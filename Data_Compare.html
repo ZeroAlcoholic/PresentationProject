@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
+</script>
+<script>
+/*
+
+*/
+
+function compare_data(data1,data2){
+  var s1 = data1.split("\r\n");
+  var s2 = data2.split("\r\n");
+    
+  for (var i=0;i<s1.length;i++){
+    if(s1[i]==""){
+	  s1.splice(i,s1.length-i);
+	  break;
+	}
+	if(s2[i]==""){
+	  s2.splice(i,s2.length-i);
+	  break;
+	}
+  }
+    
+  if (s1.length!=s2.length){
+    return false;
+  }
+  
+  s1.sort(function(a,b){
+    return (a.substr(0,a.indexOf(" ")) - b.substr(0,b.indexOf(" ")));
+  });
+  
+  s2.sort(function(a,b){
+    return (a.substr(0,a.indexOf(" ")) - b.substr(0,b.indexOf(" ")));
+  });
+  
+  var a1 = s1.toString();
+  var a2 = s2.toString();
+  return a1==a2;
+};
+
+$(document).ready(function(){
+  $("button").click(function(){
+    //get data
+	$.get("data1.txt",function(data1){
+	  $.get("data2.txt",function(data2){
+	    document.getElementById("test").innerHTML=compare_data(data1,data2);
+	  },"text");
+	},"text");
+  });
+});
+</script>
+</head>
+<body>
+
+<button>Compare Data</button>
+<p id="test">result</p>
+
+</body>
+</html>

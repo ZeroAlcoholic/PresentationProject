@@ -1,0 +1,40 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<style>
+		body {
+			margin: 0px;
+			padding: 0px;
+		}
+		#container {
+			background-color: #ffffff;
+		}
+	</style>
+</head>
+<body>
+
+	<!--<button type="button" onclick="startCount()">startCount</button>-->
+	<!--<button type="button" onclick="stopCount()">stopCount</button>-->
+	<div></div>
+	<canvas id="timer_canvas" width="180" height="60" style="border:1px solid #d3d3d3;"></canvas>
+
+	<button id="getbutton" onclick="getQuestion()" >Get Question</button>
+        <button type="button" onclick="startCount()">StartGame</button>
+	<h3 id="underline"></h3>
+
+	<div id="container"></div>
+	<script src="http://d3lp1msu2r81bx.cloudfront.net/kjs/js/lib/kinetic-v4.7.4.min.js"></script>
+	<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.10.2.min.js"></script>
+
+	
+	<script language="javascript" src="init.js"></script>
+
+	<button type='submit' id="finish" value="finish" onClick="save_to_file();stopCount();">Finish</button>
+	<button id="verify" value="verify">check</button>
+
+</body>
+
+
+
+</html>
