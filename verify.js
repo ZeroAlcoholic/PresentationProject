@@ -28,46 +28,61 @@ function rotate_compare(d1,d2){
     }else
         return error_compare(d1[3],d2[3],1);
 }
- 
-function compare_data(allText1)
+
+function sort_function(a,b){
+	var data1 = a.split(" ");
+	var data2 = b.split(" ");
+	if(data1[0]!=data2[0])
+		return data1[0] - data2[0];
+	else if(data1[3]!=data2[3])
+		return data1[3] - data2[3];
+	else if(data1[1]!=data2[1])
+		return data1[1] - data2[1];
+	else
+		return data1[2] - data2[2];
+}
+
+function standard_Deg(a) {
+	while(a>180) {
+		a = a - 360;
+	}
+	return a;
+}
+
+function compare_data()
 {
     var textToWrite = "";
+    // in the form of "a b c d\n"
     for(var i=0; i<shapes.length; i++)
     {
-        if( shapes[i].getAttr('is_used') )
+        if( textToWrite != "" )
         {
-            if( textToWrite != "" )
-            {
-                textToWrite += "\n";  
-            }
-            textToWrite += shapes[i].getAttr('id') ;
-            textToWrite += " "; 
-            textToWrite += shapes[i].getX() ; 
-            textToWrite += " ";  
-            textToWrite += shapes[i].getY() ; 
-            textToWrite += " " ; 
-            textToWrite += shapes[i].getRotationDeg(); 
+            textToWrite += "\n";  
         }
+        textToWrite += shapes[i].getAttr('id') ;
+        textToWrite += " "; 
+        textToWrite += shapes[i].getX() ; 
+        textToWrite += " ";  
+        textToWrite += shapes[i].getY() ; 
+        textToWrite += " " ; 
+        textToWrite += standard_Deg(shapes[i].getRotationDeg()); 
     }
-    alert(textToWrite);
-    alert(allText1);
-    var block1 = allText1.split("\n");
+
+    //var block1 = .split("\n");
     var block2 = textToWrite.split("\n");
+    var block1 = correct_answer; 
      
     if (block1.length!=block2.length){
         return false;
     }
     else {
         var result = true;
-        var error = 1000;
+        var error = 50;
          
         //排序
-        block1.sort(function(a,b){
-            return (a.substr(0,a.indexOf(" ")) - b.substr(0,b.indexOf(" ")));
-        });
-        block2.sort(function(a,b){
-            return (a.substr(0,a.indexOf(" ")) - b.substr(0,b.indexOf(" ")));
-        });
+        block1.sort(sort_function);
+        block2.sort(sort_function);
+        
  
         //分解
         var data1 = new Array();
@@ -91,28 +106,38 @@ function compare_data(allText1)
             data2[i][1] = data2[i][1]-ref_x2;
             data2[i][2] = data2[i][2]-ref_y2;
         }
-         
+		
         //比較
         for (var i=0; i<block1.length; i++)
             result = result && (data1[i][0]==data2[i][0]);
-        for (var i=0; i<block1.length; i++)
+		for (var i=0; i<block1.length; i++)
             result = result && error_compare(data1[i][1],data2[i][1],error);
-        for (var i=0; i<block1.length; i++)
+		for (var i=0; i<block1.length; i++)
             result = result && error_compare(data1[i][2],data2[i][2],error);
-        for (var i=0; i<block1.length; i++)
+		for (var i=0; i<block1.length; i++)
             result = result && rotate_compare(data1[i],data2[i]);
- 
         return result;
     }
 }
  
+
 /*  to read the file */
 $(document).ready(function(){
     $("#verify").click(function(){
+
         //question_file = question_file.substring(2);
         //get data
-        $.get(question_file, function(allText1){
-            alert( compare_data(allText1)) ;
+        $.get(question_file, function(){
+
+			var result = compare_data();
+			if(result) {
+
+				alert("Congratulation! You have done your puzzle!");
+				stopCount();
+			}
+			else {
+				alert("Your answer is FALSE. Please continue your work.")
+			}
         },"text");
     });
 });

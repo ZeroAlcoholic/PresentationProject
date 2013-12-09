@@ -7,14 +7,14 @@ function random_position(element, index, array){
 	if( type == "Polygon" || type == "Rect" )
 	{
 		x_M = border_right - element.getWidth() - 10; 
-		x_m = border_split_x + 10; 
+		x_m = border_left + 10; 
 		y_M = border_bottom - element.getHeight() - 10 ;
 		y_m = border_top + 10; 
 	}
 	else if( type == "Circle" || type == "Wedge"  )
 	{
 		x_M = border_right - element.getRadius() - 10; 
-		x_m = border_split_x + element.getRadius() + 10; 
+		x_m = border_left + element.getRadius() + 10; 
 		y_M = border_bottom - element.getRadius() - 10 ;
 		y_m = border_top + element.getRadius() + 10; 
 	}
@@ -58,10 +58,9 @@ function shape_mouse_event(element, index, array)
   			element.setPosition(initX, initY); 
   			layer.draw();
   		}
-  		whether_in_used(element); 
   	});
   	element.on('click', function() {
-  		element.rotate(Math.PI/6); 
+  		element.rotate(Math.PI/12); 
   	});
 }
 
@@ -76,7 +75,7 @@ function set_to_undraggable(element, index, array)
 {
 	element.setDraggable(false);
 }
-
+/*
 // 題目可能會多給，來判斷該圖形是否有被拉出pool
 function whether_in_used(obj)
 {
@@ -89,6 +88,7 @@ function whether_in_used(obj)
 		obj.setAttr('is_used', false);
 	}
 }
+*/
 // 圖形靠近時 snap
 function near_and_snap(obj){
 	for( var i=0; i< shapes.length; i++ )
@@ -150,8 +150,7 @@ function is_on_border(shape)
 		if( (shape.getX() < border_left )
 			|| (shape.getX()+shape.getWidth() > border_right ) 
 			|| (shape.getY() < border_top )
-			|| (shape.getY()+shape.getHeight() > border_bottom) 
-			|| ((shape.getX()< border_split_x) && (shape.getX()+shape.getWidth() > border_split_x)) )
+			|| (shape.getY()+shape.getHeight() > border_bottom) )
 		{	return true; 	}
 		/*
 		if( (shape.getX()-shape.getWidth()/2 < border_left )
@@ -167,8 +166,7 @@ function is_on_border(shape)
 		if( (shape.getX()-shape.getRadius()/2 < border_left )
 			|| (shape.getX()+shape.getRadius()/2 > border_right ) 
 			|| (shape.getY()-shape.getRadius()/2 < border_top )
-			|| (shape.getY()+shape.getRadius()/2 > border_bottom) 
-			|| ((shape.getX()-shape.getRadius()/2< border_split_x) && (shape.getX()+shape.getRadius()/2> border_split_x)) )
+			|| (shape.getY()+shape.getRadius()/2 > border_bottom)  )
 		{	return true;	}
 	}
 	
@@ -187,7 +185,7 @@ function save_to_file()
 			{
 				textToWrite += "\n";  
 			}
-			textToWrite += shapes[i].getAttr('number') ;
+			textToWrite += shapes[i].getAttr('id') ;
 			textToWrite += " "; 
 			textToWrite += shapes[i].getX() ; 
 			textToWrite += " ";  

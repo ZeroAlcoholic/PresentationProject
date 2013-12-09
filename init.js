@@ -14,7 +14,7 @@ var question_file ;
 /* the timer */ 
 var m=0;
 var s=0;
-var timer_is_on=0;
+var timer_is_on=1;
 var c=document.getElementById("timer_canvas");
 var ctx=c.getContext("2d");
 ctx.font="60px Arial";
@@ -70,8 +70,6 @@ function startCount()
 
 	if (!timer_is_on)
 	{
-		m=0;
-		s=0;
 		timer_is_on=1;
 		timeCount();
 	}
@@ -108,7 +106,7 @@ var border = new Kinetic.Line({
 	lineJoin: 'round'
 });
 layer.add(border);
-
+/*
 var border_split = new Kinetic.Line({
 	points: [border_split_x, border_top, border_split_x, border_bottom], 
 	stroke: '#999999',
@@ -116,7 +114,9 @@ var border_split = new Kinetic.Line({
     lineJoin: 'round'
      //line segments with a length of 20, with a gap of 10px
 });
+
 layer.add(border_split);
+*/
 stage.add(layer);
 /*  end of the stage and layer */
 
@@ -130,5 +130,5 @@ $(document).ready( function() {
 	}) ; 
 }); 
 
-document.write('<script language="javascript" src="teacherwindow.js"></script>');
+document.write('<script language="javascript" src="getQuestion.js"></script>');
 document.write('<script language="javascript" src="tool.js"></script>');

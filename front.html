@@ -19,7 +19,7 @@
 	<div></div>
 	<canvas id="timer_canvas" width="180" height="60" style="border:1px solid #d3d3d3;"></canvas>
 
-	<button id="getbutton" onclick="getQuestion()" >Get Question</button>
+	<button id="getbutton" onclick="getQuestion();timer_is_on=0" >Get Question</button>
         <button type="button" onclick="startCount()">StartGame</button>
 	<h3 id="underline"></h3>
 
@@ -30,8 +30,8 @@
 	
 	<script language="javascript" src="init.js"></script>
 
-	<button type='submit' id="finish" value="finish" onClick="save_to_file();stopCount();">Finish</button>
-	<button id="verify" value="verify">check</button>
+	<button type='submit' id="finish" value="finish" onClick="window.location.reload();" >quit</button>
+	<button id="verify" value="verify" onClick="save_to_file();">Verify</button>
 
 </body>
 
