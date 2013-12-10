@@ -147,11 +147,12 @@ function is_on_border(shape)
 	var type = shape.getClassName();
 	if( type == "Polygon" || type == "Rect" )
 	{
+		
 		if( (shape.getX() < border_left )
 			|| (shape.getX()+shape.getWidth() > border_right ) 
 			|| (shape.getY() < border_top )
 			|| (shape.getY()+shape.getHeight() > border_bottom) )
-		{	return true; 	}
+		{	console.log("border_1");return true; 	}
 		/*
 		if( (shape.getX()-shape.getWidth()/2 < border_left )
 			|| (shape.getX()+shape.getWidth()/2 > border_right ) 
@@ -163,11 +164,12 @@ function is_on_border(shape)
 	}
 	else if( type == "Circle" || type == "Wedge"  )
 	{
+		
 		if( (shape.getX()-shape.getRadius()/2 < border_left )
 			|| (shape.getX()+shape.getRadius()/2 > border_right ) 
 			|| (shape.getY()-shape.getRadius()/2 < border_top )
 			|| (shape.getY()+shape.getRadius()/2 > border_bottom)  )
-		{	return true;	}
+		{	console.log("border_2");return true;	}
 	}
 	
 	return false; 

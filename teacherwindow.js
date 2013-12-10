@@ -2,24 +2,22 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
+var question_file; 
+var correct_answer ; 
 
-/* *** View *** */
-var margin = 20 ; 
-var border_left = window.innerWidth/4 ; 
-var border_top = margin ; 
-var border_right = window.innerWidth*3/4 ; 
-var border_bottom = window.innerHeight-margin-margin-margin-margin ; 
+
+
 //var border_split_x = window.innerWidth/2 ;
 
-
 function getQuestion(){
-    var q_idx = Math.floor(Math.random()*5) ; // 0, 1, 2
+    var q_idx = Math.floor(Math.random()*6) ; // started from 0
     //alert("ques_A0"+(q_idx+1)+".txt"); // 1, 2, 3
     //var path = "file:///C:/Users/MY/Desktop/";
-    var file = "ques_A0"+(q_idx+1)+".txt"; // 1, 2, 3
+    //var file = "ques_A0"+(q_idx+1)+".txt"; // started from 1, as the index
+    question_file = "ques_A0"+(q_idx+1)+".txt";
     
     var rawFile = new XMLHttpRequest();
-    rawFile.open("GET", file, true);
+    rawFile.open("GET", question_file, true);
     rawFile.onreadystatechange = function ()
     {
         if(rawFile.readyState === 4)
@@ -29,6 +27,8 @@ function getQuestion(){
                 var allText = rawFile.responseText;
                 //alert(allText);
                 var block = allText.split("\n");
+                correct_answer = block ;
+
                 var data = Array(block.length);
                 for(var i=0; i<block.length; ++i)
                     data[i] = block[i].split(" ");
@@ -39,6 +39,49 @@ function getQuestion(){
     rawFile.send(null);
 }
 
+function getQuestionFromNumber(number)
+{
+
+    question_file = "ques_A0" + number +".txt";   
+    
+    var rawFile = new XMLHttpRequest();
+    rawFile.open("GET", question_file, true);
+    rawFile.onreadystatechange = function ()
+    {
+        if(rawFile.readyState === 4)
+        {
+            if(rawFile.status === 200 || rawFile.status === 0)
+            {
+                var allText = rawFile.responseText;
+                //alert(allText);
+                var block = allText.split("\n");
+                correct_answer = block ;
+
+                var data = Array(block.length);
+                for(var i=0; i<block.length; ++i)
+                    data[i] = block[i].split(" ");
+                drawQuestionFromNumber(data);
+            }
+        }
+    }
+    rawFile.send(null);
+
+}
+function drawQuestionFromNumber(data)
+{
+    for(var i=0; i<data.length; ++i)
+        layer.add(buildblock(parseInt(data[i][0]), parseInt(data[i][1]), parseInt(data[i][2]), parseInt(data[i][3])));
+
+    // add the shapes to the layer
+    stage.add(layer);
+
+    shapes = stage.get(".shape");
+    shapes.forEach(random_position);
+    layer.draw();
+    shapes.forEach(shape_mouse_event);
+}
+
+
 function drawQuestion(data, q_idx){
 
     //var dataset = new Array();
@@ -47,47 +90,42 @@ function drawQuestion(data, q_idx){
     //dataset[2] = [[1, 450, 175, 0], [3, 330, 400, 0], [2, 250, 225, 0], [3, 520, 400, 0]];
     
     //alert(data);
+    var marginInTeacher = 20 ; 
+    var borderLeftInTeacher = window.innerWidth/4 ; 
+    var borderTopInTeacher = margin ; 
+    var borderRightInTeacher = window.innerWidth*3/4 ; 
+    var borderBottomInTeacher = window.innerHeight-margin-margin-margin-margin ; 
 
-    var stage = new Kinetic.Stage({
+    var stageInTeacher = new Kinetic.Stage({
             container: 'container',
             X:0, 
             Y:0, 
             width: window.innerWidth,
-            height: border_bottom
+            height: borderBottomInTeacher
     });
-    var layer = new Kinetic.Layer({
+    var layerInTeacher = new Kinetic.Layer({
             X:0, 
             Y:0, 
             width: window.innerWidth, 
-            height: border_bottom
+            height: borderBottomInTeacher
     });
 
-    var border = new Kinetic.Line({
-            points: [border_left, border_top, border_right, border_top, border_right, border_bottom, border_left, border_bottom, border_left, border_top], 
+    var borderInTeacher = new Kinetic.Line({
+            points: [borderLeftInTeacher, borderTopInTeacher, borderRightInTeacher, borderTopInTeacher, borderRightInTeacher, borderBottomInTeacher, borderLeftInTeacher, borderBottomInTeacher, borderLeftInTeacher, borderTopInTeacher], 
             stroke: 'blue', 
             strokeWidth: 2, 
             lineJoin: 'round', 
             dashArray: [20, 10]
     });
-    layer.add(border);
+    layerInTeacher.add(borderInTeacher);
     
     for(var i=0; i<data.length; ++i)
-    {
-        layer.add( buildblock(parseInt(data[i][0]), parseInt(data[i][1]), parseInt(data[i][2]), parseInt(data[i][3])) );
-    }
-    
+        layerInTeacher.add(buildblock(parseInt(data[i][0]), parseInt(data[i][1]), parseInt(data[i][2]), parseInt(data[i][3])));
+
     // add the shapes to the layer
-    stage.add(layer);
+    stageInTeacher.add(layerInTeacher);
+    //stage.show();
 
-    /*
-    for (var i = 0; i < shapes.length; i++) {
-        random_num_texture = Math.floor(Math.random() * 8) ; 
-
-        shapes[i].setFill( "#000000" );
-        console.log( shapes[i]);
-        layer.draw();
-    };
-*/
     var verinum = "A0"+(q_idx+1) ; // 1, 2, 3
     document.getElementById("getbutton").style.display = "none";
     document.getElementById("underline").innerHTML = '<h3>----Verifying Number = '+verinum+'</h3>';
@@ -105,20 +143,17 @@ function buildblock(type, x, y, r){
     switch(type){
         
         // 1~10 are squares and rectangles
-        
         case 1:  //square
             var square = new Kinetic.Rect({
                 x: border_left+x,
                 y: border_top+y,
-                width: 150,
-                height: 150,
+                width: 80,
+                height: 80,
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#9e9e9e',
                 cornerRadius: 10, 
-                name: "shape" , 
-                number: 0, 
-                is_used: false, 
+                name: "shape" ,  
                 //offset: [-border_left-x, -border_top-y],
                 rotationDeg: r
             });
@@ -127,16 +162,13 @@ function buildblock(type, x, y, r){
             var square = new Kinetic.Rect({
                 x: border_left+x,
                 y: border_top+y,
-                width: 200,
-                height: 200,
+                width: 100,
+                height: 100,
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#9e9e9e',
-                cornerRadius: 10, 
                 name: "shape" , 
-                number: 0, 
-                is_used: false, 
-                //offset: [-border_left-x, -border_top-y],
+                cornerRadius: 10, 
                 rotationDeg: r
             });
             return square;
@@ -144,37 +176,101 @@ function buildblock(type, x, y, r){
             var square = new Kinetic.Rect({
                 x: border_left+x,
                 y: border_top+y,
-                width: 250,
-                height: 250,
+                width: 120,
+                height: 120,
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#9e9e9e',
-                cornerRadius: 10,
                 name: "shape" , 
-                number: 0, 
-                is_used: false, 
-                //offset: [-border_left-x, -border_top-y],
+                cornerRadius: 10, 
                 rotationDeg: r
             });
             return square;
-        case 4:  //regular rect
+        case 4:  //short thin rect
             var rect = new Kinetic.Rect({
                 x: border_left+x,
                 y: border_top+y,
-                width: 200,
+                width: 90,
+                height: 60,
+                stroke: '#555',
+                strokeWidth: 1,
+                fill: '#ddd',
+                name: "shape" , 
+                cornerRadius: 10, 
+                rotationDeg: r
+            });
+            return rect;
+        case 5:  //thin rect
+            var rect = new Kinetic.Rect({
+                x: border_left+x,
+                y: border_top+y,
+                width: 120,
+                height: 60,
+                stroke: '#555',
+                strokeWidth: 1,
+                fill: '#ddd',
+                name: "shape" , 
+                cornerRadius: 10, 
+                rotationDeg: r
+            });
+            return rect;
+        case 6:  //long thin rect
+            var rect = new Kinetic.Rect({
+                x: border_left+x,
+                y: border_top+y,
+                width: 150,
+                height: 60,
+                stroke: '#555',
+                strokeWidth: 1,
+                fill: '#ddd',
+                name: "shape" , 
+                cornerRadius: 10, 
+                rotationDeg: r
+            });
+            return rect;
+        case 7:  //regular rect
+            var rect = new Kinetic.Rect({
+                x: border_left+x,
+                y: border_top+y,
+                width: 120,
+                height: 80,
+                stroke: '#555',
+                strokeWidth: 1,
+                fill: '#ddd',
+                name: "shape" , 
+                cornerRadius: 10, 
+                rotationDeg: r
+            });
+            return rect;
+        case 8:  //short fat rect
+            var rect = new Kinetic.Rect({
+                x: border_left+x,
+                y: border_top+y,
+                width: 90,
                 height: 100,
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
+                name: "shape" , 
                 cornerRadius: 10, 
-                name: "shape", 
-                number: 1, 
-                is_used: false,
-                //offset: [-border_left-x, -border_top-y],
                 rotationDeg: r
             });
             return rect;
-        case 5:  //short rect
+        case 9:  //fat rect
+            var rect = new Kinetic.Rect({
+                x: border_left+x,
+                y: border_top+y,
+                width: 120,
+                height: 100,
+                stroke: '#555',
+                strokeWidth: 1,
+                fill: '#ddd',
+                name: "shape" , 
+                cornerRadius: 10, 
+                rotationDeg: r
+            });
+            return rect;
+        case 10:  //long fat rect
             var rect = new Kinetic.Rect({
                 x: border_left+x,
                 y: border_top+y,
@@ -183,96 +279,8 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
+                name: "shape" , 
                 cornerRadius: 10, 
-                name: "shape", 
-                number: 1, 
-                is_used: false, 
-                //offset: [-border_left-x, -border_top-y],
-                rotationDeg: r
-            });
-            return rect;
-        case 6:  //thin rect
-            var rect = new Kinetic.Rect({
-                x: border_left+x,
-                y: border_top+y,
-                width: 200,
-                height: 80,
-                stroke: '#555',
-                strokeWidth: 1,
-                fill: '#ddd',
-                cornerRadius: 10, 
-                name: "shape", 
-                number: 1, 
-                is_used: false, 
-                //offset: [-border_left-x, -border_top-y],
-                rotationDeg: r
-            });
-            return rect;
-        case 7:  //long rect
-            var rect = new Kinetic.Rect({
-                x: border_left+x,
-                y: border_top+y,
-                width: 250,
-                height: 100,
-                stroke: '#555',
-                strokeWidth: 1,
-                fill: '#ddd',
-                cornerRadius: 10, 
-                name: "shape", 
-                number: 1, 
-                is_used: false, 
-                //offset: [-border_left-x, -border_top-y],
-                rotationDeg: r
-            });
-            return rect;
-        case 8:  //fat rect
-            var rect = new Kinetic.Rect({
-                x: border_left+x,
-                y: border_top+y,
-                width: 200,
-                height: 120,
-                stroke: '#555',
-                strokeWidth: 1,
-                fill: '#ddd',
-                cornerRadius: 10, 
-                name: "shape", 
-                number: 1, 
-                is_used: false, 
-                //offset: [-border_left-x, -border_top-y],
-                rotationDeg: r
-            });
-            return rect;
-        case 9:  //big rect
-            var rect = new Kinetic.Rect({
-                x: border_left+x,
-                y: border_top+y,
-                width: 220,
-                height: 120,
-                stroke: '#555',
-                strokeWidth: 1,
-                fill: '#ddd',
-                cornerRadius: 10, 
-                name: "shape", 
-                number: 1, 
-                is_used: false, 
-                //offset: [-border_left-x, -border_top-y],
-                rotationDeg: r
-            });
-            return rect;
-        case 10:  //bif fat rect
-            var rect = new Kinetic.Rect({
-                x: border_left+x,
-                y: border_top+y,
-                width: 250,
-                height: 120,
-                stroke: '#555',
-                strokeWidth: 1,
-                fill: '#ddd',
-                cornerRadius: 10, 
-                name: "shape", 
-                number: 1, 
-                is_used: false, 
-                //offset: [-border_left-x, -border_top-y],
                 rotationDeg: r
             });
             return rect;
@@ -283,10 +291,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 75,
+                radius: 15,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -294,10 +302,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 85,
+                radius: 20,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -305,10 +313,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 95,
+                radius: 25,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -316,10 +324,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 105,
+                radius: 30,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -327,10 +335,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 115,
+                radius: 40,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -338,10 +346,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 125,
+                radius: 50,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -349,10 +357,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 135,
+                radius: 60,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -360,10 +368,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 145,
+                radius: 75,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -371,10 +379,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 155,
+                radius: 90,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -382,10 +390,10 @@ function buildblock(type, x, y, r){
             var circle = new Kinetic.Circle({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 165,
+                radius: 100,
                 fill: 'red',
-                stroke: 'black',
                 name: "shape" , 
+                stroke: 'black',
                 strokeWidth: 1
             });
             return circle;
@@ -399,9 +407,9 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 30,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
@@ -412,9 +420,9 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 60,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
@@ -425,9 +433,9 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 90,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
@@ -438,9 +446,9 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 120,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
@@ -451,74 +459,73 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 150,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
-        case 26:  //big wedge -30
+        case 26:  //small wedge -30
             var wedge = new Kinetic.Wedge({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 180,
+                radius: 90,
                 angleDeg: 30,
                 fill: 'green',
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
-        case 27:  //big wedge -60
+        case 27:  //small wedge -60
             var wedge = new Kinetic.Wedge({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 180,
+                radius: 90,
                 angleDeg: 60,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
-        case 28:  //big wedge -90
+        case 28:  //small wedge -90
             var wedge = new Kinetic.Wedge({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 180,
+                radius: 90,
                 angleDeg: 90,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
-        case 29:  //big wedge -120
+        case 29:  //small wedge -120
             var wedge = new Kinetic.Wedge({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 180,
+                radius: 90,
                 angleDeg: 120,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
-        case 30:  //big wedge -150
+        case 30:  //small wedge -150
             var wedge = new Kinetic.Wedge({
                 x: border_left+x,
                 y: border_top+y,
-                radius: 180,
+                radius: 90,
                 angleDeg: 150,
                 fill: 'green',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return wedge;
@@ -527,241 +534,240 @@ function buildblock(type, x, y, r){
         
         case 31:  //triangle1
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 0, 150, 150, 0],
+                points: [0, 0, 0, 90, 90, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 32:  //triangle2
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 0, 150, 180, 0],
+                points: [0, 0, 0, 90, 120, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 33:  //triangle3
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 0, 150, 200, 0],
+                points: [0, 0, 0, 120, 90, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 34:  //triangle4
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 0, 180, 150, 0],
+                points: [0, 0, 0, 100, 110, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 35:  //triangle5
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 0, 200, 150, 0],
+                points: [0, 0, 0, 150, 120, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 36:  //triangle6
             var tri = new Kinetic.Polygon({
-                points: [0, 0, -20, 150, 150, 0],
+                points: [0, 0, -20, 80, 80, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 37:  //triangle7
             var tri = new Kinetic.Polygon({
-                points: [0, 0, -20, 180, 150, 0],
+                points: [0, 0, -20, 100, 80, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 38:  //triangle8
             var tri = new Kinetic.Polygon({
-                points: [0, 0, -20, 180, 180, 0],
+                points: [0, 0, -20, 100, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 39:  //triangle9
             var tri = new Kinetic.Polygon({
-                points: [0, 0, -20, 120, 150, 0],
+                points: [0, 0, -20, 80, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 40:  //triangle10
             var tri = new Kinetic.Polygon({
-                points: [0, 0, -20, 120, 180, 0],
+                points: [0, 0, -20, 60, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 41:  //triangle11
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 20, 150, 150, 0],
+                points: [0, 0, 20, 80, 80, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 42:  //triangle12
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 20, 120, 150, 0],
+                points: [0, 0, 20, 100, 80, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 43:  //triangle13
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 20, 180, 150, 0],
+                points: [0, 0, 20, 100, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 44:  //triangle14
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 20, 180, 180, 0],
+                points: [0, 0, 20, 80, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 45:  //triangle15
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 20, 150, 150, 20],
+                points: [0, 0, 20, 100, 100, 20],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 46:  //triangle16
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 50, 150, 150, 0],
+                points: [0, 0, 50, 100, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 47:  //triangle17
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 50, 180, 150, 0],
+                points: [0, 0, 50, 120, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 48:  //triangle18
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 50, 180, 150, 20],
+                points: [0, 0, 50, 100, 120, 20],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 49:  //triangle19
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 50, 150, 150, 50],
+                points: [0, 0, 50, 100, 100, 50],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
         case 50:  //triangle20
             var tri = new Kinetic.Polygon({
-                points: [0, 0, 50, 150, 150, -20],
+                points: [0, 0, 50, 100, 100, -20],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return tri;
@@ -770,241 +776,241 @@ function buildblock(type, x, y, r){
         
         case 51:  //trapezoid1
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 150, 200, 150, 150, 0],
+                points: [0, 0, 0, 90, 120, 90, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 52:  //trapezoid2
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 150, 220, 150, 150, 0],
+                points: [0, 0, 0, 90, 130, 90, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 53:  //trapezoid3
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 150, 180, 150, 150, 0],
+                points: [0, 0, 0, 90, 150, 90, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 54:  //trapezoid4
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 150, 200, 150, 120, 0],
+                points: [0, 0, 0, 90, 100, 90, 80, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 55:  //trapezoid5
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 150, 200, 150, 180, 0],
+                points: [0, 0, 0, 90, 50, 90, 30, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 56:  //trapezoid6
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 120, 200, 120, 150, 0],
+                points: [0, 0, 0, 80, 120, 80, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 57:  //trapezoid7
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 120, 220, 120, 150, 0],
+                points: [0, 0, 0, 80, 130, 80, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 58:  //trapezoid8
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 120, 180, 120, 150, 0],
+                points: [0, 0, 0, 80, 150, 80, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 59:  //trapezoid9
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 120, 200, 120, 120, 0],
+                points: [0, 0, 0, 80, 100, 80, 80, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 60:  //trapezoid10
             var trape = new Kinetic.Polygon({
-                points: [0, 0, 0, 120, 200, 120, 180, 0],
+                points: [0, 0, 0, 80, 50, 80, 30, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 61:  //trapezoid11
             var trape = new Kinetic.Polygon({
-                points: [50, 0, 0, 150, 200, 150, 200, 0],
+                points: [0, 0, 0, 90, 100, 90, 120, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 62:  //trapezoid12
             var trape = new Kinetic.Polygon({
-                points: [50, 0, 20, 150, 200, 150, 200, 0],
+                points: [0, 0, 0, 90, 100, 90, 130, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 63:  //trapezoid13
             var trape = new Kinetic.Polygon({
-                points: [80, 0, 0, 150, 230, 150, 230, 0],
+                points: [0, 0, 0, 90, 100, 90, 150, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 64:  //trapezoid14
             var trape = new Kinetic.Polygon({
-                points: [70, 0, 0, 150, 200, 150, 200, 0],
+                points: [0, 0, 0, 90, 80, 90, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 65:  //trapezoid15
             var trape = new Kinetic.Polygon({
-                points: [30, 0, 0, 150, 200, 150, 200, 0],
+                points: [0, 0, 0, 90, 30, 90, 50, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 66:  //trapezoid16
             var trape = new Kinetic.Polygon({
-                points: [50, 0, 0, 120, 200, 120, 200, 0],
+                points: [0, 0, 0, 80, 100, 80, 120, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 67:  //trapezoid17
             var trape = new Kinetic.Polygon({
-                points: [70, 0, 0, 120, 200, 120, 200, 0],
+                points: [0, 0, 0, 80, 100, 80, 130, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 68:  //trapezoid18
             var trape = new Kinetic.Polygon({
-                points: [30, 0, 0, 120, 200, 120, 200, 0],
+                points: [0, 0, 0, 80, 100, 80, 150, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 69:  //trapezoid19
             var trape = new Kinetic.Polygon({
-                points: [50, 0, 20, 120, 200, 120, 200, 0],
+                points: [0, 0, 0, 80, 80, 80, 100, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
         case 70:  //trapezoid20
             var trape = new Kinetic.Polygon({
-                points: [80, 0, 0, 120, 230, 120, 230, 0],
+                points: [0, 0, 0, 80, 30, 80, 50, 0],
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return trape;
@@ -1017,15 +1023,16 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: '#00D2FF',
+                name: "shape" , 
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
                 rotationDeg: r
             });
             return poly;
 
     }
 }
+document.write('<script language="javascript" src="verify.js"></script>');
 /*
 function readTextFile(file)
 {

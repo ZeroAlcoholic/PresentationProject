@@ -9,7 +9,6 @@ var border_right = window.innerWidth-margin-margin ;
 var border_bottom = window.innerHeight-margin-margin-margin-margin-finish_btn; 
 var border_split_x = window.innerWidth/2 ;
 var shapes ; 
-var question_file ; 
 
 /* the timer */ 
 var m=0;
@@ -120,6 +119,9 @@ layer.add(border_split);
 stage.add(layer);
 /*  end of the stage and layer */
 
+document.write('<script language="javascript" src="teacherwindow.js"></script>');
+document.write('<script language="javascript" src="tool.js"></script>');
+
 // set the canvas size
 $(document).ready( function() {
 	$(window).resize(function(){
@@ -128,7 +130,35 @@ $(document).ready( function() {
 		layer.setWidth(window.innerWidth);
 		layer.setHeight(window.innerHeight);
 	}) ; 
+	$("#getbutton").click( function(){
+		var questionNumber = $('#selectQuestion').find(":selected").text();
+		if( questionNumber == "請選擇" )
+		{
+			alert("Please choose a question!");
+		}
+		else
+		{
+			getQuestionFromNumber( questionNumber );
+
+			$('#selectQuestion').hide();
+			$("#getbutton").hide();
+		}
+	}); 
+	/*
+	$("#verify").click(function(){
+        $.get(question_file, function(){
+
+			var result = compare_data();
+			if(result) {
+
+				alert("Congratulation! You have done your puzzle!");
+				stopCount();
+			}
+			else {
+				alert("Your answer is FALSE. Please continue your work.")
+			}
+        },"text");
+    });
+	*/
 }); 
 
-document.write('<script language="javascript" src="getQuestion.js"></script>');
-document.write('<script language="javascript" src="tool.js"></script>');

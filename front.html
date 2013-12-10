@@ -18,8 +18,20 @@
 	<!--<button type="button" onclick="stopCount()">stopCount</button>-->
 	<div></div>
 	<canvas id="timer_canvas" width="180" height="60" style="border:1px solid #d3d3d3;"></canvas>
+	<select id="selectQuestion">
+		<option value="0" selected>請選擇</option>
+		<option value="1">1</option>
+		<option value="2">2</option>
+		<option value="3">3</option>
+		<option value="4">4</option>
+		<option value="5">5</option>
+		<option value="6">6</option>
+		<option value="7">7</option>
+		<option value="8">8</option>
+		<option value="9">9</option>
+	</select>
 
-	<button id="getbutton" onclick="getQuestion();timer_is_on=0" >Get Question</button>
+	<button id="getbutton" onclick="timer_is_on=0" >Get Question</button>
         <button type="button" onclick="startCount()">StartGame</button>
 	<h3 id="underline"></h3>
 
@@ -31,7 +43,7 @@
 	<script language="javascript" src="init.js"></script>
 
 	<button type='submit' id="finish" value="finish" onClick="window.location.reload();" >quit</button>
-	<button id="verify" value="verify" onClick="save_to_file();">Verify</button>
+	<button id="verify" value="verify">Verify</button>
 
 </body>
 

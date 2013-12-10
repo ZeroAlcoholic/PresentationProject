@@ -119,25 +119,20 @@ function compare_data()
         return result;
     }
 }
- 
 
-/*  to read the file */
-$(document).ready(function(){
+$(document).ready( function() {
     $("#verify").click(function(){
+            $.get(question_file, function(){
+                var result = compare_data();
+                if(result) {
 
-        //question_file = question_file.substring(2);
-        //get data
-        $.get(question_file, function(){
-
-			var result = compare_data();
-			if(result) {
-
-				alert("Congratulation! You have done your puzzle!");
-				stopCount();
-			}
-			else {
-				alert("Your answer is FALSE. Please continue your work.")
-			}
-        },"text");
+                    alert("Congratulation! You have done your puzzle!");
+                    stopCount();
+                }
+                else {
+                    alert("Your answer is FALSE. Please continue your work.")
+                }
+            },"text");
     });
-});
+}); 
+ 
