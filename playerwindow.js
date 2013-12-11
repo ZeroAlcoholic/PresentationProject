@@ -4,6 +4,29 @@ var question_file ;
 var correct_answer ; 
 
 // things for init set
+// set offsettttt
+function set_offset(element, index, array)
+{
+	var type = element.getClassName();
+	var newX, newY; 
+	if( type == "Polygon")
+	{
+		newX = element.getAttr('width')/2; 
+		newY = element.getAttr('height')/2; 
+	}
+	else if( type == "Rect")
+	{
+		newX = element.getWidth()/2; 
+		newY = element.getHeight()/2;
+	}
+	else if( type == "Wedge")
+	{
+		newX = element.getRadius()/2 ;
+		newY = element.getAngleDeg() * element.getRadius() * 2 / 360
+	}
+	element.setOffset(newX, newY); 
+}
+
 //   1. random set their position and angles
 function random_position(element, index, array){
 	var x_M, x_m, y_M, y_m; 
@@ -289,6 +312,7 @@ function drawQuestionFromNumber(data)
     stage.add(layer);
 
     shapes = stage.get(".shape");
+    shapes.forEach(set_offset);
     shapes.forEach(random_position);
     shapes.forEach(setWedgeOffset); 
     shapes.forEach(shape_mouse_event);

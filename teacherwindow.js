@@ -14,8 +14,8 @@ function getQuestion(){
     var q_idx = Math.floor(Math.random()*6) ; // started from 0
     //alert("ques_A0"+(q_idx+1)+".txt"); // 1, 2, 3
     //var path = "file:///C:/Users/MY/Desktop/";
-    //var file = "ques_A0"+(q_idx+1)+".txt"; // started from 1, as the index
-    var file = "ques_A0"+(q_idx+1)+".txt";
+    var file = "ques_A0"+(q_idx+1)+".txt"; // started from 1, as the index
+
 
     var rawFile = new XMLHttpRequest();
     rawFile.open("GET", file, true);
@@ -78,7 +78,7 @@ function drawQuestion(data, q_idx){
 
     // add the shapes to the layer
     stageInTeacher.add(layerInTeacher);
-    //stage.show();
+
 
     var verinum = "A0"+(q_idx+1) ; // 1, 2, 3
     document.getElementById("getbutton").style.display = "none";

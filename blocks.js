@@ -2,6 +2,7 @@ function buildblock(type, x, y, r){
     switch(type){
         
         // 1~10 are squares and rectangles
+        
         case 1:  //square
             var square = new Kinetic.Rect({
                 x: border_left+x,
@@ -12,10 +13,9 @@ function buildblock(type, x, y, r){
                 strokeWidth: 1,
                 fill: '#9e9e9e',
                 cornerRadius: 10, 
-                name: "shape" ,
-                id: 1,
-                is_used: false,   
-                offset: [40, 40],
+                id: 1,  
+                name: "shape" , 
+                is_used: false, 
                 rotationDeg: r
             });
             return square;
@@ -28,11 +28,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#9e9e9e',
-                name: "shape" , 
-                cornerRadius: 10,
+                cornerRadius: 10, 
                 id: 2,  
-                is_used: false,
-                offset: [50, 50],
+                name: "shape" , 
+                is_used: false, 
                 rotationDeg: r
             });
             return square;
@@ -45,11 +44,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#9e9e9e',
-                name: "shape" , 
-                id: 3,
-                is_used: false,
-                offset: [60, 60],
                 cornerRadius: 10, 
+                id: 3,  
+                name: "shape" , 
+                is_used: false, 
                 rotationDeg: r
             });
             return square;
@@ -62,11 +60,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
-                name: "shape" ,
-                id: 4, 
-                is_used: false,
-                offset: [45, 30],
                 cornerRadius: 10, 
+                id: 4,  
+                name: "shape" , 
+                is_used: false, 
                 rotationDeg: r
             });
             return rect;
@@ -79,11 +76,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
-                name: "shape" , 
-                id: 5, 
-                is_used: false,
-                offset: [60, 30],
                 cornerRadius: 10, 
+                id: 5,  
+                name: "shape" , 
+                is_used: false, 
                 rotationDeg: r
             });
             return rect;
@@ -96,11 +92,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
-                name: "shape" , 
-                id: 6, 
-                is_used: false,
-                offset: [75, 30],
                 cornerRadius: 10, 
+                id: 6,  
+                name: "shape" , 
+                is_used: false, 
                 rotationDeg: r
             });
             return rect;
@@ -113,11 +108,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
-                name: "shape" , 
-                id: 7, 
-                is_used: false,
-                offset: [60, 40],
                 cornerRadius: 10, 
+                id: 7,  
+                name: "shape" , 
+                is_used: false, 
                 rotationDeg: r
             });
             return rect;
@@ -130,11 +124,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
-                name: "shape" , 
-                id:8, 
-                is_used: false,
-                offset: [45, 50],
                 cornerRadius: 10, 
+                name: "shape" , 
+                is_used: false, 
+                id: 8,
                 rotationDeg: r
             });
             return rect;
@@ -147,11 +140,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
-                name: "shape" , 
-                id: 9, 
-                is_used: false,
-                offset: [60, 50],
                 cornerRadius: 10, 
+                name: "shape" , 
+                is_used: false, 
+                id: 9,
                 rotationDeg: r
             });
             return rect;
@@ -164,11 +156,10 @@ function buildblock(type, x, y, r){
                 stroke: '#555',
                 strokeWidth: 1,
                 fill: '#ddd',
-                name: "shape" , 
-                id: 10,
-                is_used: false,
-                offset: [75, 50],
                 cornerRadius: 10, 
+                name: "shape" , 
+                is_used: false, 
+                id: 10, 
                 rotationDeg: r
             });
             return rect;
@@ -181,11 +172,11 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 15,
                 fill: 'red',
-                name: "shape" , 
                 stroke: 'black',
-                id: 11,
-                is_used: false,
-                strokeWidth: 1
+                strokeWidth: 1, 
+                name: "shape" , 
+                is_used: false, 
+                id: 11
             });
             return circle;
         case 12:  //circle
@@ -194,10 +185,10 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 20,
                 fill: 'red',
-                name: "shape" , 
-                id: 12,
-                is_used: false,
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
+                id: 12, 
                 strokeWidth: 1
             });
             return circle;
@@ -207,10 +198,10 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 25,
                 fill: 'red',
-                name: "shape" , 
-                id: 13,
-                is_used: false,
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
+                id: 13, 
                 strokeWidth: 1
             });
             return circle;
@@ -220,10 +211,10 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 30,
                 fill: 'red',
-                name: "shape" , 
-                id: 14,
-                is_used: false,
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
+                id: 14, 
                 strokeWidth: 1
             });
             return circle;
@@ -233,10 +224,10 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 40,
                 fill: 'red',
-                name: "shape" , 
-                id: 15,
-                is_used: false,
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
+                id: 15, 
                 strokeWidth: 1
             });
             return circle;
@@ -246,10 +237,10 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 50,
                 fill: 'red',
-                name: "shape" , 
-                id: 16,
-                is_used: false,
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
+                id: 16, 
                 strokeWidth: 1
             });
             return circle;
@@ -259,10 +250,10 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 60,
                 fill: 'red',
-                name: "shape" , 
-                id: 17,
-                is_used: false,
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
+                id: 17, 
                 strokeWidth: 1
             });
             return circle;
@@ -272,10 +263,10 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 75,
                 fill: 'red',
-                name: "shape" , 
-                id: 18,
-                is_used: false,
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
+                id: 18, 
                 strokeWidth: 1
             });
             return circle;
@@ -285,10 +276,8 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 90,
                 fill: 'red',
-                name: "shape" , 
-                id: 19,
-                is_used: false,
                 stroke: 'black',
+                id: 19, 
                 strokeWidth: 1
             });
             return circle;
@@ -298,10 +287,10 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 radius: 100,
                 fill: 'red',
-                name: "shape" , 
-                id: 20,
-                is_used: false,
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
+                id: 20, 
                 strokeWidth: 1
             });
             return circle;
@@ -310,17 +299,16 @@ function buildblock(type, x, y, r){
         
         case 21:  //wedge -30
             var wedge = new Kinetic.Wedge({
-                x: border_left + x,
-                y: border_top + y,
+                x: border_left+x,
+                y: border_top+y,
                 radius: 150,
                 angleDeg: 30,
                 fill: 'green',
-                name: "shape" ,
-                id: 21, 
-                is_used: false, 
-                offset: [75, 75/6], 
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 21, 
                 rotationDeg: r
             });
             return wedge;
@@ -331,12 +319,11 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 60,
                 fill: 'green',
-                name: "shape" , 
-                id: 22,
-                is_used: false,
-                offset: [75, 25], 
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 22, 
                 rotationDeg: r
             });
             return wedge;
@@ -347,12 +334,11 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 90,
                 fill: 'green',
-                name: "shape" , 
-                id: 23,
-                is_used: false,
-                offset: [75, 75/2],
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 23, 
                 rotationDeg: r
             });
             return wedge;
@@ -363,12 +349,11 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 120,
                 fill: 'green',
-                name: "shape" , 
-                id: 24,
-                is_used: false,
-                offset: [75, 50],
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 24, 
                 rotationDeg: r
             });
             return wedge;
@@ -379,12 +364,11 @@ function buildblock(type, x, y, r){
                 radius: 150,
                 angleDeg: 150,
                 fill: 'green',
-                name: "shape" ,
-                id: 25, 
-                is_used: false,
-                offset: [75, 75/2],
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 25, 
                 rotationDeg: r
             });
             return wedge;
@@ -396,11 +380,10 @@ function buildblock(type, x, y, r){
                 angleDeg: 30,
                 fill: 'green',
                 stroke: 'black',
-                name: "shape", 
-                id: 26,
-                is_used: false,
-                offset: [45, 75/6],
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 26, 
                 rotationDeg: r
             });
             return wedge;
@@ -411,12 +394,11 @@ function buildblock(type, x, y, r){
                 radius: 90,
                 angleDeg: 60,
                 fill: 'green',
-                name: "shape" , 
-                id: 27,
-                is_used: false,
-                offset: [45, 25],
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 27, 
                 rotationDeg: r
             });
             return wedge;
@@ -427,12 +409,11 @@ function buildblock(type, x, y, r){
                 radius: 90,
                 angleDeg: 90,
                 fill: 'green',
-                name: "shape" , 
-                id: 28,
-                is_used: false,
-                offset: [45, 75/2],
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 28, 
                 rotationDeg: r
             });
             return wedge;
@@ -443,12 +424,11 @@ function buildblock(type, x, y, r){
                 radius: 90,
                 angleDeg: 120,
                 fill: 'green',
-                name: "shape" ,
-                id: 29, 
-                is_used: false,
-                offset: [45, 50],
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 29, 
                 rotationDeg: r
             });
             return wedge;
@@ -459,12 +439,11 @@ function buildblock(type, x, y, r){
                 radius: 90,
                 angleDeg: 150,
                 fill: 'green',
-                name: "shape" , 
-                id: 30,
-                is_used: false,
-                offset: [45, 750/12],
                 stroke: 'black',
                 strokeWidth: 1,
+                name: "shape" , 
+                is_used: false, 
+                id: 30, 
                 rotationDeg: r
             });
             return wedge;
@@ -477,14 +456,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 31,
-                is_used: false,
-                offset: [45, 45], 
-                width: 90, 
-                height: 90, 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 90, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 31, 
                 rotationDeg: r
             });
             return tri;
@@ -494,14 +472,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" ,
-                id: 32, 
-                is_used: false,
-                offset: [60, 45], 
-                width: 120, 
-                height: 90,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 32, 
                 rotationDeg: r
             });
             return tri;
@@ -511,14 +488,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 33,
-                is_used: false,
-                offset: [45, 60], 
-                width: 90, 
-                height: 120,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 90, 
+                height: 120, 
+                name: "shape" , 
+                is_used: false, 
+                id: 33, 
                 rotationDeg: r
             });
             return tri;
@@ -528,14 +504,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" ,
-                id: 34, 
-                is_used: false,
-                offset: [55, 50], 
-                width: 110, 
-                height: 100,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 110, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 34, 
                 rotationDeg: r
             });
             return tri;
@@ -545,14 +520,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 35,
-                is_used: false,
-                offset: [60, 75], 
-                width: 120, 
-                height: 150,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 150, 
+                name: "shape" , 
+                is_used: false, 
+                id: 35, 
                 rotationDeg: r
             });
             return tri;
@@ -562,14 +536,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" ,
-                id: 36, 
-                is_used: false,
-                offset: [30, 40], 
-                width: 100, 
-                height: 80,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 36, 
                 rotationDeg: r
             });
             return tri;
@@ -580,13 +553,12 @@ function buildblock(type, x, y, r){
                 y: border_top+y,
                 fill: 'blue',
                 stroke: 'black',
-                name: "shape", 
-                id: 37, 
-                is_used: false,
-                offset: [30, 50], 
-                width: 100, 
-                height: 100,
                 strokeWidth: 1,
+                width: 100, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 37, 
                 rotationDeg: r
             });
             return tri;
@@ -596,14 +568,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 38, 
-                is_used: false,
-                offset: [40, 50], 
-                width: 120, 
-                height: 100,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 38, 
                 rotationDeg: r
             });
             return tri;
@@ -613,14 +584,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" ,
-                id: 39,  
-                is_used: false,
-                offset: [30, 40], 
-                width: 120, 
-                height: 80,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 39, 
                 rotationDeg: r
             });
             return tri;
@@ -630,14 +600,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 40, 
-                is_used: false,
-                offset: [40, 30], 
-                width: 120, 
-                height: 60,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 60, 
+                name: "shape" , 
+                is_used: false, 
+                id: 40, 
                 rotationDeg: r
             });
             return tri;
@@ -647,14 +616,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 41,
-                is_used: false,
-                offset: [40, 40], 
-                width: 80, 
-                height: 80, 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 80, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 41, 
                 rotationDeg: r
             });
             return tri;
@@ -664,14 +632,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 42, 
-                is_used: false,
-                offset: [40, 50], 
-                width: 80, 
-                height: 100,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 80, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 42, 
                 rotationDeg: r
             });
             return tri;
@@ -681,11 +648,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 43, 
-                is_used: false,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 43, 
                 rotationDeg: r
             });
             return tri;
@@ -695,14 +664,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 44, 
-                is_used: false,
-                offset: [50, 40], 
-                width: 100, 
-                height: 80,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 44, 
                 rotationDeg: r
             });
             return tri;
@@ -712,14 +680,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 45, 
-                is_used: false,
-                offset: [50, 50], 
-                width: 100, 
-                height: 100,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 45, 
                 rotationDeg: r
             });
             return tri;
@@ -729,14 +696,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 46, 
-                is_used: false,
-                offset: [50, 50], 
-                width: 100, 
-                height: 100,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 46, 
                 rotationDeg: r
             });
             return tri;
@@ -746,14 +712,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 47, 
-                is_used: false,
-                offset: [50, 60], 
-                width: 100, 
-                height: 120,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 120, 
+                name: "shape" , 
+                is_used: false, 
+                id: 47, 
                 rotationDeg: r
             });
             return tri;
@@ -763,14 +728,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 48, 
-                is_used: false,
-                offset: [60, 50], 
-                width: 120, 
-                height: 100,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 48, 
                 rotationDeg: r
             });
             return tri;
@@ -780,14 +744,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" ,
-                id: 49, 
-                is_used: false, 
-                offset: [50, 50], 
-                width: 100, 
-                height: 100,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 100, 
+                name: "shape" , 
+                is_used: false, 
+                id: 49, 
                 rotationDeg: r
             });
             return tri;
@@ -797,14 +760,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'blue',
-                name: "shape" , 
-                id: 50, 
-                is_used: false,
-                offset: [50, 40], 
-                width: 100, 
-                height: 120,
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 120, 
+                name: "shape" , 
+                is_used: false, 
+                id: 50, 
                 rotationDeg: r
             });
             return tri;
@@ -817,14 +779,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 51, 
-                is_used: false,
-                width: 120, 
-                height: 90,
-                offset: [55, 45],  
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 51, 
                 rotationDeg: r
             });
             return trape;
@@ -834,14 +795,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 52, 
-                is_used: false,
-                width: 130, 
-                height: 90, 
-                offset: [60, 45], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 130, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 52, 
                 rotationDeg: r
             });
             return trape;
@@ -851,14 +811,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 53, 
-                is_used: false,
-                width: 150, 
-                height: 90, 
-                offset: [68, 45], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 150, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 53, 
                 rotationDeg: r
             });
             return trape;
@@ -868,14 +827,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" ,
-                id: 54,  
-                is_used: false,
-                width: 100, 
-                height: 90, 
-                offset: [45, 45], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 54, 
                 rotationDeg: r
             });
             return trape;
@@ -885,14 +843,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 55, 
-                is_used: false,
-                width: 30, 
-                height: 90, 
-                offset: [20, 45], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 50, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 55, 
                 rotationDeg: r
             });
             return trape;
@@ -902,14 +859,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 56, 
-                is_used: false,
-                width: 120, 
-                height: 80, 
-                offset: [55, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 56, 
                 rotationDeg: r
             });
             return trape;
@@ -919,14 +875,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 57, 
-                is_used: false,
-                width: 130, 
-                height: 80, 
-                offset: [60, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 130, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 57, 
                 rotationDeg: r
             });
             return trape;
@@ -936,14 +891,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" ,
-                id: 58,
-                is_used: false,  
-                width: 150, 
-                height: 80,
-                offset: [68, 40],  
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 150, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 58, 
                 rotationDeg: r
             });
             return trape;
@@ -953,14 +907,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 59, 
-                is_used: false,
-                width: 100, 
-                height: 80, 
-                offset: [45, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 59, 
                 rotationDeg: r
             });
             return trape;
@@ -970,14 +923,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" ,
-                id: 60,  
-                is_used: false,
-                width: 50, 
-                height: 80, 
-                offset: [20, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 50, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 60, 
                 rotationDeg: r
             });
             return trape;
@@ -987,14 +939,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 61, 
-                is_used: false,
-                width: 120, 
-                height: 90, 
-                offset: [55, 45], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 61, 
                 rotationDeg: r
             });
             return trape;
@@ -1004,14 +955,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 62, 
-                is_used: false,
-                width: 130, 
-                height: 90, 
-                offset: [60, 45], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 130, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 62, 
                 rotationDeg: r
             });
             return trape;
@@ -1021,14 +971,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 63, 
-                is_used: false,
-                width: 150, 
-                height: 90, 
-                offset: [68, 45], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 150, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 63, 
                 rotationDeg: r
             });
             return trape;
@@ -1038,14 +987,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 64, 
-                is_used: false,
-                width: 100, 
-                height: 90, 
-                offset: [45, 45], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 64, 
                 rotationDeg: r
             });
             return trape;
@@ -1055,14 +1003,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" ,
-                id: 65,  
-                is_used: false,
-                width: 50, 
-                height: 90,
-                offset: [20, 45],  
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 50, 
+                height: 90, 
+                name: "shape" , 
+                is_used: false, 
+                id: 65, 
                 rotationDeg: r
             });
             return trape;
@@ -1072,14 +1019,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 66, 
-                is_used: false,
-                width: 120, 
-                height: 80, 
-                offset: [55, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 120, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 66, 
                 rotationDeg: r
             });
             return trape;
@@ -1089,14 +1035,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 67 ,
-                is_used: false,
-                width: 130, 
-                height: 80, 
-                offset: [60, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 130, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 67, 
                 rotationDeg: r
             });
             return trape;
@@ -1106,14 +1051,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 68, 
-                is_used: false,
-                width: 150, 
-                height: 80, 
-                offset: [68, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 150, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 68, 
                 rotationDeg: r
             });
             return trape;
@@ -1123,14 +1067,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" , 
-                id: 69, 
-                is_used: false,
-                width: 100, 
-                height: 80, 
-                offset: [45, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 100, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 69, 
                 rotationDeg: r
             });
             return trape;
@@ -1140,14 +1083,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: 'orange',
-                name: "shape" ,
-                id: 70, 
-                is_used: false, 
-                width: 50, 
-                height: 80, 
-                offset: [20, 40], 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 50, 
+                height: 80, 
+                name: "shape" , 
+                is_used: false, 
+                id: 70, 
                 rotationDeg: r
             });
             return trape;
@@ -1160,14 +1102,13 @@ function buildblock(type, x, y, r){
                 x: border_left+x,
                 y: border_top+y,
                 fill: '#00D2FF',
-                name: "shape" , 
-                id: 99, 
-                is_used: false,
-                offset: [46, 132], 
-                width: 227, 
-                height: 299, 
                 stroke: 'black',
                 strokeWidth: 1,
+                width: 227, 
+                height: 299, 
+                name: "shape" , 
+                is_used: false, 
+                id: 99, 
                 rotationDeg: r
             });
             return poly;
