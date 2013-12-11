@@ -55,6 +55,10 @@ function compare_data()
     // in the form of "a b c d\n"
     for(var i=0; i<shapes.length; i++)
     {
+        if( !shapes[i].getAttr('is_used') )
+        {
+            continue; 
+        }
         if( textToWrite != "" )
         {
             textToWrite += "\n";  
@@ -119,20 +123,3 @@ function compare_data()
         return result;
     }
 }
-
-$(document).ready( function() {
-    $("#verify").click(function(){
-            $.get(question_file, function(){
-                var result = compare_data();
-                if(result) {
-
-                    alert("Congratulation! You have done your puzzle!");
-                    stopCount();
-                }
-                else {
-                    alert("Your answer is FALSE. Please continue your work.")
-                }
-            },"text");
-    });
-}); 
- 

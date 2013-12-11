@@ -5,10 +5,10 @@ var finish_btn =  60;
 var margin = 20 ;
 var border_left = margin ; 
 var border_top = margin ; 
-var border_right = window.innerWidth-margin-margin ; 
-var border_bottom = window.innerHeight-margin-margin-margin-margin-finish_btn; 
+var border_right = window.innerWidth-margin*2 ; 
+var border_bottom = window.innerHeight-margin*4-finish_btn; 
 var border_split_x = window.innerWidth/2 ;
-var shapes ; 
+
 
 /* the timer */ 
 var m=0;
@@ -101,26 +101,23 @@ var layer = new Kinetic.Layer({
 var border = new Kinetic.Line({
 	points: [border_left, border_top, border_right, border_top, border_right, border_bottom, border_left, border_bottom, border_left, border_top], 
 	stroke: '#999999', 
-	strokeWidth: 2, 
+	strokeWidth: 10, 
 	lineJoin: 'round'
 });
 layer.add(border);
-/*
+
 var border_split = new Kinetic.Line({
 	points: [border_split_x, border_top, border_split_x, border_bottom], 
 	stroke: '#999999',
-    strokeWidth: 2,
+    strokeWidth: 10,
     lineJoin: 'round'
      //line segments with a length of 20, with a gap of 10px
 });
 
 layer.add(border_split);
-*/
+
 stage.add(layer);
 /*  end of the stage and layer */
-
-document.write('<script language="javascript" src="teacherwindow.js"></script>');
-document.write('<script language="javascript" src="tool.js"></script>');
 
 // set the canvas size
 $(document).ready( function() {
@@ -144,7 +141,7 @@ $(document).ready( function() {
 			$("#getbutton").hide();
 		}
 	}); 
-	/*
+	
 	$("#verify").click(function(){
         $.get(question_file, function(){
 
@@ -159,6 +156,6 @@ $(document).ready( function() {
 			}
         },"text");
     });
-	*/
+	
 }); 
 
