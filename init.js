@@ -129,7 +129,7 @@ $(document).ready( function() {
 	}) ; 
 	$("#getbutton").click( function(){
 		var questionNumber = $('#selectQuestion').find(":selected").text();
-		if( questionNumber == "請選擇" )
+		if( questionNumber == "Select" )
 		{
 			alert("Please choose a question!");
 		}
