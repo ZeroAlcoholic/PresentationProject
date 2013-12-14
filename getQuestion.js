@@ -9,7 +9,7 @@ var correct_answer ;
 
 function getQuestion(){
 	
-	var q_idx = Math.floor(Math.random()*5) ; // 0, 1, 2
+	var q_idx = Math.floor(Math.random()*10) ; // 0, 1, 2
 
     // question_file: define in "init.js"
     question_file = "ques_A0"+(q_idx+1)+".txt"; // 1, 2, 3
