@@ -114,7 +114,7 @@ function setWedgeOffset(element, index, array)
 //  3. mouse events on the shapes 
 function shape_mouse_event(element, index, array)
 {
-	var initX, initY; 
+        var initX, initY; 
 	element.on('dragstart', function() {
     	element.moveToTop();
     	initX = element.getX(); 
@@ -151,6 +151,7 @@ function shape_mouse_event(element, index, array)
   	});
   	element.on('click', function() {
   		element.rotate(Math.PI/12); 
+                layer.draw();
   	});
 }
 //  4. when the timer starts counting, shapes are draggable 
@@ -161,7 +162,7 @@ function set_to_draggable(element, index, array)
 function set_to_undraggable(element, index, array)
 {	element.setDraggable(false);	}
 
-// 圖形靠近時 snap
+// ?�形?��???snap
 function near_and_snap(obj){
 	for( var i=0; i< shapes.length; i++ )
 	{
@@ -212,7 +213,7 @@ function near_and_snap(obj){
 	return false ; 
 }
 
-// 圖形在邊界時，彈回原位置
+// ?�形?��??��?，�??��?位置
 function is_on_border(shape)
 {
 	// on the edge of 'border'
