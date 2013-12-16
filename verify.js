@@ -55,10 +55,6 @@ function compare_data()
     // in the form of "a b c d\n"
     for(var i=0; i<shapes.length; i++)
     {
-        if( !shapes[i].getAttr('is_used') )
-        {
-            continue; 
-        }
         if( textToWrite != "" )
         {
             textToWrite += "\n";  

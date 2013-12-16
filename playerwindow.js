@@ -261,6 +261,7 @@ function is_on_border(shape)
 	
 	return false; 
 }
+/*
 
 function whether_in_used(element)
 {
@@ -282,6 +283,7 @@ function whether_in_used(element)
     else
     {	element.setAttr('is_used', false);	}
 }
+*/
 
 
 function getQuestionFromNumber(number)
