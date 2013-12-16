@@ -5,33 +5,47 @@ var correct_answer ;
 
 // things for init set
 // set offsettttt
-function set_offset(element, index, array)
+/*
+function set_offset()
 {
-	var type = element.getClassName();
+	var type ;
 	var newX, newY; 
-	if( type == "Polygon")
-	{
-		newX = element.getAttr('width')/2; 
-		newY = element.getAttr('height')/2; 
-	}
-	else if( type == "Rect")
-	{
-		newX = element.getWidth()/2; 
-		newY = element.getHeight()/2;
-	}
-	else if( type == "Wedge")
-	{
-		newX = element.getRadius()/2 ;
-		newY = element.getAngleDeg() * element.getRadius() * 2 / 360
-	}
-	element.setOffset(newX, newY); 
+	for (var i = 0; i < shapes.length; i++) {
+		type = shapes[i].getClassName(); 
+		if( type == "Polygon")
+		{
+			newX = shapes[i].getAttr('width')/2; 
+			newY = shapes[i].getAttr('height')/2; 
+		}
+		else if( type == "Rect")
+		{
+			newX = shapes[i].getWidth()/2; 
+			newY = shapes[i].getHeight()/2;
+		}
+		else if( type == "Wedge")
+		{
+			newX = shapes[i].getRadius()/2 ;
+			newY = shapes[i].getAngleDeg() * shapes[i].getRadius() * 2 / 360
+		}
+		shapes[i].setOffset(newX, newY); 
+	};
+	console.log(shapes[0].getOffset()); 
+	
 }
+function resetOffset()
+{
+	for (var i = 0; i < shapes.length; i++) {
+		shapes[i].setOffset(0,0); 
+	};
+	console.log( shapes[0].getOffset());
+}
+*/
 
 //   1. random set their position and angles
 function random_position(element, index, array){
 	var x_M, x_m, y_M, y_m; 
 	var type = element.getClassName();
-	var endurance = 30 ; 
+	var endurance = 100 ; 
 	
 	if( type == "Polygon")
 	{
@@ -40,7 +54,7 @@ function random_position(element, index, array){
 			endurance = 100 ; 
 		}
 		x_M = border_right - element.getAttr('width')/2 - endurance; 
-		x_m = border_split_x + element.getAttr('width')/2 + endurance; 
+		x_m = border_left + element.getAttr('width')/2 + endurance; 
 		y_M = border_bottom - element.getAttr('height')/2 - endurance ;
 		y_m = border_top + element.getAttr('height') + endurance; 
 		endurance = 30 ; 
@@ -48,21 +62,21 @@ function random_position(element, index, array){
 	else if( type == "Rect" )
 	{
 		x_M = border_right - element.getWidth()/2 - endurance; 
-		x_m = border_split_x + element.getWidth()/2 + endurance; 
+		x_m = border_left + element.getWidth()/2 + endurance; 
 		y_M = border_bottom - element.getHeight()/2 - endurance ;
 		y_m = border_top + element.getHeight()/2 + endurance; 
 	}
 	else if( type == "Wedge")
 	{
 		x_M = border_right - element.getRadius()/2 - endurance; 
-		x_m = border_split_x + element.getRadius()/2 + endurance; 
+		x_m = border_left + element.getRadius()/2 + endurance; 
 		y_M = border_bottom - element.getRadius()/2 - endurance ;
 		y_m = border_top + element.getRadius()/2 + endurance; 
 	}
 	else if( type == "Circle")
 	{
 		x_M = border_right - element.getRadius() - endurance; 
-		x_m = border_split_x + element.getRadius() + endurance; 
+		x_m = border_left + element.getRadius() + endurance; 
 		y_M = border_bottom - element.getRadius() - endurance ;
 		y_m = border_top + element.getRadius() + endurance; 
 	}
@@ -134,8 +148,6 @@ function shape_mouse_event(element, index, array)
   			element.setPosition(initX, initY); 
   			layer.draw();
   		}
-  		whether_in_used(element); 
-
   	});
   	element.on('click', function() {
   		element.rotate(Math.PI/12); 
@@ -215,8 +227,7 @@ function is_on_border(shape)
 		if( (   posX - width/2 < border_left )
 			|| (posX + width/2 > border_right ) 
 			|| (posY - height/2 < border_top )
-			|| (posY + height/2 > border_bottom) 
-			|| (posX - width/2 < border_split_x && posX + width/2 > border_split_x))
+			|| (posY + height/2 > border_bottom) )
 		{	return true; 	}
 	}
 	else if( type == "Rect" )
@@ -226,8 +237,7 @@ function is_on_border(shape)
 		if( (   posX - width/2 < border_left )
 			|| (posX + width/2 > border_right ) 
 			|| (posY - height/2 < border_top )
-			|| (posY + height/2 > border_bottom) 
-			|| (posX - width/2 < border_split_x && posX + width/2 > border_split_x) )
+			|| (posY + height/2 > border_bottom)  )
 		{	return true; 	}
 	}
 	else if( type == "Circle")
@@ -236,8 +246,7 @@ function is_on_border(shape)
 		if( (posX - radius < border_left )
 			|| (posX + radius > border_right ) 
 			|| (posY - radius < border_top )
-			|| (posY + radius > border_bottom)  
-			|| (posX - radius < border_split_x && posX + radius > border_split_x) )
+			|| (posY + radius > border_bottom)   )
 		{	return true;	}
 	}
 	else if( type == "Wedge"  )
@@ -246,8 +255,7 @@ function is_on_border(shape)
 		if( (posX - radius/2 < border_left )
 			|| (posX + radius/2 > border_right ) 
 			|| (posY - radius/2 < border_top )
-			|| (posY + radius/2 > border_bottom)  
-			|| (posX - radius/2 < border_split_x && posX + radius/2 > border_split_x) )
+			|| (posY + radius/2 > border_bottom)  )
 		{	return true;	}
 	}
 	
@@ -312,7 +320,6 @@ function drawQuestionFromNumber(data)
     stage.add(layer);
 
     shapes = stage.get(".shape");
-    shapes.forEach(set_offset);
     shapes.forEach(random_position);
     shapes.forEach(setWedgeOffset); 
     shapes.forEach(shape_mouse_event);

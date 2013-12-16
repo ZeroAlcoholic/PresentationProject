@@ -15,6 +15,7 @@ function buildblock(type, x, y, r){
                 cornerRadius: 10, 
                 id: 1,  
                 name: "shape" , 
+                offset: [40, 40], 
                 is_used: false, 
                 rotationDeg: r
             });
@@ -31,6 +32,7 @@ function buildblock(type, x, y, r){
                 cornerRadius: 10, 
                 id: 2,  
                 name: "shape" , 
+                offset: [50, 50], 
                 is_used: false, 
                 rotationDeg: r
             });
@@ -47,6 +49,7 @@ function buildblock(type, x, y, r){
                 cornerRadius: 10, 
                 id: 3,  
                 name: "shape" , 
+                offset: [60, 60], 
                 is_used: false, 
                 rotationDeg: r
             });
@@ -63,6 +66,7 @@ function buildblock(type, x, y, r){
                 cornerRadius: 10, 
                 id: 4,  
                 name: "shape" , 
+                offset: [45, 30], 
                 is_used: false, 
                 rotationDeg: r
             });
@@ -79,6 +83,7 @@ function buildblock(type, x, y, r){
                 cornerRadius: 10, 
                 id: 5,  
                 name: "shape" , 
+                offset: [60, 30], 
                 is_used: false, 
                 rotationDeg: r
             });
@@ -95,6 +100,7 @@ function buildblock(type, x, y, r){
                 cornerRadius: 10, 
                 id: 6,  
                 name: "shape" , 
+                offset: [75, 30], 
                 is_used: false, 
                 rotationDeg: r
             });
@@ -111,6 +117,7 @@ function buildblock(type, x, y, r){
                 cornerRadius: 10, 
                 id: 7,  
                 name: "shape" , 
+                offset: [60, 40], 
                 is_used: false, 
                 rotationDeg: r
             });
@@ -126,6 +133,7 @@ function buildblock(type, x, y, r){
                 fill: '#ddd',
                 cornerRadius: 10, 
                 name: "shape" , 
+                offset: [45, 50], 
                 is_used: false, 
                 id: 8,
                 rotationDeg: r
@@ -142,6 +150,7 @@ function buildblock(type, x, y, r){
                 fill: '#ddd',
                 cornerRadius: 10, 
                 name: "shape" , 
+                offset: [60, 50], 
                 is_used: false, 
                 id: 9,
                 rotationDeg: r
@@ -157,7 +166,8 @@ function buildblock(type, x, y, r){
                 strokeWidth: 1,
                 fill: '#ddd',
                 cornerRadius: 10, 
-                name: "shape" , 
+                name: "shape" ,
+                offset: [75, 50],  
                 is_used: false, 
                 id: 10, 
                 rotationDeg: r
@@ -307,6 +317,7 @@ function buildblock(type, x, y, r){
                 stroke: 'black',
                 strokeWidth: 1,
                 name: "shape" , 
+                offset: [75, 15/12], 
                 is_used: false, 
                 id: 21, 
                 rotationDeg: r
@@ -321,7 +332,8 @@ function buildblock(type, x, y, r){
                 fill: 'green',
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
+                name: "shape" ,
+                offset: [75, 25],  
                 is_used: false, 
                 id: 22, 
                 rotationDeg: r
@@ -337,6 +349,7 @@ function buildblock(type, x, y, r){
                 stroke: 'black',
                 strokeWidth: 1,
                 name: "shape" , 
+                offset: [75, 75/2], 
                 is_used: false, 
                 id: 23, 
                 rotationDeg: r
@@ -351,7 +364,8 @@ function buildblock(type, x, y, r){
                 fill: 'green',
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
+                name: "shape" ,
+                offset: [75, 50],  
                 is_used: false, 
                 id: 24, 
                 rotationDeg: r
@@ -367,6 +381,7 @@ function buildblock(type, x, y, r){
                 stroke: 'black',
                 strokeWidth: 1,
                 name: "shape" , 
+                offset: [75, 125/2], 
                 is_used: false, 
                 id: 25, 
                 rotationDeg: r
@@ -382,6 +397,7 @@ function buildblock(type, x, y, r){
                 stroke: 'black',
                 strokeWidth: 1,
                 name: "shape" , 
+                offset: [45, 30/4], 
                 is_used: false, 
                 id: 26, 
                 rotationDeg: r
@@ -396,7 +412,8 @@ function buildblock(type, x, y, r){
                 fill: 'green',
                 stroke: 'black',
                 strokeWidth: 1,
-                name: "shape" , 
+                name: "shape" ,
+                offset: [45, 15],  
                 is_used: false, 
                 id: 27, 
                 rotationDeg: r
@@ -412,6 +429,7 @@ function buildblock(type, x, y, r){
                 stroke: 'black',
                 strokeWidth: 1,
                 name: "shape" , 
+                offset: [45, 45/2], 
                 is_used: false, 
                 id: 28, 
                 rotationDeg: r
@@ -427,6 +445,7 @@ function buildblock(type, x, y, r){
                 stroke: 'black',
                 strokeWidth: 1,
                 name: "shape" , 
+                offset: [45, 30], 
                 is_used: false, 
                 id: 29, 
                 rotationDeg: r
@@ -442,6 +461,7 @@ function buildblock(type, x, y, r){
                 stroke: 'black',
                 strokeWidth: 1,
                 name: "shape" , 
+                offset: [45, 225/6], 
                 is_used: false, 
                 id: 30, 
                 rotationDeg: r
@@ -461,6 +481,7 @@ function buildblock(type, x, y, r){
                 width: 90, 
                 height: 90, 
                 name: "shape" , 
+                offset: [45, 45], 
                 is_used: false, 
                 id: 31, 
                 rotationDeg: r
@@ -477,6 +498,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 90, 
                 name: "shape" , 
+                offset: [60, 45], 
                 is_used: false, 
                 id: 32, 
                 rotationDeg: r
@@ -493,6 +515,7 @@ function buildblock(type, x, y, r){
                 width: 90, 
                 height: 120, 
                 name: "shape" , 
+                offset: [45, 60], 
                 is_used: false, 
                 id: 33, 
                 rotationDeg: r
@@ -509,6 +532,7 @@ function buildblock(type, x, y, r){
                 width: 110, 
                 height: 100, 
                 name: "shape" , 
+                offset: [55, 50], 
                 is_used: false, 
                 id: 34, 
                 rotationDeg: r
@@ -525,6 +549,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 150, 
                 name: "shape" , 
+                offset: [60, 75], 
                 is_used: false, 
                 id: 35, 
                 rotationDeg: r
@@ -541,6 +566,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 80, 
                 name: "shape" , 
+                offset: [30, 40], 
                 is_used: false, 
                 id: 36, 
                 rotationDeg: r
@@ -557,6 +583,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 100, 
                 name: "shape" , 
+                offset: [30, 50], 
                 is_used: false, 
                 id: 37, 
                 rotationDeg: r
@@ -573,6 +600,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 100, 
                 name: "shape" , 
+                offset: [40, 50], 
                 is_used: false, 
                 id: 38, 
                 rotationDeg: r
@@ -588,7 +616,8 @@ function buildblock(type, x, y, r){
                 strokeWidth: 1,
                 width: 120, 
                 height: 80, 
-                name: "shape" , 
+                name: "shape" ,
+                offset: [40, 40],  
                 is_used: false, 
                 id: 39, 
                 rotationDeg: r
@@ -605,6 +634,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 60, 
                 name: "shape" , 
+                offset: [40, 30], 
                 is_used: false, 
                 id: 40, 
                 rotationDeg: r
@@ -621,6 +651,7 @@ function buildblock(type, x, y, r){
                 width: 80, 
                 height: 80, 
                 name: "shape" , 
+                offset: [50, 40], 
                 is_used: false, 
                 id: 41, 
                 rotationDeg: r
@@ -636,7 +667,8 @@ function buildblock(type, x, y, r){
                 strokeWidth: 1,
                 width: 80, 
                 height: 100, 
-                name: "shape" , 
+                name: "shape" ,
+                offset: [50, 50],  
                 is_used: false, 
                 id: 42, 
                 rotationDeg: r
@@ -653,6 +685,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 100, 
                 name: "shape" , 
+                offset: [60, 50], 
                 is_used: false, 
                 id: 43, 
                 rotationDeg: r
@@ -669,6 +702,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 80, 
                 name: "shape" , 
+                offset: [60, 40], 
                 is_used: false, 
                 id: 44, 
                 rotationDeg: r
@@ -685,6 +719,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 100, 
                 name: "shape" , 
+                offset: [50, 50], 
                 is_used: false, 
                 id: 45, 
                 rotationDeg: r
@@ -701,6 +736,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 100, 
                 name: "shape" , 
+                offset: [50, 50], 
                 is_used: false, 
                 id: 46, 
                 rotationDeg: r
@@ -717,6 +753,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 120, 
                 name: "shape" , 
+                offset: [50, 60], 
                 is_used: false, 
                 id: 47, 
                 rotationDeg: r
@@ -733,6 +770,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 100, 
                 name: "shape" , 
+                offset: [60, 50], 
                 is_used: false, 
                 id: 48, 
                 rotationDeg: r
@@ -749,6 +787,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 100, 
                 name: "shape" , 
+                offset: [50, 50], 
                 is_used: false, 
                 id: 49, 
                 rotationDeg: r
@@ -765,6 +804,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 120, 
                 name: "shape" , 
+                offset: [50, 40], 
                 is_used: false, 
                 id: 50, 
                 rotationDeg: r
@@ -784,6 +824,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 90, 
                 name: "shape" , 
+                offset: [60, 45], 
                 is_used: false, 
                 id: 51, 
                 rotationDeg: r
@@ -800,6 +841,7 @@ function buildblock(type, x, y, r){
                 width: 130, 
                 height: 90, 
                 name: "shape" , 
+                offset: [65, 45], 
                 is_used: false, 
                 id: 52, 
                 rotationDeg: r
@@ -816,6 +858,7 @@ function buildblock(type, x, y, r){
                 width: 150, 
                 height: 90, 
                 name: "shape" , 
+                offset: [75, 45], 
                 is_used: false, 
                 id: 53, 
                 rotationDeg: r
@@ -832,6 +875,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 90, 
                 name: "shape" , 
+                offset: [50, 45], 
                 is_used: false, 
                 id: 54, 
                 rotationDeg: r
@@ -847,7 +891,8 @@ function buildblock(type, x, y, r){
                 strokeWidth: 1,
                 width: 50, 
                 height: 90, 
-                name: "shape" , 
+                name: "shape" ,
+                offset: [25, 45],  
                 is_used: false, 
                 id: 55, 
                 rotationDeg: r
@@ -864,6 +909,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 80, 
                 name: "shape" , 
+                offset: [60, 40], 
                 is_used: false, 
                 id: 56, 
                 rotationDeg: r
@@ -880,6 +926,7 @@ function buildblock(type, x, y, r){
                 width: 130, 
                 height: 80, 
                 name: "shape" , 
+                offset: [65, 40], 
                 is_used: false, 
                 id: 57, 
                 rotationDeg: r
@@ -896,6 +943,7 @@ function buildblock(type, x, y, r){
                 width: 150, 
                 height: 80, 
                 name: "shape" , 
+                offset: [75, 40], 
                 is_used: false, 
                 id: 58, 
                 rotationDeg: r
@@ -912,6 +960,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 80, 
                 name: "shape" , 
+                offset: [50, 40], 
                 is_used: false, 
                 id: 59, 
                 rotationDeg: r
@@ -927,7 +976,8 @@ function buildblock(type, x, y, r){
                 strokeWidth: 1,
                 width: 50, 
                 height: 80, 
-                name: "shape" , 
+                name: "shape" ,
+                offset: [25, 40],  
                 is_used: false, 
                 id: 60, 
                 rotationDeg: r
@@ -944,6 +994,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 90, 
                 name: "shape" , 
+                offset: [60, 45], 
                 is_used: false, 
                 id: 61, 
                 rotationDeg: r
@@ -960,6 +1011,7 @@ function buildblock(type, x, y, r){
                 width: 130, 
                 height: 90, 
                 name: "shape" , 
+                offset: [65, 45], 
                 is_used: false, 
                 id: 62, 
                 rotationDeg: r
@@ -976,6 +1028,7 @@ function buildblock(type, x, y, r){
                 width: 150, 
                 height: 90, 
                 name: "shape" , 
+                offset: [75, 45], 
                 is_used: false, 
                 id: 63, 
                 rotationDeg: r
@@ -992,6 +1045,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 90, 
                 name: "shape" , 
+                offset: [50, 45], 
                 is_used: false, 
                 id: 64, 
                 rotationDeg: r
@@ -1008,6 +1062,7 @@ function buildblock(type, x, y, r){
                 width: 50, 
                 height: 90, 
                 name: "shape" , 
+                offset: [25, 45], 
                 is_used: false, 
                 id: 65, 
                 rotationDeg: r
@@ -1024,6 +1079,7 @@ function buildblock(type, x, y, r){
                 width: 120, 
                 height: 80, 
                 name: "shape" , 
+                offset: [60, 40], 
                 is_used: false, 
                 id: 66, 
                 rotationDeg: r
@@ -1040,6 +1096,7 @@ function buildblock(type, x, y, r){
                 width: 130, 
                 height: 80, 
                 name: "shape" , 
+                offset: [65, 40], 
                 is_used: false, 
                 id: 67, 
                 rotationDeg: r
@@ -1056,6 +1113,7 @@ function buildblock(type, x, y, r){
                 width: 150, 
                 height: 80, 
                 name: "shape" , 
+                offset: [75, 40], 
                 is_used: false, 
                 id: 68, 
                 rotationDeg: r
@@ -1072,6 +1130,7 @@ function buildblock(type, x, y, r){
                 width: 100, 
                 height: 80, 
                 name: "shape" , 
+                offset: [50, 40], 
                 is_used: false, 
                 id: 69, 
                 rotationDeg: r
@@ -1088,6 +1147,7 @@ function buildblock(type, x, y, r){
                 width: 50, 
                 height: 80, 
                 name: "shape" , 
+                offset: [25, 40], 
                 is_used: false, 
                 id: 70, 
                 rotationDeg: r
@@ -1107,6 +1167,7 @@ function buildblock(type, x, y, r){
                 width: 227, 
                 height: 299, 
                 name: "shape" , 
+                offset: [93/2, 265/2], 
                 is_used: false, 
                 id: 99, 
                 rotationDeg: r

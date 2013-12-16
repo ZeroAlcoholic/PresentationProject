@@ -105,7 +105,7 @@ var border = new Kinetic.Line({
 	lineJoin: 'round'
 });
 layer.add(border);
-
+/*
 var border_split = new Kinetic.Line({
 	points: [border_split_x, border_top, border_split_x, border_bottom], 
 	stroke: '#999999',
@@ -115,7 +115,7 @@ var border_split = new Kinetic.Line({
 });
 
 layer.add(border_split);
-
+*/
 stage.add(layer);
 /*  end of the stage and layer */
 
@@ -144,7 +144,6 @@ $(document).ready( function() {
 	
 	$("#verify").click(function(){
         $.get(question_file, function(){
-
 			var result = compare_data();
 			if(result) {
 
