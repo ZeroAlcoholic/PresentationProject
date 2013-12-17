@@ -324,7 +324,7 @@ function drawQuestionFromNumber(data)
 
     shapes = stage.get(".shape");
     shapes.forEach(random_position);
-    shapes.forEach(setWedgeOffset); 
+    //shapes.forEach(setWedgeOffset); 
     shapes.forEach(shape_mouse_event);
     layer.draw();
 }

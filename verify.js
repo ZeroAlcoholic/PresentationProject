@@ -18,15 +18,21 @@ function rotate_compare(d1,d2){
         result = result || error_compare(Math.abs(d1[3]-d2[3]),90,1);
         result = result || error_compare(Math.abs(d1[3]-d2[3]),180,1);
         result = result || error_compare(Math.abs(d1[3]-d2[3]),270,1);
+		result = result || error_compare(Math.abs(d1[3]-d2[3]),360,1);
         return result;
     //rectangle
     }else if(d1[0]>=4 && d1[0]<=10){
         var result = false;
         result = result || error_compare(Math.abs(d1[3]-d2[3]),0,1);
         result = result || error_compare(Math.abs(d1[3]-d2[3]),180,1);
+		result = result || error_compare(Math.abs(d1[3]-d2[3]),360,1);
         return result;
-    }else
-        return error_compare(d1[3],d2[3],1);
+    }else {
+        var result = false;
+        result = result || error_compare(Math.abs(d1[3]-d2[3]),0,1);
+        result = result || error_compare(Math.abs(d1[3]-d2[3]),360,1);
+        return result;
+	}
 }
 
 function sort_function(a,b){
@@ -43,7 +49,7 @@ function sort_function(a,b){
 }
 
 function standard_Deg(a) {
-	while(a>180) {
+	while(a>=180) {
 		a = a - 360;
 	}
 	return a;
@@ -67,7 +73,7 @@ function compare_data()
         textToWrite += " " ; 
         textToWrite += standard_Deg(shapes[i].getRotationDeg()); 
     }
-
+    alert(textToWrite);
     //var block1 = .split("\n");
     var block2 = textToWrite.split("\n");
     var block1 = correct_answer; 
@@ -82,8 +88,7 @@ function compare_data()
         //排序
         block1.sort(sort_function);
         block2.sort(sort_function);
-        
- 
+         
         //分解
         var data1 = new Array();
         var data2 = new Array();
@@ -116,6 +121,6 @@ function compare_data()
             result = result && error_compare(data1[i][2],data2[i][2],error);
 		for (var i=0; i<block1.length; i++)
             result = result && rotate_compare(data1[i],data2[i]);
-        return result;
+		return result;
     }
 }
