@@ -73,7 +73,6 @@ function compare_data()
         textToWrite += " " ; 
         textToWrite += standard_Deg(shapes[i].getRotationDeg()); 
     }
-    alert(textToWrite);
     //var block1 = .split("\n");
     var block2 = textToWrite.split("\n");
     var block1 = correct_answer; 
@@ -83,7 +82,7 @@ function compare_data()
     }
     else {
         var result = true;
-        var error = 50;
+        var error = 30;
          
         //排序
         block1.sort(sort_function);
