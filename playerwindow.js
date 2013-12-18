@@ -150,17 +150,24 @@ function shape_mouse_event(element, index, array)
   		}
   	});
   	element.on('click', function() {
-  		element.rotate(Math.PI/12); 
-                layer.draw();
+		if(element.getAttr('is_used')==true)
+		{
+		    element.rotate(Math.PI/12); 
+            layer.draw();
+		}
   	});
 }
 //  4. when the timer starts counting, shapes are draggable 
 function set_to_draggable(element, index, array)
 {	element.setDraggable(true);	}
+function set_to_rotatable(element, index, array)
+{   element.setAttr('is_used',true); }
 
 //  5. when the timer stops counting, shapes are undraggable 
 function set_to_undraggable(element, index, array)
 {	element.setDraggable(false);	}
+function set_to_unrotatable(element, index, array)
+{   element.setAttr('is_used',false); }
 
 // ?–å½¢? è???snap
 function near_and_snap(obj){

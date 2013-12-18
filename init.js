@@ -66,6 +66,7 @@ function startCount()
 {
 	// set all shapes to 'draggable'
 	shapes.forEach(set_to_draggable);
+	shapes.forEach(set_to_rotatable);
 
 	if (!timer_is_on)
 	{
@@ -77,6 +78,7 @@ function startCount()
 function stopCount()
 {
 	shapes.forEach(set_to_undraggable);
+	shapes.forEach(set_to_unrotatable);
 
 	clearTimeout(t);
 	timer_is_on=0;
