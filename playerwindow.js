@@ -123,22 +123,9 @@ function shape_mouse_event(element, index, array)
   	});
   	element.on('dragmove', function(){
   		element.setOpacity(0.7);
-  		var snap_direction = near_and_snap(element); 
   		var snapX = element.getX(); 
-  		var snapY = element.getY(); /*
-  		if( snap_direction  )
-  		{
-  			//snap_by_grid(element, snap_direction); 
-  			if( snap_direction == "X" )
-			{
-				$(element).draggable( {grid:[20, 20]} ); 
-			}
-			else if( snap_direction == "Y")
-			{
-				console.log(initX);
-				element.setPosition(snapX, Math.floor(element.getY()/100)*100 +50); 
-			}
-  		}*/
+  		var snapY = element.getY(); 
+  		
   	}); 
   	element.on('dragend', function(){
   		element.setOpacity(1); 
@@ -150,75 +137,18 @@ function shape_mouse_event(element, index, array)
   		}
   	});
   	element.on('click', function() {
-		if(element.getAttr('is_used')==true)
-		{
-		    element.rotate(Math.PI/12); 
-            layer.draw();
-		}
+  		element.rotate(Math.PI/12); 
+                layer.draw();
   	});
 }
 //  4. when the timer starts counting, shapes are draggable 
 function set_to_draggable(element, index, array)
 {	element.setDraggable(true);	}
-function set_to_rotatable(element, index, array)
-{   element.setAttr('is_used',true); }
 
 //  5. when the timer stops counting, shapes are undraggable 
 function set_to_undraggable(element, index, array)
 {	element.setDraggable(false);	}
-function set_to_unrotatable(element, index, array)
-{   element.setAttr('is_used',false); }
 
-// ?–å½¢? è???snap
-function near_and_snap(obj){
-	for( var i=0; i< shapes.length; i++ )
-	{
-		if( shapes[i] == obj )
-		{
-			continue; 
-		}
-		var obj_left = obj.getX() - obj.getWidth()/2; 
-		var obj_top = obj.getY() - obj.getHeight()/2; 
-		var obj_right = obj.getX() + obj.getWidth()/2; 
-		var obj_bottom = obj.getY() + obj.getHeight()/2; 
-		var shape_left = shapes[i].getX() - shapes[i].getWidth()/2; 
-		var shape_right = shapes[i].getX() + shapes[i].getWidth()/2; 
-		var shape_bottom = shapes[i].getY() + shapes[i].getHeight()/2; 
-		var shape_top = shapes[i].getY() - shapes[i].getHeight()/2; 
-
-		// near the right side
-		if( (obj_left < shape_right +20 )&&( obj_left > shape_right ) )
-		{	
-			obj.setX(shape_right + obj.getWidth()/2);
-			layer.draw();
-			return 'Y'; 
-		}
-		// near the left side
-		else if(  (obj_right < shape_left )&&( obj_right > shape_left-20 ) )
-		{
-			obj.setX( shape_left - obj.getWidth()/2);
-			layer.draw();
-			return 'Y' ; 
-		}
-		// near the bottom side
-		else if( (obj_top < shape_bottom +20 )&&( obj_top > shape_bottom ))
-		{
-			obj.setY( shape_bottom + obj.getHeight()/2 ); 
-			layer.draw();
-			return 'X'; 
-		}
-		// near the top side
-		else if( (obj_bottom < shape_top )&&( obj_bottom > shape_top-20) )
-		{
-			obj.setY( shape_top - obj.getHeight()/2 );
-			layer.draw();
-			return 'X'; 
-		}
-		else 
-		{	continue ; }
-	}
-	return false ; 
-}
 
 // ?–å½¢?¨é??Œæ?ï¼Œå??žå?ä½ç½®
 function is_on_border(shape)
@@ -269,29 +199,7 @@ function is_on_border(shape)
 	
 	return false; 
 }
-/*
 
-function whether_in_used(element)
-{
-	var type = element.getClassName();
-	var posX = element.getX() ; 
-	var posY = element.getY(); 
-	var width, radius ; 
-	if( type == "Polygon")
-	{	width = element.getAttr('width');	}
-	else if( type == "Rect")
-	{	width = element.getWidth();	}
-	else if( type == "Wedge")
-	{	width = height = element.getRadius();	}
-	else if( type == "Circle")
-	{	width = height = element.getRadius()*2;	}
-
-	if( (posX - width/2 > border_left) && (posX + width/2 < border_split_x ))
-    {	element.setAttr('is_used', true);	}
-    else
-    {	element.setAttr('is_used', false);	}
-}
-*/
 
 
 function getQuestionFromNumber(number)
@@ -331,8 +239,7 @@ function drawQuestionFromNumber(data)
 
     shapes = stage.get(".shape");
     shapes.forEach(random_position);
-    //shapes.forEach(setWedgeOffset); 
-    shapes.forEach(shape_mouse_event);
+    
     layer.draw();
 }
 
@@ -340,7 +247,7 @@ document.write('<script language="javascript" src="verify.js"></script>');
 
 
 
-
+/*
 function snap_by_grid(YourSquares, obj)
 {
    	var lastone = shapes.length-1;
@@ -365,3 +272,4 @@ function snap_by_grid(YourSquares, obj)
         }
    }
 }
+*/

@@ -11,7 +11,7 @@ var border_bottom = window.innerHeight-margin*4 ;
 //var border_split_x = window.innerWidth/2 ;
 
 function getQuestion(){
-    var q_idx = Math.floor(Math.random()*10) ; // started from 0
+    var q_idx = Math.floor(Math.random()*11) ; // started from 0
     //alert("ques_A0"+(q_idx+1)+".txt"); // 1, 2, 3
     //var path = "file:///C:/Users/MY/Desktop/";
     var file = "ques_A0"+(q_idx+1)+".txt"; // started from 1, as the index
