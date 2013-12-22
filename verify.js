@@ -87,7 +87,7 @@ function compare_data()
     }
     else {
         var result = true;
-        var error = 40;
+        var error = 50;
          
         //排序
         block1.sort(sort_function);
