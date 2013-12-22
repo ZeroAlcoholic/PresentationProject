@@ -1,3 +1,20 @@
+$(document).ready( function() {
+    $("#getbutton").click( function(){
+        var questionNumber = $('#selectQuestion').find(":selected").text();
+        if( questionNumber == "Select" )
+        {
+            alert("Please choose a question!");
+        }
+        else
+        {
+            getQuestionFromNumber( questionNumber );
+
+            $('#selectQuestion').hide();
+            $("#getbutton").hide();
+        }
+    }); 
+}); 
+
 /* 
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
@@ -10,11 +27,23 @@ var border_bottom = window.innerHeight-margin*4 ;
 
 //var border_split_x = window.innerWidth/2 ;
 
-function getQuestion(){
-    var q_idx = Math.floor(Math.random()*10) ; // started from 0
-    //alert("ques_A0"+(q_idx+1)+".txt"); // 1, 2, 3
-    //var path = "file:///C:/Users/MY/Desktop/";
-    var file = "ques_A0"+(q_idx+1)+".txt"; // started from 1, as the index
+//function getQuestion(){
+function getQuestionFromNumber(number){
+    var q_idx, file; 
+
+    if( number == "random" )
+    {
+        q_idx = Math.floor(Math.random()*11) ; // started from 0
+        console.log(q_idx);
+        //alert("ques_A0"+(q_idx+1)+".txt"); // 1, 2, 3
+        //var path = "file:///C:/Users/MY/Desktop/";
+        file = "ques_A0"+(q_idx+1)+".txt"; // started from 1, as the index
+    }
+    else 
+    {
+        q_idx = parseInt(number);
+        file = "ques_A0" + number +".txt";   
+    }
 
 
     var rawFile = new XMLHttpRequest();
@@ -80,7 +109,7 @@ function drawQuestion(data, q_idx){
     stageInTeacher.add(layerInTeacher);
 
 
-    var verinum = "A0"+(q_idx+1) ; // 1, 2, 3
+    var verinum = "A0"+(q_idx) ; // 1, 2, 3
     document.getElementById("getbutton").style.display = "none";
     document.getElementById("underline").innerHTML = '<h3>----Verifying Number = '+verinum+'</h3>';
     //document.write('<h3>----Verifying Number = '+verinum+'</h3>');

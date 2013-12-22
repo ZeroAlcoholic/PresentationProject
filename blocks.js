@@ -287,6 +287,8 @@ function buildblock(type, x, y, r){
                 radius: 90,
                 fill: 'red',
                 stroke: 'black',
+                name: "shape" , 
+                is_used: false, 
                 id: 19, 
                 strokeWidth: 1
             });

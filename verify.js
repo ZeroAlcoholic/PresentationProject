@@ -18,35 +18,44 @@ function rotate_compare(d1,d2){
         result = result || error_compare(Math.abs(d1[3]-d2[3]),90,1);
         result = result || error_compare(Math.abs(d1[3]-d2[3]),180,1);
         result = result || error_compare(Math.abs(d1[3]-d2[3]),270,1);
+        result = result || error_compare(Math.abs(d1[3]-d2[3]),360,1);
         return result;
     //rectangle
     }else if(d1[0]>=4 && d1[0]<=10){
         var result = false;
         result = result || error_compare(Math.abs(d1[3]-d2[3]),0,1);
         result = result || error_compare(Math.abs(d1[3]-d2[3]),180,1);
+        result = result || error_compare(Math.abs(d1[3]-d2[3]),360,1);
         return result;
-    }else
-        return error_compare(d1[3],d2[3],1);
+    }else {
+        var result = false;
+        result = result || error_compare(Math.abs(d1[3]-d2[3]),0,1);
+        result = result || error_compare(Math.abs(d1[3]-d2[3]),360,1);
+        return result;
+    }
 }
 
 function sort_function(a,b){
-	var data1 = a.split(" ");
-	var data2 = b.split(" ");
-	if(data1[0]!=data2[0])
-		return data1[0] - data2[0];
-	else if(data1[3]!=data2[3])
-		return data1[3] - data2[3];
-	else if(data1[1]!=data2[1])
-		return data1[1] - data2[1];
-	else
-		return data1[2] - data2[2];
+    var data1 = a.split(" ");
+    var data2 = b.split(" ");
+    if(data1[0]!=data2[0])
+        return data1[0] - data2[0];
+    else if(data1[1]!=data2[1])
+        return data1[1] - data2[1];
+    else if(data1[2]!=data2[2])
+        return data1[2] - data2[2];
+    else
+        return data1[3] - data2[3];
 }
 
 function standard_Deg(a) {
-	while(a>180) {
-		a = a - 360;
-	}
-	return a;
+    while(a>180) {
+        a = a - 360;
+    }
+    while(a<-180) {
+        a = a + 360;
+    }
+    return a;
 }
 
 function compare_data()
@@ -67,7 +76,7 @@ function compare_data()
         textToWrite += " " ; 
         textToWrite += standard_Deg(shapes[i].getRotationDeg()); 
     }
-
+    alert(textToWrite);
     //var block1 = .split("\n");
     var block2 = textToWrite.split("\n");
     var block1 = correct_answer; 
@@ -77,13 +86,12 @@ function compare_data()
     }
     else {
         var result = true;
-        var error = 50;
+        var error = 30;
          
         //排序
         block1.sort(sort_function);
         block2.sort(sort_function);
-        
- 
+         
         //分解
         var data1 = new Array();
         var data2 = new Array();
@@ -106,15 +114,15 @@ function compare_data()
             data2[i][1] = data2[i][1]-ref_x2;
             data2[i][2] = data2[i][2]-ref_y2;
         }
-		
+        
         //比較
         for (var i=0; i<block1.length; i++)
             result = result && (data1[i][0]==data2[i][0]);
-		for (var i=0; i<block1.length; i++)
+        for (var i=0; i<block1.length; i++)
             result = result && error_compare(data1[i][1],data2[i][1],error);
-		for (var i=0; i<block1.length; i++)
+        for (var i=0; i<block1.length; i++)
             result = result && error_compare(data1[i][2],data2[i][2],error);
-		for (var i=0; i<block1.length; i++)
+        for (var i=0; i<block1.length; i++)
             result = result && rotate_compare(data1[i],data2[i]);
         return result;
     }

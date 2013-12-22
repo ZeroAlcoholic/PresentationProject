@@ -6,7 +6,7 @@ var margin = 20 ;
 var border_left = margin ; 
 var border_top = margin ; 
 var border_right = window.innerWidth-margin*2 ; 
-var border_bottom = window.innerHeight-margin*4-finish_btn; 
+var border_bottom = 800-margin*4-finish_btn; 
 var border_split_x = window.innerWidth/2 ;
 
 
@@ -66,7 +66,7 @@ function startCount()
 {
 	// set all shapes to 'draggable'
 	shapes.forEach(set_to_draggable);
-
+	shapes.forEach(shape_mouse_event);
 	if (!timer_is_on)
 	{
 		timer_is_on=1;
@@ -123,7 +123,7 @@ stage.add(layer);
 $(document).ready( function() {
 	$(window).resize(function(){
 		stage.setWidth(window.innerWidth);
-		stage.setHeight(window.innerHeight);
+		stage.setHeight(800);
 		layer.setWidth(window.innerWidth);
 		layer.setHeight(window.innerHeight);
 	}) ; 
