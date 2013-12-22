@@ -77,7 +77,7 @@ function compare_data()
         textToWrite += " " ; 
         textToWrite += standard_Deg(shapes[i].getRotationDeg()); 
     }
-    alert(textToWrite);
+    //alert(textToWrite);
     //var block1 = .split("\n");
     var block2 = textToWrite.split("\n");
     var block1 = correct_answer; 
