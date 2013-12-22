@@ -49,9 +49,13 @@ function sort_function(a,b){
 }
 
 function standard_Deg(a) {
-    while(a>=180) {
+    while(a>180) {
         a = a - 360;
-    }
+	}
+	while(a <= -180){
+		a = a + 360;
+	}
+
     return a;
 }
 
