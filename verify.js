@@ -40,7 +40,7 @@ function sort_function(a,b){
     var data2 = b.split(" ");
     if(data1[0]!=data2[0])
         return data1[0] - data2[0];
-    else if(data1[1]!=data2[1])
+    else if(!error_compare(data1[1],data2[1],5))
         return data1[1] - data2[1];
     else if(data1[2]!=data2[2])
         return data1[2] - data2[2];
