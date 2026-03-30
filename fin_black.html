@@ -1,0 +1,3834 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>黑天鵝資本保衛戰</title>
+    <meta
+      name="description"
+      content="以黑天鵝衝擊、資產負債管理與投資風險決策為核心的單頁教學網頁遊戲。"
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307111f'/%3E%3Cpath d='M19 40c6-11 12-17 18-17 5 0 9 4 9 9 0 8-8 13-20 13-3 0-5-2-7-5Z' fill='%2371d8c2'/%3E%3Ccircle cx='41' cy='23' r='4' fill='%23f7d77c'/%3E%3C/svg%3E" />
+    <style>
+:root {
+  --bg: #07111f;
+  --line: rgba(173, 207, 255, 0.16);
+  --line-strong: rgba(173, 207, 255, 0.28);
+  --text: #eef4ff;
+  --muted: #9ab0d4;
+  --accent: #71d8c2;
+  --accent-strong: #1ec8a7;
+  --warm: #ffb16f;
+  --danger: #ff6b77;
+  --gold: #f7d77c;
+  --shadow: 0 24px 90px rgba(3, 8, 20, 0.42);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(36, 102, 173, 0.24), transparent 32%),
+    radial-gradient(circle at 80% 12%, rgba(113, 216, 194, 0.18), transparent 22%),
+    linear-gradient(135deg, #07111f 0%, #0c1830 50%, #060b15 100%);
+  overflow-x: hidden;
+}
+
+body.playing {
+  overflow: hidden;
+}
+
+.ambient {
+  position: fixed;
+  border-radius: 999px;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.48;
+}
+
+.ambient-a {
+  width: 360px;
+  height: 360px;
+  background: rgba(32, 102, 181, 0.3);
+  left: -80px;
+  top: 60px;
+}
+
+.ambient-b {
+  width: 340px;
+  height: 340px;
+  background: rgba(9, 198, 165, 0.16);
+  right: -70px;
+  bottom: 30px;
+}
+
+.app-shell {
+  width: min(1440px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 28px 0 48px;
+}
+
+body.playing .app-shell {
+  width: min(1480px, calc(100vw - 20px));
+  height: 100vh;
+  padding: 8px 0 8px;
+}
+
+.glass-panel,
+.modal-card,
+.event-card,
+.action-card,
+.metric-card,
+.history-item {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(21, 36, 66, 0.86), rgba(8, 17, 33, 0.82));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.hero.compact {
+  min-height: 0;
+}
+
+body.playing .hero.compact {
+  display: none;
+}
+
+.hero-copy,
+.hero-panel,
+.topbar,
+.metrics-panel,
+.allocation-panel,
+.event-stage,
+.action-stage,
+.insight-panel,
+.log-panel {
+  border-radius: 28px;
+  padding: 28px;
+  background: linear-gradient(180deg, rgba(17, 30, 54, 0.84), rgba(7, 15, 29, 0.76));
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.eyebrow,
+.mini-label {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--accent);
+  margin: 0;
+}
+
+h1 {
+  margin: 12px 0;
+  font-size: clamp(2.6rem, 4vw, 4.6rem);
+  line-height: 0.98;
+  max-width: 10ch;
+}
+
+h2,
+h3,
+h4,
+p {
+  margin-top: 0;
+}
+
+.hero-lead {
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: 1.04rem;
+  line-height: 1.7;
+}
+
+.hero-actions,
+.final-actions,
+.tutorial-footer,
+.topbar-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+body.compact-ui .hero-actions,
+body.compact-ui .topbar-actions {
+  gap: 8px;
+}
+
+body.playing .topbar-actions {
+  gap: 8px;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button {
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 700;
+}
+
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(247, 215, 124, 0.16), rgba(255, 177, 111, 0.12));
+  border: 1px solid rgba(247, 215, 124, 0.18);
+  color: #ffe8aa;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.streak-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f7d77c;
+  box-shadow: 0 0 14px rgba(247, 215, 124, 0.55);
+}
+
+body.playing .secondary-button {
+  padding: 7px 10px;
+  font-size: 0.76rem;
+}
+
+body.playing .streak-badge {
+  padding: 7px 10px;
+  font-size: 0.74rem;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, var(--accent-strong), #58b6ff);
+  color: #05111f;
+  box-shadow: 0 16px 42px rgba(31, 181, 213, 0.3);
+}
+
+.secondary-button {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.panel-toggle,
+.side-tab {
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.82rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.ghost-button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.hero-tags {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.hero-tags span,
+.badge,
+.impact-pill,
+.action-badge,
+.event-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+}
+
+.hero-tags span {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.hero-stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.hero-stat-row strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.05rem;
+}
+
+.hero-visual {
+  position: relative;
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.hero-gridlines {
+  position: absolute;
+  inset: 18px;
+  border-radius: 28px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(circle at center, black 30%, transparent 78%);
+}
+
+.floating-sigil {
+  position: absolute;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(14px);
+}
+
+.sigil-a {
+  width: 54px;
+  height: 54px;
+  left: 22px;
+  top: 30px;
+  box-shadow: inset 0 0 0 1px rgba(113, 216, 194, 0.16);
+}
+
+.sigil-b {
+  width: 72px;
+  height: 72px;
+  right: 24px;
+  bottom: 24px;
+  box-shadow: inset 0 0 0 1px rgba(88, 182, 255, 0.16);
+}
+
+.pulse-ring {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(113, 216, 194, 0.24);
+  position: absolute;
+  animation: pulse 4.6s ease-in-out infinite;
+}
+
+.portfolio-orb {
+  width: 170px;
+  height: 170px;
+  border-radius: 36px;
+  background: linear-gradient(180deg, rgba(27, 52, 92, 0.9), rgba(7, 17, 34, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.portfolio-orb span {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+
+.portfolio-orb strong {
+  font-size: 1.8rem;
+}
+
+.hero-mini-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hero-mini-card {
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-mini-card strong {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.game-layout {
+  margin-top: 24px;
+}
+
+body.playing .game-layout {
+  margin-top: 0;
+  height: calc(100vh - 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+body.playing .topbar,
+body.playing .metrics-panel,
+body.playing .allocation-panel,
+body.playing .event-stage,
+body.playing .action-stage,
+body.playing .side-panel {
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.topbar-left {
+  flex: 1;
+}
+
+body.playing .topbar {
+  align-items: flex-start;
+}
+
+body.playing .topbar-left {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+body.playing .topbar h2 {
+  margin-bottom: 0;
+  font-size: 1.28rem;
+  line-height: 1.05;
+}
+
+body.playing .topbar .eyebrow {
+  font-size: 0.58rem;
+}
+
+.round-progress {
+  width: 100%;
+  margin-top: 2px;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.round-progress-fill {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #58b6ff, var(--accent));
+  box-shadow: 0 0 16px rgba(88, 182, 255, 0.42);
+  transition: width 0.4s ease;
+}
+
+.turn-splash {
+  position: fixed;
+  left: 50%;
+  top: 84px;
+  transform: translateX(-50%);
+  min-width: 320px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  text-align: center;
+  z-index: 16;
+  background: linear-gradient(180deg, rgba(13, 25, 47, 0.96), rgba(7, 14, 26, 0.94));
+  border: 1px solid rgba(113, 216, 194, 0.18);
+  box-shadow: 0 24px 70px rgba(3, 8, 20, 0.38);
+  pointer-events: none;
+}
+
+.turn-splash.show {
+  animation: splashInOut 1.9s ease forwards;
+}
+
+.turn-splash-kicker,
+.turn-splash-subtitle {
+  display: block;
+}
+
+.turn-splash-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.turn-splash strong {
+  display: block;
+  margin: 6px 0 4px;
+  font-size: 1.28rem;
+}
+
+.turn-splash-subtitle {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.impact-flash {
+  position: fixed;
+  inset: auto 24px 24px auto;
+  min-width: 260px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  z-index: 18;
+  background: linear-gradient(180deg, rgba(8, 18, 33, 0.96), rgba(6, 12, 22, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 52px rgba(3, 8, 20, 0.35);
+  transform: translateY(12px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.impact-flash strong,
+.impact-flash span {
+  display: block;
+}
+
+.impact-flash strong {
+  font-size: 1rem;
+}
+
+.impact-flash span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.impact-flash.show {
+  animation: impactToast 1.4s ease forwards;
+}
+
+.impact-flash.positive {
+  border-color: rgba(113, 216, 194, 0.2);
+  box-shadow: 0 18px 52px rgba(31, 181, 213, 0.18);
+}
+
+.impact-flash.negative {
+  border-color: rgba(255, 107, 119, 0.24);
+  box-shadow: 0 18px 52px rgba(255, 107, 119, 0.18);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 320px;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+body.playing .dashboard-grid {
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: 270px minmax(0, 1fr) 178px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+body.focus-mode .dashboard-grid {
+  grid-template-columns: 228px minmax(0, 1fr) 0;
+}
+
+body.focus-mode .dashboard-right {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+}
+
+.dashboard-left,
+.dashboard-right,
+.center-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
+
+body.playing .dashboard-left,
+body.playing .dashboard-right,
+body.playing .center-stage {
+  gap: 12px;
+  overflow: hidden;
+}
+
+body.compact-ui .dashboard-grid {
+  grid-template-columns: 252px minmax(0, 1fr) 176px;
+}
+
+body.compact-ui .section-heading {
+  margin-bottom: 12px;
+}
+
+body.compact-ui .section-heading h3 {
+  font-size: 1.18rem;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.section-heading h3 {
+  margin: 6px 0 0;
+  font-size: 1.36rem;
+}
+
+.badge {
+  background: rgba(113, 216, 194, 0.12);
+  color: var(--accent);
+}
+
+#statusBadge {
+  box-shadow: inset 0 0 0 1px rgba(113, 216, 194, 0.12), 0 0 20px rgba(113, 216, 194, 0.08);
+  animation: statusPulse 3.8s ease-in-out infinite;
+}
+
+.event-chip {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.severity-mid {
+  background: rgba(255, 177, 111, 0.14);
+  color: var(--warm);
+}
+
+.severity-high {
+  background: rgba(255, 107, 119, 0.14);
+  color: #ffb6bd;
+}
+
+.severity-critical {
+  background: linear-gradient(135deg, rgba(255, 107, 119, 0.18), rgba(247, 215, 124, 0.18));
+  color: #ffe6ad;
+}
+
+#eventSeverityChip {
+  animation: statusPulse 3.6s ease-in-out infinite;
+}
+
+.badge.subtle {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+body.compact-ui .metrics-grid {
+  gap: 8px;
+}
+
+.metric-card {
+  border-radius: 22px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: linear-gradient(180deg, rgba(17, 31, 58, 0.98), rgba(8, 17, 33, 0.88));
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card.good {
+  box-shadow: inset 0 0 0 1px rgba(113, 216, 194, 0.18), var(--shadow);
+}
+
+.metric-card.mid {
+  box-shadow: inset 0 0 0 1px rgba(255, 177, 111, 0.18), var(--shadow);
+}
+
+.metric-card.bad {
+  box-shadow: inset 0 0 0 1px rgba(255, 107, 119, 0.24), var(--shadow);
+}
+
+.metric-label {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.metric-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  flex: 0 0 auto;
+}
+
+.metric-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.metric-card strong {
+  font-size: 1.3rem;
+}
+
+body.playing .metric-card {
+  padding: 9px 10px;
+  gap: 7px;
+}
+
+body.playing .metric-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+}
+
+body.playing .metric-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+body.playing .metric-card strong {
+  font-size: 0.94rem;
+}
+
+body.playing .metric-label {
+  margin-bottom: 3px;
+  font-size: 0.7rem;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+
+body.playing .metric-top {
+  gap: 10px;
+  align-items: flex-start;
+}
+
+body.playing .metric-top > div:last-child {
+  min-width: 0;
+  flex: 1;
+}
+
+body.compact-ui .metric-card {
+  padding: 10px;
+  gap: 8px;
+}
+
+body.compact-ui .metric-label {
+  margin-bottom: 4px;
+  font-size: 0.76rem;
+}
+
+body.compact-ui .metric-card strong {
+  font-size: 0.98rem;
+}
+
+.metric-meter {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.metric-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #58b6ff, var(--accent));
+}
+
+.allocation-bars,
+.teacher-panel,
+.compact-tip,
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.allocation-visual {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  justify-items: center;
+}
+
+.allocation-donut {
+  width: 176px;
+  height: 176px;
+  border-radius: 50%;
+  padding: 16px;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.allocation-donut-core {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(10, 19, 36, 0.96), rgba(12, 24, 48, 0.92));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  padding: 18px;
+}
+
+body.compact-ui .allocation-donut {
+  width: 152px;
+  height: 152px;
+}
+
+.allocation-donut-core span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.allocation-donut-core strong {
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.allocation-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.allocation-peek {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.allocation-peek-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.allocation-peek-pill.wide {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, rgba(88, 182, 255, 0.1), rgba(113, 216, 194, 0.08));
+  border-color: rgba(88, 182, 255, 0.14);
+}
+
+.allocation-peek-pill span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.allocation-peek-pill strong {
+  font-size: 0.82rem;
+}
+
+.allocation-peek-pill i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.allocation-content.collapsed {
+  display: none;
+}
+
+.mini-stat-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mini-stat-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-bottom: 8px;
+}
+
+.mini-stat-card strong {
+  font-size: 1.1rem;
+}
+
+body.playing .allocation-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+body.playing .allocation-donut {
+  width: 160px;
+  height: 160px;
+  padding: 14px;
+}
+
+body.playing .allocation-donut-core {
+  padding: 18px;
+}
+
+body.playing .allocation-donut-core strong {
+  font-size: 1.08rem;
+}
+
+body.playing .mini-stat-card {
+  padding: 10px 12px;
+}
+
+body.playing .mini-stat-card strong {
+  font-size: 1rem;
+}
+
+body.playing .allocation-peek {
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+body.playing .allocation-peek-pill {
+  padding: 7px 9px;
+  border-radius: 12px;
+}
+
+body.playing .allocation-peek-pill span {
+  font-size: 0.72rem;
+}
+
+body.playing .allocation-peek-pill strong {
+  font-size: 0.78rem;
+}
+
+.allocation-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.allocation-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+}
+
+.allocation-track {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.allocation-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.35s ease;
+}
+
+.allocation-fill.hot {
+  background: linear-gradient(90deg, #ff7e71, #ffb16f);
+}
+
+.allocation-fill.cool {
+  background: linear-gradient(90deg, #65a1ff, #8fd2ff);
+}
+
+.allocation-fill.safe {
+  background: linear-gradient(90deg, #58d8b8, #71d8c2);
+}
+
+.allocation-fill.accent {
+  background: linear-gradient(90deg, #efcf68, #f7d77c);
+}
+
+.allocation-fill.alt {
+  background: linear-gradient(90deg, #b38cff, #8ddcff);
+}
+
+.event-card {
+  min-height: 280px;
+  border-radius: 28px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 210px) 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+body.compact-ui .event-card {
+  min-height: 164px;
+  gap: 12px;
+}
+
+body.compact-ui .event-card p:last-child {
+  line-height: 1.5;
+  font-size: 0.93rem;
+}
+
+body.compact-ui .event-card h3 {
+  font-size: 1.38rem;
+}
+
+body.compact-ui .event-icon {
+  width: 64px;
+  height: 64px;
+  font-size: 1.5rem;
+}
+
+body.playing .event-stage {
+  flex: 0 0 auto;
+}
+
+body.playing .event-card {
+  min-height: 172px;
+  grid-template-columns: 176px 1fr;
+  gap: 14px;
+  padding: 16px;
+}
+
+body.playing .event-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+}
+
+body.playing .event-card h3 {
+  font-size: 1.5rem;
+}
+
+body.playing .concept-chips {
+  margin-top: 12px;
+}
+
+body.playing .concept-chips span {
+  padding: 7px 10px;
+  font-size: 0.76rem;
+}
+
+.event-card.reveal {
+  animation: reveal 0.6s ease;
+}
+
+.event-card.reveal .event-illustration {
+  animation: illustrationGlow 0.7s ease;
+}
+
+.event-stage,
+.action-stage {
+  position: relative;
+  overflow: hidden;
+}
+
+.event-stage::before,
+.action-stage::before {
+  content: "";
+  position: absolute;
+  inset: -30% auto auto -10%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  filter: blur(46px);
+  opacity: 0.28;
+  pointer-events: none;
+  transition: background 0.25s ease, transform 0.25s ease, opacity 0.25s ease;
+}
+
+.event-stage::before {
+  background: rgba(88, 182, 255, 0.24);
+}
+
+.event-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.04) 18%, transparent 32%),
+    radial-gradient(circle at 18% 22%, rgba(88, 182, 255, 0.14), transparent 28%);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.event-stage.severity-high::before {
+  background: rgba(255, 177, 111, 0.26);
+}
+
+.event-stage.severity-critical::before {
+  background: rgba(255, 107, 119, 0.28);
+  opacity: 0.36;
+}
+
+.event-stage.severity-high::after {
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255, 177, 111, 0.06) 20%, transparent 34%),
+    radial-gradient(circle at 18% 22%, rgba(255, 177, 111, 0.18), transparent 30%);
+}
+
+.event-stage.severity-critical::after {
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255, 107, 119, 0.08) 20%, transparent 34%),
+    radial-gradient(circle at 18% 22%, rgba(255, 107, 119, 0.22), transparent 30%);
+  animation: criticalField 2.6s ease-in-out infinite;
+}
+
+.action-stage::before {
+  background: rgba(113, 216, 194, 0.18);
+  inset: auto -10% -42% auto;
+}
+
+.event-illustration {
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px;
+  display: grid;
+  place-items: center;
+}
+
+body.playing .event-illustration {
+  min-height: 132px;
+}
+
+.event-illustration svg {
+  width: 100%;
+  height: auto;
+}
+
+.event-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.event-header-line {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.event-icon {
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  border-radius: 26px;
+  font-size: 2rem;
+  background: linear-gradient(135deg, rgba(255, 177, 111, 0.18), rgba(88, 182, 255, 0.18));
+  color: var(--gold);
+}
+
+.event-card h3 {
+  font-size: 2.1rem;
+  margin-bottom: 0;
+}
+
+.event-summary {
+  color: var(--muted);
+  line-height: 1.56;
+  margin-bottom: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+body.compact-ui .event-summary {
+  line-height: 1.45;
+  font-size: 0.9rem;
+}
+
+body.playing .event-summary {
+  line-height: 1.42;
+  font-size: 0.9rem;
+}
+
+.concept-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.concept-chips span {
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfe6ff;
+  font-size: 0.84rem;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.compact-ui .action-grid {
+  gap: 8px;
+}
+
+body.playing .action-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.playing .action-grid {
+  gap: 8px;
+  grid-auto-rows: 1fr;
+}
+
+.action-card {
+  text-align: left;
+  border-radius: 24px;
+  padding: 18px;
+  min-height: 188px;
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(28, 47, 83, 0.88), rgba(10, 18, 34, 0.85));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+body.playing .action-card {
+  min-height: 144px;
+  padding: 12px;
+  gap: 9px;
+}
+
+body.playing .action-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 0%, rgba(113, 216, 194, 0.08) 46%, transparent 72%);
+  transform: translateX(-130%);
+  transition: transform 0.35s ease;
+  pointer-events: none;
+}
+
+body.compact-ui .action-card {
+  min-height: 132px;
+  padding: 11px;
+  gap: 7px;
+}
+
+.action-card:hover {
+  box-shadow: 0 20px 48px rgba(7, 16, 31, 0.46), inset 0 0 0 1px rgba(113, 216, 194, 0.2);
+  transform: translateY(-3px) scale(1.01);
+}
+
+.action-card:hover::after {
+  transform: translateX(0);
+}
+
+.action-card.selected {
+  box-shadow: 0 20px 48px rgba(7, 16, 31, 0.46), inset 0 0 0 1px rgba(88, 182, 255, 0.4);
+}
+
+.action-card.dealing {
+  animation: dealIn 0.46s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.action-head {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.action-head h4 {
+  margin: 0;
+  font-size: 1.18rem;
+}
+
+.action-symbol {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(113, 216, 194, 0.12), rgba(88, 182, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.action-symbol svg {
+  width: 30px;
+  height: 30px;
+}
+
+body.playing .action-head {
+  grid-template-columns: 46px 1fr;
+  gap: 10px;
+}
+
+body.playing .action-symbol {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+
+body.playing .action-symbol svg {
+  width: 24px;
+  height: 24px;
+}
+
+body.playing .action-head h4 {
+  font-size: 0.96rem;
+}
+
+body.playing .action-badge {
+  font-size: 0.72rem;
+  padding: 5px 8px;
+}
+
+body.playing .action-chip-row span {
+  font-size: 0.68rem;
+  padding: 5px 8px;
+}
+
+body.compact-ui .action-badge,
+body.compact-ui .action-chip-row span {
+  font-size: 0.7rem;
+}
+
+.action-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-badge {
+  width: fit-content;
+  background: rgba(255, 177, 111, 0.12);
+  color: var(--warm);
+  line-height: 1.4;
+}
+
+.action-rarity {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(125, 184, 255, 0.1);
+  color: #cfe6ff;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.action-rarity::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+.action-chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-summary {
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.42;
+  font-size: 0.84rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.action-hover-panel {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border-radius: 16px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(8, 15, 27, 0.96), rgba(7, 13, 24, 0.94));
+  border: 1px solid rgba(113, 216, 194, 0.18);
+  box-shadow: 0 12px 28px rgba(3, 8, 20, 0.32);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.action-hover-panel strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.action-hover-panel span {
+  display: block;
+  color: #d8e7fb;
+  font-size: 0.76rem;
+  line-height: 1.42;
+}
+
+.action-card:hover .action-hover-panel,
+.action-card:focus-visible .action-hover-panel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.action-chip-row span {
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c8defc;
+  font-size: 0.78rem;
+}
+
+.action-card p,
+.teacher-block p,
+.teacher-highlight,
+.compact-tip,
+.history-item p,
+.summary-explainer,
+#finalNarrative {
+  color: var(--muted);
+  line-height: 1.65;
+  margin-bottom: 0;
+}
+
+.teacher-block {
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.playing .side-panel {
+  min-height: 0;
+}
+
+body.playing .metrics-panel,
+body.playing .side-panel {
+  overflow: hidden;
+}
+
+body.playing .teacher-panel,
+body.playing .history-list {
+  gap: 8px;
+}
+
+body.playing .teacher-block,
+body.playing .history-item {
+  padding: 12px;
+  border-radius: 16px;
+}
+
+body.playing .compact-tip,
+body.playing .teacher-block p,
+body.playing .history-item p,
+body.playing .teacher-highlight {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.teacher-highlight {
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+}
+
+.history-item {
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.history-item.muted {
+  color: var(--muted);
+}
+
+.history-top {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.history-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 6px;
+  background: linear-gradient(135deg, var(--accent), #58b6ff);
+  box-shadow: 0 0 0 5px rgba(113, 216, 194, 0.12);
+}
+
+.history-top span {
+  color: var(--accent);
+  font-size: 0.92rem;
+}
+
+.side-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.side-tab.active {
+  background: linear-gradient(135deg, rgba(113, 216, 194, 0.18), rgba(88, 182, 255, 0.12));
+  color: #f1fbff;
+  border-color: rgba(113, 216, 194, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(113, 216, 194, 0.1), 0 8px 20px rgba(8, 20, 38, 0.22);
+}
+
+.side-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.brief-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.brief-item {
+  border-radius: 16px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.brief-item strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+}
+
+.brief-item span {
+  color: var(--muted);
+  font-size: 0.79rem;
+  line-height: 1.42;
+}
+
+body.playing .side-tab {
+  padding: 8px 10px;
+  font-size: 0.76rem;
+}
+
+body.playing .side-tab::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  background: rgba(154, 176, 212, 0.55);
+  vertical-align: middle;
+}
+
+body.playing .side-tab.active::before {
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(113, 216, 194, 0.55);
+}
+
+body.playing .dashboard-right .section-heading {
+  margin-bottom: 8px;
+}
+
+body.playing .dashboard-right .section-heading h3 {
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+body.playing .dashboard-right .eyebrow,
+body.playing .dashboard-right .mini-label {
+  font-size: 0.64rem;
+}
+
+body.playing .dashboard-right .brief-item strong {
+  font-size: 0.84rem;
+}
+
+body.playing .dashboard-right .brief-item span,
+body.playing .dashboard-right .history-item p,
+body.playing .dashboard-right .teacher-block p,
+body.playing .dashboard-right .teacher-highlight,
+body.playing .dashboard-right .compact-tip {
+  font-size: 0.76rem;
+  line-height: 1.36;
+}
+
+.metric-note,
+.teacher-inline-note {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.metric-card:hover .metric-note,
+.metric-card:focus-within .metric-note,
+.teacher-block:hover .teacher-inline-note,
+.teacher-block:focus-within .teacher-inline-note {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.metric-note {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(7, 14, 25, 0.96), rgba(6, 11, 21, 0.94));
+  border: 1px solid rgba(113, 216, 194, 0.18);
+  color: #d8e7fb;
+  transform: translateY(12px);
+  pointer-events: none;
+  box-shadow: 0 10px 24px rgba(3, 8, 20, 0.28);
+}
+
+body.playing .metric-note {
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+body.compact-ui .metric-note,
+body.compact-ui .teacher-inline-note {
+  font-size: 0.7rem;
+}
+
+body.playing .history-item p,
+body.playing .compact-tip {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-height: 920px) {
+  body.playing .app-shell {
+    padding: 6px 0;
+  }
+
+  body.playing .game-layout {
+    gap: 8px;
+    height: calc(100vh - 12px);
+  }
+
+  body.playing .topbar,
+  body.playing .metrics-panel,
+  body.playing .allocation-panel,
+  body.playing .event-stage,
+  body.playing .action-stage,
+  body.playing .side-panel {
+    padding: 14px;
+  }
+
+  body.playing .event-card {
+    min-height: 160px;
+    grid-template-columns: 156px 1fr;
+    padding: 14px;
+  }
+
+  body.playing .event-illustration {
+    min-height: 120px;
+  }
+
+  body.playing .allocation-donut {
+    width: 136px;
+    height: 136px;
+  }
+
+  body.playing .action-card {
+    min-height: 128px;
+  }
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 8, 18, 0.62);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  padding: 20px;
+}
+
+.modal-card {
+  width: min(780px, 100%);
+  border-radius: 30px;
+  padding: 28px;
+  position: relative;
+}
+
+.summary-card {
+  width: min(640px, 100%);
+}
+
+.final-card {
+  width: min(980px, 100%);
+}
+
+.modal-close {
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tutorial-list,
+.final-list {
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.tutorial-footer {
+  justify-content: space-between;
+  margin-top: 24px;
+  color: var(--muted);
+}
+
+.summary-impact {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+
+.impact-pill {
+  background: rgba(88, 182, 255, 0.12);
+  color: #a4d8ff;
+  border: 1px solid rgba(88, 182, 255, 0.16);
+  animation: flashIn 0.35s ease;
+}
+
+.final-score {
+  font-size: 1.18rem;
+  color: var(--accent);
+}
+
+.final-honor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fef0b4;
+  border: 1px solid rgba(247, 215, 124, 0.18);
+  letter-spacing: 0.06em;
+}
+
+.final-honor::before {
+  content: "◎";
+  color: #f7d77c;
+}
+
+.final-card {
+  overflow: hidden;
+}
+
+.final-card::before {
+  content: "";
+  position: absolute;
+  inset: -20% auto auto -10%;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  filter: blur(46px);
+  background: rgba(113, 216, 194, 0.18);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.final-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -12% -18% auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  filter: blur(52px);
+  background: rgba(88, 182, 255, 0.16);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.final-modal-open .final-card {
+  animation: finalRise 0.7s cubic-bezier(.18,.84,.24,1) both;
+}
+
+.final-modal-open .finalHonor {
+  animation: honorStamp 0.55s cubic-bezier(.2,.9,.2,1) 0.16s both;
+}
+
+.final-hero {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.final-visual {
+  min-height: 160px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.final-visual svg {
+  width: 100%;
+  height: auto;
+}
+
+.final-summary h2 {
+  margin-bottom: 8px;
+}
+
+.final-badge {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
+.final-theme-triumph .final-card {
+  background: linear-gradient(180deg, rgba(13, 41, 67, 0.94), rgba(6, 18, 35, 0.92));
+  box-shadow: 0 28px 90px rgba(21, 169, 173, 0.22);
+}
+
+.final-theme-steady .final-card {
+  background: linear-gradient(180deg, rgba(16, 36, 66, 0.94), rgba(8, 16, 31, 0.92));
+}
+
+.final-theme-survive .final-card {
+  background: linear-gradient(180deg, rgba(49, 34, 20, 0.94), rgba(21, 15, 13, 0.94));
+  box-shadow: 0 28px 90px rgba(255, 177, 111, 0.18);
+}
+
+.final-theme-collapse .final-card {
+  background: linear-gradient(180deg, rgba(58, 19, 28, 0.96), rgba(20, 10, 13, 0.96));
+  box-shadow: 0 28px 90px rgba(255, 107, 119, 0.2);
+}
+
+.final-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 22px 0;
+}
+
+.final-column {
+  border-radius: 22px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.final-learning {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.final-learning-card {
+  border-radius: 22px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.final-learning-card h3 {
+  margin-bottom: 10px;
+}
+
+@keyframes reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) rotateX(-12deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.95;
+  }
+}
+
+@keyframes flashIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 1px rgba(113, 216, 194, 0.12), 0 0 18px rgba(113, 216, 194, 0.08);
+  }
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(113, 216, 194, 0.24), 0 0 26px rgba(113, 216, 194, 0.18);
+  }
+}
+
+@keyframes illustrationGlow {
+  0% {
+    transform: scale(0.98);
+    filter: brightness(0.86);
+  }
+  55% {
+    transform: scale(1.015);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes splashInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-12px) scale(0.96);
+  }
+  18%,
+  76% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.98);
+  }
+}
+
+@keyframes dealIn {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes impactToast {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  18%,
+  72% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@keyframes criticalField {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes finalRise {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes honorStamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.18) rotate(-4deg);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(0.96) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (max-width: 1180px) {
+  .dashboard-grid,
+  .final-grid,
+  .final-learning,
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .allocation-visual,
+  .event-card {
+    grid-template-columns: 1fr;
+  }
+
+  .allocation-donut {
+    margin: 0 auto;
+  }
+
+  .final-hero {
+    grid-template-columns: 1fr;
+  }
+
+  body.focus-mode .dashboard-grid,
+  body.compact-ui .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    width: min(100vw - 18px, 100%);
+    padding-top: 16px;
+  }
+
+  .hero-copy,
+  .hero-panel,
+  .topbar,
+  .metrics-panel,
+  .allocation-panel,
+  .event-stage,
+  .action-stage,
+  .insight-panel,
+  .log-panel,
+  .modal-card {
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .metrics-grid,
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar,
+  .hero-actions,
+  .topbar-actions,
+  .tutorial-footer,
+  .final-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-mini-cards,
+  .allocation-summary-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+    </style>
+  </head>
+  <body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+    <div class="app-shell">
+      <header class="hero" id="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">總體風險管理教學遊戲｜單機展示版</p>
+          <h1>黑天鵝資本保衛戰</h1>
+          <p class="hero-lead">
+            在突發事件連發的市場裡，管理總資產、融資負債與流動性，讓投資組合在壓力下仍保有生存與調整空間。
+          </p>
+          <div class="hero-actions">
+            <button class="primary-button" id="startGameButton">開始演練</button>
+            <button class="ghost-button" id="openTutorialButton">玩法教學</button>
+          </div>
+          <div class="hero-tags">
+            <span>8 回合短局</span>
+            <span>事件牌 × 行動牌</span>
+            <span>教師模式</span>
+          </div>
+        </div>
+        <div class="hero-panel glass-panel">
+          <div class="hero-stat-row">
+            <div>
+              <span class="mini-label">教學主軸</span>
+              <strong>分散、避險、流動性、壓力測試</strong>
+            </div>
+            <div>
+              <span class="mini-label">勝利條件</span>
+              <strong>撐到期末，避免流動性、資本緩衝與負債風險失控</strong>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <div class="pulse-ring"></div>
+            <div class="hero-gridlines"></div>
+            <div class="portfolio-orb">
+              <span>風險</span>
+              <strong>指揮席</strong>
+            </div>
+            <div class="floating-sigil sigil-a"></div>
+            <div class="floating-sigil sigil-b"></div>
+          </div>
+          <div class="hero-mini-cards">
+            <div class="hero-mini-card">
+              <span class="mini-label">市場場景</span>
+              <strong>黑天鵝、救市、泡沫、踩踏</strong>
+            </div>
+            <div class="hero-mini-card">
+              <span class="mini-label">課堂玩法</span>
+              <strong>每回合 1 張事件牌 + 1 張行動牌</strong>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="game-layout hidden" id="gameLayout">
+        <section class="topbar glass-panel">
+          <div class="topbar-left">
+            <div>
+              <p class="eyebrow">即時局勢</p>
+              <h2 id="roundTitle">第 1 / 8 回合</h2>
+            </div>
+            <div class="round-progress">
+              <div class="round-progress-fill" id="roundProgressFill"></div>
+            </div>
+          </div>
+          <div class="topbar-actions">
+            <div class="streak-badge" id="streakBadge">韌性連擊 x0</div>
+            <button class="secondary-button" id="densityToggleButton">資訊：精簡</button>
+            <button class="secondary-button" id="focusToggleButton">專注：關</button>
+            <button class="secondary-button" id="teacherToggleButton">教學：關</button>
+            <button class="secondary-button" id="restartButton">重新開局</button>
+          </div>
+        </section>
+
+        <div class="turn-splash hidden" id="turnSplash">
+          <span class="turn-splash-kicker">市場警報</span>
+          <strong id="turnSplashTitle">本回合事件</strong>
+          <span class="turn-splash-subtitle" id="turnSplashSubtitle">準備應對突發衝擊</span>
+        </div>
+        <div class="impact-flash hidden" id="impactFlash">
+          <strong id="impactFlashTitle">局勢震盪</strong>
+          <span id="impactFlashSubtitle">風險正在重定價</span>
+        </div>
+
+        <section class="dashboard-grid">
+          <aside class="dashboard-left">
+            <div class="glass-panel metrics-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">風控儀表板</p>
+                  <h3>風險狀態</h3>
+                </div>
+                <span class="badge" id="statusBadge">穩健巡航</span>
+              </div>
+              <div class="metrics-grid" id="metricsGrid"></div>
+            </div>
+
+            <div class="glass-panel allocation-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">資產配置</p>
+                  <h3>目前部位</h3>
+                </div>
+                <button class="panel-toggle" id="allocationToggleButton" aria-expanded="true">收合配置</button>
+              </div>
+              <div class="allocation-peek" id="allocationPeek"></div>
+              <div class="allocation-content" id="allocationContent">
+                <div class="allocation-visual" id="allocationVisual"></div>
+                <div class="allocation-bars" id="allocationBars"></div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="center-stage">
+            <div class="glass-panel event-stage" id="eventStage">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">外部事件牌</p>
+                  <h3>本回合衝擊</h3>
+                </div>
+                <span class="event-chip" id="eventSeverityChip">高壓</span>
+              </div>
+              <div class="event-card" id="eventCard"></div>
+            </div>
+
+            <div class="glass-panel action-stage" id="actionStage">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">行動牌</p>
+                  <h3>選擇你的應對策略</h3>
+                </div>
+                <span class="mini-label">每回合只能打出 1 張</span>
+              </div>
+              <div class="action-grid" id="actionGrid"></div>
+            </div>
+          </section>
+
+          <aside class="dashboard-right">
+            <div class="glass-panel side-panel">
+              <div class="side-tabs">
+                <button class="side-tab active" id="tabTeacherButton" data-panel="teacher">教師模式</button>
+                <button class="side-tab" id="tabHistoryButton" data-panel="history">戰情記錄</button>
+                <button class="side-tab" id="tabBriefButton" data-panel="brief">即時摘要</button>
+              </div>
+              <div class="side-panel-content" id="teacherPane">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">回合判讀</p>
+                    <h3>教師模式</h3>
+                  </div>
+                  <span class="badge subtle" id="teacherModeBadge">教學關閉</span>
+                </div>
+                <div class="teacher-panel hidden" id="teacherPanel"></div>
+                <div class="compact-tip" id="compactTip">
+                  切換教師模式後，會顯示本回合事件涵義、穩健決策理由與對應風控概念。
+                </div>
+              </div>
+              <div class="side-panel-content hidden" id="historyPane">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">戰情記錄</p>
+                    <h3>近期回合摘要</h3>
+                  </div>
+                  <span class="mini-label">最新 4 筆</span>
+                </div>
+                <div class="history-list" id="historyList"></div>
+              </div>
+              <div class="side-panel-content hidden" id="briefPane">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">即時摘要</p>
+                    <h3>決策備忘</h3>
+                  </div>
+                  <span class="mini-label">縮放版資訊</span>
+                </div>
+                <div class="brief-list" id="briefList"></div>
+              </div>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="tutorialModal">
+      <div class="modal-card">
+        <button class="modal-close" id="closeTutorialButton" aria-label="關閉教學">×</button>
+        <p class="eyebrow">1 分鐘上手</p>
+        <h2>如何玩</h2>
+        <ol class="tutorial-list">
+          <li>每回合先看 1 張外部事件牌，判斷主要衝擊來自市場、信用、流動性或政策。</li>
+          <li>從行動牌中選 1 張應對。每張牌都有代價，例如犧牲報酬、提高持有成本，或錯失行情。</li>
+          <li>觀察資產配置、總資產、融資負債、風險值、流動性、資本緩衝與累積績效如何一起變動。</li>
+          <li>8 回合後，只要沒有出現流動性斷裂、資本緩衝失守或負債風險惡化到不可控，就有機會過關。</li>
+        </ol>
+        <div class="tutorial-footer">
+          <span>核心概念：分散配置、避險、槓桿管理、資產負債觀念、壓力測試、黑天鵝韌性</span>
+          <button class="primary-button" id="tutorialStartButton">開始遊戲</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop hidden" id="roundModal">
+      <div class="modal-card summary-card">
+        <p class="eyebrow">回合結算</p>
+        <h2 id="roundModalTitle">局勢回報</h2>
+        <div class="summary-impact" id="roundImpactList"></div>
+        <div class="summary-explainer" id="roundExplainer"></div>
+        <button class="primary-button" id="continueButton">下一回合</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop hidden" id="finalModal">
+      <div class="modal-card final-card">
+        <p class="eyebrow">最終結算報告</p>
+        <div class="final-hero">
+          <div class="final-visual" id="finalVisual"></div>
+          <div class="final-summary">
+            <h2 id="finalTitle">任務完成</h2>
+            <p class="final-score" id="finalScore"></p>
+            <p class="final-honor" id="finalHonor">風控稱號</p>
+            <p class="final-badge" id="finalBadge">穩健巡航</p>
+          </div>
+        </div>
+        <div class="final-grid">
+          <div class="final-column">
+            <h3>總評</h3>
+            <p id="finalNarrative"></p>
+          </div>
+          <div class="final-column">
+            <h3>關鍵原因</h3>
+            <ul class="final-list" id="finalReasons"></ul>
+          </div>
+          <div class="final-column">
+            <h3>能力輪廓</h3>
+            <ul class="final-list" id="finalStrengths"></ul>
+          </div>
+        </div>
+        <div class="final-learning">
+          <div class="final-learning-card">
+            <h3>教學重點</h3>
+            <p id="finalTeachingSummary"></p>
+          </div>
+          <div class="final-learning-card">
+            <h3>建議帶回課堂的問題</h3>
+            <ul class="final-list" id="finalTeachingQuestions"></ul>
+          </div>
+          <div class="final-learning-card">
+            <h3>下次可以練習的方向</h3>
+            <ul class="final-list" id="finalTeachingActions"></ul>
+          </div>
+        </div>
+        <div class="final-actions">
+          <button class="ghost-button" id="finalRestartButton">再玩一次</button>
+          <button class="secondary-button" id="finalCloseButton">回到畫面</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+(function () {
+  const TOTAL_ROUNDS = 8;
+  const BASE_EQUITY_EOK = 1;
+
+  const allocationDefinitions = [
+    { key: "stocks", label: "股票", suffix: "%", tone: "hot" },
+    { key: "bonds", label: "債券", suffix: "%", tone: "cool" },
+    { key: "cash", label: "現金", suffix: "%", tone: "safe" },
+    { key: "gold", label: "防禦資產", suffix: "%", tone: "accent" },
+    { key: "hedge", label: "避險部位", suffix: "%", tone: "alt" },
+  ];
+
+  const riskMetricDefinitions = [
+    { key: "varRisk", label: "風險值", suffix: "", tone: "warning" },
+    { key: "liquidity", label: "流動性", suffix: "", tone: "safe" },
+    { key: "capital", label: "資本緩衝", suffix: "", tone: "accent" },
+    { key: "performance", label: "累積績效", suffix: "%", tone: "neutral" },
+    { key: "leverage", label: "槓桿倍率", suffix: "x", tone: "warning" },
+  ];
+
+  const events = [
+    {
+      id: "inflation",
+      title: "通膨升溫",
+      severity: "中高",
+      icon: "▲",
+      summary: "原物料與服務價格齊揚，市場開始擔心實質購買力與估值壓力。",
+      marketMeaning: "高通膨會壓縮成長型資產評價，也可能讓長天期債券承受壓力。",
+      robustPlay: "保留現金、增加防禦資產，通常比追高風險資產更穩健。",
+      category: "risk",
+      concepts: ["通膨風險", "資產再配置", "實質報酬"],
+      effects: { stocks: -5.5, bonds: -4.2, cash: 0.8, gold: 3.6, liquidity: -6, capital: -4, varRisk: 6 },
+      tags: ["inflation", "rates", "valuation"],
+    },
+    {
+      id: "rate_hike",
+      title: "央行升息超預期",
+      severity: "高",
+      icon: "◎",
+      summary: "利率急升導致折現率上揚，槓桿部位與高估值資產先被擠壓。",
+      marketMeaning: "升息衝擊通常先打到長久期資產與高槓桿部位，風險資產波動放大。",
+      robustPlay: "降低槓桿、縮減風險資產，可降低被迫停損的機率。",
+      category: "risk",
+      concepts: ["利率風險", "槓桿管理", "估值重定價"],
+      effects: { stocks: -6.2, bonds: -5.6, cash: 1.1, gold: 1.5, liquidity: -5, capital: -5, varRisk: 7 },
+      tags: ["rates", "leverage", "valuation"],
+    },
+    {
+      id: "credit_spread",
+      title: "信用利差擴大",
+      severity: "中高",
+      icon: "▣",
+      summary: "企業融資成本升高，信用風險資產被重新定價，資金偏好轉向保守。",
+      marketMeaning: "信用市場惡化不只影響債券，也會拖累股市與再融資能力。",
+      robustPlay: "分散與避險有助於降低單一信用來源造成的連鎖衝擊。",
+      category: "risk",
+      concepts: ["信用風險", "資金成本", "再融資壓力"],
+      effects: { stocks: -4.6, bonds: -3.8, cash: 0.7, gold: 1.7, liquidity: -8, capital: -6, varRisk: 6 },
+      tags: ["credit", "liquidity"],
+    },
+    {
+      id: "geopolitics",
+      title: "地緣政治衝突",
+      severity: "高",
+      icon: "✦",
+      summary: "衝突升級引發避險情緒，供應不確定性與能源價格同步升高。",
+      marketMeaning: "地緣事件常讓波動急升，資產關聯性在短時間內上升。",
+      robustPlay: "持有防禦資產與避險部位，通常比單押高 Beta 資產更能保住彈性。",
+      category: "risk",
+      concepts: ["黑天鵝", "關聯性上升", "避險需求"],
+      effects: { stocks: -7.1, bonds: -1.8, cash: 0.9, gold: 4.5, liquidity: -7, capital: -6, varRisk: 8 },
+      tags: ["geopolitics", "riskoff"],
+    },
+    {
+      id: "fx_shock",
+      title: "匯率震盪",
+      severity: "中",
+      icon: "≈",
+      summary: "主要貨幣劇烈波動，跨國曝險與外幣融資部位承受額外壓力。",
+      marketMeaning: "匯率波動會放大看似分散的海外曝險，尤其在避險不足時。",
+      robustPlay: "補上避險或提高現金部位，可避免匯損把整體績效拖垮。",
+      category: "mixed",
+      concepts: ["匯率風險", "海外曝險", "避險成本"],
+      effects: { stocks: -3.5, bonds: -2.5, cash: 0.5, gold: 2.1, liquidity: -4, capital: -3, varRisk: 4 },
+      tags: ["fx", "hedge"],
+    },
+    {
+      id: "liquidity_dryup",
+      title: "流動性乾涸",
+      severity: "極高",
+      icon: "◌",
+      summary: "市場成交量驟降，賣壓擴大，想出場卻不一定找得到對手方。",
+      marketMeaning: "流動性風險會讓小損失快速變成大虧損，也容易觸發折價拋售。",
+      robustPlay: "提高現金與降低槓桿，是面對流動性真空最直接的防守。",
+      category: "risk",
+      concepts: ["流動性風險", "火災式拋售", "資本保全"],
+      effects: { stocks: -8.8, bonds: -4.1, cash: 1.4, gold: -0.5, liquidity: -14, capital: -9, varRisk: 10 },
+      tags: ["liquidity", "blackSwan"],
+    },
+    {
+      id: "ai_bubble",
+      title: "AI 泡沫狂熱",
+      severity: "中",
+      icon: "⬡",
+      summary: "熱門題材帶動股價急漲，短線績效誘人，但估值與擁擠度同步飆升。",
+      marketMeaning: "泡沫期間報酬看似亮眼，但集中持有與追價往往埋下回撤風險。",
+      robustPlay: "若追逐熱門資產，至少要搭配避險與資金控管，否則之後很難下車。",
+      category: "falseDawn",
+      concepts: ["泡沫風險", "集中曝險", "紀律投資"],
+      effects: { stocks: 6.8, bonds: -1.5, cash: -0.8, gold: -1.1, liquidity: 2, capital: 1, varRisk: 5 },
+      tags: ["bubble", "valuation"],
+    },
+    {
+      id: "black_swan",
+      title: "黑天鵝突襲",
+      severity: "極高",
+      icon: "✺",
+      summary: "罕見事件突然爆發，模型失效，原本看似分散的部位同時失血。",
+      marketMeaning: "黑天鵝的核心不是預測不到，而是平常是否為不可預測做好準備。",
+      robustPlay: "先有現金、避險與資本緩衝，才能把不可知變成可承受。",
+      category: "risk",
+      concepts: ["黑天鵝", "尾端風險", "韌性管理"],
+      effects: { stocks: -11.5, bonds: -6.2, cash: 1.2, gold: 5.4, liquidity: -12, capital: -12, varRisk: 12 },
+      tags: ["blackSwan", "tailRisk", "liquidity"],
+    },
+    {
+      id: "policy_rescue",
+      title: "政策救市",
+      severity: "中",
+      icon: "✚",
+      summary: "政策端釋放流動性與信心，市場出現反彈，但基本面並未完全修復。",
+      marketMeaning: "救市有助短期止血，但不代表風險已經消失，紀律仍然重要。",
+      robustPlay: "保留部分風險資產參與反彈，同時維持緩衝，是較平衡的做法。",
+      category: "mixed",
+      concepts: ["政策風險", "流動性注入", "反彈管理"],
+      effects: { stocks: 5.4, bonds: 2.8, cash: -0.5, gold: -1.4, liquidity: 6, capital: 4, varRisk: -4 },
+      tags: ["policy", "rebound"],
+    },
+    {
+      id: "supply_chain",
+      title: "供應鏈中斷",
+      severity: "中高",
+      icon: "⌁",
+      summary: "物流卡關、關鍵零組件短缺，企業獲利預期下修，庫存與成本壓力升高。",
+      marketMeaning: "供應鏈風險會同步打擊成長與成本結構，常伴隨通膨二次壓力。",
+      robustPlay: "分散配置與防禦資產能減少單一產業鏈斷裂造成的衝擊。",
+      category: "risk",
+      concepts: ["供應鏈風險", "獲利修正", "產業分散"],
+      effects: { stocks: -5.2, bonds: -2.2, cash: 0.6, gold: 2.3, liquidity: -5, capital: -4, varRisk: 5 },
+      tags: ["inflation", "supply"],
+    },
+    {
+      id: "non_bank_run",
+      title: "非銀金融機構踩踏",
+      severity: "高",
+      icon: "▤",
+      summary: "影子銀行與基金槓桿去化，市場被迫賣出優質資產換現金。",
+      marketMeaning: "去槓桿不只傷風險資產，也會讓本來安全的部位一起被拋售。",
+      robustPlay: "降槓桿與預留現金能避免被動捲入他人去槓桿的賣壓。",
+      category: "risk",
+      concepts: ["去槓桿", "連鎖平倉", "系統性風險"],
+      effects: { stocks: -7.7, bonds: -5.0, cash: 1.3, gold: 0.4, liquidity: -11, capital: -8, varRisk: 9 },
+      tags: ["leverage", "liquidity", "systemic"],
+    },
+    {
+      id: "sovereign_debt",
+      title: "主權債疑慮",
+      severity: "高",
+      icon: "◈",
+      summary: "市場開始質疑政府財政續航，長債承壓，避險資產角色出現分化。",
+      marketMeaning: "當主權信任下降，原本的安全資產也可能不再可靠。",
+      robustPlay: "不能把風險管理全寄託在單一資產，分散與情境分析更重要。",
+      category: "mixed",
+      concepts: ["主權風險", "避險失靈", "情境分析"],
+      effects: { stocks: -4.8, bonds: -7.2, cash: 0.9, gold: 3.2, liquidity: -6, capital: -6, varRisk: 7 },
+      tags: ["bonds", "sovereign", "tailRisk"],
+    },
+    {
+      id: "disinflation",
+      title: "通膨降溫快於預期",
+      severity: "中",
+      icon: "▽",
+      summary: "物價壓力緩和，利率預期回落，長久期資產與資本市場情緒同步改善。",
+      marketMeaning: "通膨回落通常舒緩折現率壓力，債券先受惠，股票估值也可能修復。",
+      robustPlay: "不必一口氣追高，分批回補風險資產或降低過度防守，通常更穩健。",
+      category: "tailwind",
+      concepts: ["通膨回落", "估值修復", "久期效應"],
+      effects: { stocks: 4.1, bonds: 5.8, cash: -0.6, gold: -1.2, liquidity: 3, capital: 3, varRisk: -5 },
+      tags: ["disinflation", "rates", "recovery"],
+    },
+    {
+      id: "policy_easing",
+      title: "政策寬鬆超預期",
+      severity: "中",
+      icon: "◉",
+      summary: "市場預期資金成本下滑，融資壓力減輕，風險偏好回升。",
+      marketMeaning: "寬鬆政策能改善融資條件與流動性，但不代表基本面已全面轉好。",
+      robustPlay: "適度回補風險資產、降低過度避險，比一次性全面衝高更符合風控紀律。",
+      category: "tailwind",
+      concepts: ["政策寬鬆", "融資條件", "風險偏好"],
+      effects: { stocks: 5.2, bonds: 3.4, cash: -0.8, gold: -0.6, liquidity: 5, capital: 4, varRisk: -4 },
+      tags: ["policy", "easing", "rebound"],
+    },
+    {
+      id: "credit_relief",
+      title: "信用利差收斂",
+      severity: "中低",
+      icon: "◇",
+      summary: "市場對違約風險的定價下修，信用與股權市場同步鬆一口氣。",
+      marketMeaning: "利差收斂代表風險溢酬下降，通常有利風險資產與再融資環境。",
+      robustPlay: "可逐步提高風險承擔，但仍應保留流動性，避免把修復誤當成無風險。",
+      category: "repair",
+      concepts: ["信用修復", "風險溢酬", "再融資改善"],
+      effects: { stocks: 3.7, bonds: 2.6, cash: -0.4, gold: -0.3, liquidity: 4, capital: 3, varRisk: -4 },
+      tags: ["credit", "repair", "recovery"],
+    },
+    {
+      id: "earnings_beat",
+      title: "企業獲利優於預期",
+      severity: "中",
+      icon: "⬈",
+      summary: "企業財報與展望優於市場預估，基本面支撐風險資產反彈。",
+      marketMeaning: "這類利多來自現金流與獲利，而非單純資金行情，品質通常較高。",
+      robustPlay: "可以參與，但仍要避免把單一產業好消息誤當整體市場安全訊號。",
+      category: "tailwind",
+      concepts: ["基本面利多", "獲利動能", "風險參與"],
+      effects: { stocks: 5.8, bonds: 1.2, cash: -0.7, gold: -0.8, liquidity: 2, capital: 3, varRisk: -2 },
+      tags: ["earnings", "growth", "recovery"],
+    },
+    {
+      id: "volatility_cools",
+      title: "市場波動回落",
+      severity: "中低",
+      icon: "○",
+      summary: "避險需求降溫，風險溢價收斂，市場交易秩序逐步恢復正常。",
+      marketMeaning: "波動回落有助於流動性改善，但也容易讓投資人過快降低戒心。",
+      robustPlay: "可適度回收部分避險成本，但不宜一次把所有保護都拆掉。",
+      category: "repair",
+      concepts: ["波動收斂", "流動性修復", "風險溢價"],
+      effects: { stocks: 2.8, bonds: 1.8, cash: -0.2, gold: -1.3, liquidity: 5, capital: 2, varRisk: -6 },
+      tags: ["repair", "hedge", "recovery"],
+    },
+    {
+      id: "funding_relief",
+      title: "融資環境改善",
+      severity: "中",
+      icon: "⊕",
+      summary: "借款條件轉鬆、保證金壓力下降，資產負債表修復速度加快。",
+      marketMeaning: "當融資條件改善，負債比高的組合會明顯受惠，但也可能誘發再度加槓桿。",
+      robustPlay: "把改善視為修復資產負債表的窗口，而不是立刻把槓桿重新加滿。",
+      category: "repair",
+      concepts: ["融資修復", "資產負債管理", "槓桿紀律"],
+      effects: { stocks: 2.5, bonds: 2.4, cash: -0.3, gold: 0.2, liquidity: 6, capital: 4, varRisk: -3 },
+      tags: ["easing", "leverage", "repair"],
+    },
+    {
+      id: "soft_landing",
+      title: "軟著陸預期升溫",
+      severity: "中",
+      icon: "☼",
+      summary: "成長放緩但未失速，通膨與利率壓力同步緩和，市場信心回穩。",
+      marketMeaning: "軟著陸代表風險資產與債券都可能有表現，但幅度通常不如極端寬鬆行情。",
+      robustPlay: "這類環境適合分散回補，不適合把市場修復誤判為全面無風險。",
+      category: "mixed",
+      concepts: ["成長放緩", "軟著陸", "平衡配置"],
+      effects: { stocks: 3.6, bonds: 2.9, cash: -0.4, gold: -0.2, liquidity: 3, capital: 2, varRisk: -3 },
+      tags: ["growth", "disinflation", "balanced"],
+    },
+    {
+      id: "false_breakout",
+      title: "假突破狂歡",
+      severity: "中",
+      icon: "✹",
+      summary: "市場在利多消息下快速追價，但成交與基本面沒有同步跟上。",
+      marketMeaning: "這類行情短線看起來很甜，但常伴隨擁擠交易與後續回吐風險。",
+      robustPlay: "可以參與一部分，但若全力追價、又忽略避險，下一回合通常會更脆弱。",
+      category: "falseDawn",
+      concepts: ["假利多", "擁擠交易", "順風風控"],
+      effects: { stocks: 6.2, bonds: -1.8, cash: -1.2, gold: -1.6, liquidity: 1, capital: 1, varRisk: 6 },
+      tags: ["bubble", "valuation", "falseDawn"],
+    },
+  ];
+
+  const actions = [
+    {
+      id: "raise_cash",
+      title: "提高現金部位",
+      summary: "賣出部分風險資產，先換取機動性與喘息空間。",
+      tradeoff: "可能錯過反彈，短期績效較平淡。",
+      immediate: { stocks: -10, bonds: -4, cash: 14, gold: 0, hedge: 0, liquidity: 12, capital: 4, performance: -0.8, leverage: -0.12 },
+      crowding: -8,
+      modifiers: { liquidity: 0.6, blackSwan: 0.75, bubble: 0.9, policy: 0.9 },
+    },
+    {
+      id: "diversify",
+      title: "分散配置",
+      summary: "降低單一資產集中度，讓組合在不同情境下都有支撐。",
+      tradeoff: "熱門行情來時，爆發力不如集中押注。",
+      immediate: { stocks: -6, bonds: 2, cash: 1, gold: 3, hedge: 0, liquidity: 4, capital: 3, performance: -0.2, leverage: -0.05 },
+      crowding: -10,
+      modifiers: { blackSwan: 0.82, supply: 0.8, credit: 0.88, bubble: 0.85 },
+    },
+    {
+      id: "hedge_on",
+      title: "啟動避險",
+      summary: "建立保護性避險部位，承擔保費換取下檔保護。",
+      tradeoff: "平穩或大漲行情時，避險成本會拖累報酬。",
+      immediate: { stocks: -2, bonds: 0, cash: -2, gold: 0, hedge: 12, liquidity: 0, capital: 2, performance: -1.2, leverage: 0 },
+      crowding: -5,
+      modifiers: { blackSwan: 0.65, geopolitics: 0.7, fx: 0.72, riskoff: 0.75, tailRisk: 0.6 },
+    },
+    {
+      id: "deleverage",
+      title: "降低槓桿",
+      summary: "主動縮小曝險，先把可承受的風險範圍拉回來。",
+      tradeoff: "在政策救市或泡沫延續時，報酬會落後。",
+      immediate: { stocks: -8, bonds: -2, cash: 6, gold: 0, hedge: 0, liquidity: 8, capital: 6, performance: -0.6, leverage: -0.22 },
+      crowding: -12,
+      modifiers: { leverage: 0.55, liquidity: 0.82, rates: 0.78, systemic: 0.62, policy: 1.12 },
+    },
+    {
+      id: "defensive",
+      title: "增持防禦資產",
+      summary: "將部分資金移往黃金與低相關資產，降低單一風險來源。",
+      tradeoff: "若市場強勁反彈，會顯得保守。",
+      immediate: { stocks: -5, bonds: -2, cash: -1, gold: 8, hedge: 0, liquidity: 2, capital: 2, performance: -0.1, leverage: -0.04 },
+      crowding: -6,
+      modifiers: { geopolitics: 0.72, inflation: 0.78, sovereign: 0.82, blackSwan: 0.86 },
+    },
+    {
+      id: "stress_test",
+      title: "壓力測試",
+      summary: "先用情境推演找出弱點，並小幅補強緩衝。",
+      tradeoff: "當回合收益有限，像是把時間花在風控而非衝績效。",
+      immediate: { stocks: -1, bonds: 0, cash: 1, gold: 1, hedge: 2, liquidity: 3, capital: 5, performance: -0.5, leverage: -0.03 },
+      crowding: -4,
+      modifiers: { blackSwan: 0.8, rates: 0.84, liquidity: 0.82, credit: 0.82, bubble: 0.92, policy: 0.96 },
+    },
+    {
+      id: "reverse_stress",
+      title: "逆向壓力測試",
+      summary: "從最糟結果反推脆弱來源，提前抽掉最危險的曝險。",
+      tradeoff: "短期會顯得過度保守，甚至犧牲部分當下表現。",
+      immediate: { stocks: -7, bonds: -1, cash: 4, gold: 2, hedge: 4, liquidity: 5, capital: 7, performance: -0.9, leverage: -0.15 },
+      crowding: -9,
+      modifiers: { blackSwan: 0.68, tailRisk: 0.64, systemic: 0.72, sovereign: 0.8, bubble: 0.88 },
+    },
+    {
+      id: "chase_hot",
+      title: "追逐熱門資產",
+      summary: "加碼市場最受追捧的題材，衝刺短線績效。",
+      tradeoff: "集中度、估值與回撤風險同步上升，黑天鵝來時很傷。",
+      immediate: { stocks: 12, bonds: -4, cash: -6, gold: -2, hedge: -4, liquidity: -7, capital: -5, performance: 1.6, leverage: 0.18 },
+      crowding: 16,
+      modifiers: { bubble: 1.28, blackSwan: 1.25, liquidity: 1.18, policy: 1.1, rates: 1.12 },
+    },
+  ];
+
+  const initialState = {
+    round: 0,
+    stocks: 42,
+    bonds: 23,
+    cash: 14,
+    gold: 11,
+    hedge: 10,
+    liquidity: 64,
+    capital: 72,
+    varRisk: 34,
+    performance: 0,
+    leverage: 1.18,
+    crowding: 12,
+    shockMemory: 8,
+    streak: 0,
+    bestStreak: 0,
+    lastRoundRating: "待命中",
+    teacherMode: false,
+    compactUI: true,
+    focusMode: false,
+    allocationExpanded: false,
+    sideTab: "brief",
+    history: [],
+  };
+
+  const state = JSON.parse(JSON.stringify(initialState));
+  let roundDeck = [];
+  let currentEvent = null;
+  let currentActionChoices = [];
+  let selectedActionId = null;
+  let waitingForContinue = false;
+  let turnSplashTimer = null;
+
+  const elements = {
+    hero: document.getElementById("hero"),
+    gameLayout: document.getElementById("gameLayout"),
+    startGameButton: document.getElementById("startGameButton"),
+    openTutorialButton: document.getElementById("openTutorialButton"),
+    tutorialModal: document.getElementById("tutorialModal"),
+    closeTutorialButton: document.getElementById("closeTutorialButton"),
+    tutorialStartButton: document.getElementById("tutorialStartButton"),
+    roundTitle: document.getElementById("roundTitle"),
+    roundProgressFill: document.getElementById("roundProgressFill"),
+    statusBadge: document.getElementById("statusBadge"),
+    streakBadge: document.getElementById("streakBadge"),
+    densityToggleButton: document.getElementById("densityToggleButton"),
+    focusToggleButton: document.getElementById("focusToggleButton"),
+    eventStage: document.getElementById("eventStage"),
+    actionStage: document.getElementById("actionStage"),
+    eventSeverityChip: document.getElementById("eventSeverityChip"),
+    eventCard: document.getElementById("eventCard"),
+    actionGrid: document.getElementById("actionGrid"),
+    metricsGrid: document.getElementById("metricsGrid"),
+    allocationToggleButton: document.getElementById("allocationToggleButton"),
+    allocationPeek: document.getElementById("allocationPeek"),
+    allocationContent: document.getElementById("allocationContent"),
+    allocationVisual: document.getElementById("allocationVisual"),
+    allocationBars: document.getElementById("allocationBars"),
+    briefList: document.getElementById("briefList"),
+    historyList: document.getElementById("historyList"),
+    teacherToggleButton: document.getElementById("teacherToggleButton"),
+    teacherPanel: document.getElementById("teacherPanel"),
+    teacherModeBadge: document.getElementById("teacherModeBadge"),
+    compactTip: document.getElementById("compactTip"),
+    tabTeacherButton: document.getElementById("tabTeacherButton"),
+    tabHistoryButton: document.getElementById("tabHistoryButton"),
+    tabBriefButton: document.getElementById("tabBriefButton"),
+    teacherPane: document.getElementById("teacherPane"),
+    historyPane: document.getElementById("historyPane"),
+    briefPane: document.getElementById("briefPane"),
+    turnSplash: document.getElementById("turnSplash"),
+    turnSplashTitle: document.getElementById("turnSplashTitle"),
+    turnSplashSubtitle: document.getElementById("turnSplashSubtitle"),
+    impactFlash: document.getElementById("impactFlash"),
+    impactFlashTitle: document.getElementById("impactFlashTitle"),
+    impactFlashSubtitle: document.getElementById("impactFlashSubtitle"),
+    roundModal: document.getElementById("roundModal"),
+    roundModalTitle: document.getElementById("roundModalTitle"),
+    roundImpactList: document.getElementById("roundImpactList"),
+    roundExplainer: document.getElementById("roundExplainer"),
+    continueButton: document.getElementById("continueButton"),
+    finalModal: document.getElementById("finalModal"),
+    finalVisual: document.getElementById("finalVisual"),
+    finalTitle: document.getElementById("finalTitle"),
+    finalScore: document.getElementById("finalScore"),
+    finalHonor: document.getElementById("finalHonor"),
+    finalBadge: document.getElementById("finalBadge"),
+    finalNarrative: document.getElementById("finalNarrative"),
+    finalReasons: document.getElementById("finalReasons"),
+    finalStrengths: document.getElementById("finalStrengths"),
+    finalTeachingSummary: document.getElementById("finalTeachingSummary"),
+    finalTeachingQuestions: document.getElementById("finalTeachingQuestions"),
+    finalTeachingActions: document.getElementById("finalTeachingActions"),
+    finalRestartButton: document.getElementById("finalRestartButton"),
+    finalCloseButton: document.getElementById("finalCloseButton"),
+    restartButton: document.getElementById("restartButton"),
+  };
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function shuffled(array) {
+    const copy = array.slice();
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = copy[i];
+      copy[i] = copy[j];
+      copy[j] = temp;
+    }
+    return copy;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function normalizePortfolio(target) {
+    const keys = ["stocks", "bonds", "cash", "gold", "hedge"];
+    const total = keys.reduce((sum, key) => sum + target[key], 0);
+    keys.forEach((key) => {
+      target[key] = clamp((target[key] / total) * 100, 0, 100);
+    });
+  }
+
+  function drawActionChoices() {
+    const mandatory = actions.find((action) => action.id === "chase_hot");
+    const pool = shuffled(actions.filter((action) => action.id !== "chase_hot")).slice(0, 3);
+    return shuffled([mandatory].concat(pool));
+  }
+
+  function drawEventDeck() {
+    const byCategory = {
+      risk: shuffled(events.filter((event) => event.category === "risk")),
+      mixed: shuffled(events.filter((event) => event.category === "mixed")),
+      tailwind: shuffled(events.filter((event) => event.category === "tailwind")),
+      repair: shuffled(events.filter((event) => event.category === "repair")),
+      falseDawn: shuffled(events.filter((event) => event.category === "falseDawn")),
+    };
+    const draft = [
+      byCategory.risk.pop(),
+      byCategory.risk.pop(),
+      byCategory.risk.pop(),
+      byCategory.mixed.pop(),
+      byCategory.mixed.pop(),
+      byCategory.tailwind.pop(),
+      byCategory.repair.pop(),
+      byCategory.falseDawn.pop(),
+    ].filter(Boolean);
+    return shuffled(draft).slice(0, TOTAL_ROUNDS);
+  }
+
+  function resetState() {
+    Object.assign(state, clone(initialState));
+    state.allocationExpanded = false;
+    state.sideTab = "brief";
+    state.focusMode = false;
+    selectedActionId = null;
+    waitingForContinue = false;
+    roundDeck = drawEventDeck();
+    currentEvent = roundDeck[0];
+    currentActionChoices = drawActionChoices();
+  }
+
+  function applyLayoutModes() {
+    document.body.classList.toggle("compact-ui", !!state.compactUI);
+    document.body.classList.toggle("focus-mode", !!state.focusMode);
+    elements.densityToggleButton.textContent = "資訊：" + (state.compactUI ? "精簡" : "展開");
+    elements.focusToggleButton.textContent = "專注：" + (state.focusMode ? "開" : "關");
+    elements.allocationToggleButton.textContent = state.allocationExpanded ? "收合配置" : "展開配置";
+    elements.allocationToggleButton.setAttribute("aria-expanded", String(state.allocationExpanded));
+    elements.allocationContent.classList.toggle("collapsed", !state.allocationExpanded);
+  }
+
+  function applyImmediateTo(target, action) {
+    target.stocks += action.immediate.stocks;
+    target.bonds += action.immediate.bonds;
+    target.cash += action.immediate.cash;
+    target.gold += action.immediate.gold;
+    target.hedge += action.immediate.hedge;
+    normalizePortfolio(target);
+    target.liquidity = clamp(target.liquidity + action.immediate.liquidity, 0, 100);
+    target.capital = clamp(target.capital + action.immediate.capital, 0, 100);
+    target.performance = clamp(target.performance + action.immediate.performance, -100, 100);
+    target.leverage = clamp(target.leverage + action.immediate.leverage, 0.8, 2.4);
+    target.crowding = clamp(target.crowding + (action.crowding || 0), 0, 100);
+  }
+
+  function eventMultiplier(action, event) {
+    return event.tags.reduce((multiplier, tag) => {
+      if (action.modifiers[tag] !== undefined) {
+        return multiplier * action.modifiers[tag];
+      }
+      return multiplier;
+    }, 1);
+  }
+
+  function calculateImpact(target, event, multiplier) {
+    const finance = {
+      equity: Math.max(0.18, BASE_EQUITY_EOK * (1 + target.performance / 100)),
+      totalAssets: Math.max(0.18, Math.max(0.18, BASE_EQUITY_EOK * (1 + target.performance / 100)) * target.leverage),
+    };
+    finance.debt = Math.max(0, finance.totalAssets - finance.equity);
+    finance.debtRatio = finance.totalAssets > 0 ? finance.debt / finance.totalAssets * 100 : 0;
+    const concentration = Math.max(target.stocks, target.bonds, target.cash, target.gold, target.hedge);
+    const concentrationPenalty = Math.max(0, concentration - 34) * 0.08;
+    const debtPenalty = Math.max(0, finance.debtRatio - 22) * 0.06;
+    const crowdingPenalty = target.crowding * 0.05;
+    const stressPenalty = target.shockMemory * 0.05;
+    const weightedMove =
+      target.stocks * event.effects.stocks * 0.01 +
+      target.bonds * event.effects.bonds * 0.01 +
+      target.cash * event.effects.cash * 0.01 +
+      target.gold * event.effects.gold * 0.01 +
+      target.hedge * (-0.28 * event.effects.stocks + 0.16 * event.effects.gold) * 0.01;
+
+    const leveragePenalty = (target.leverage - 1) * 7.4;
+    const hedgeSupport = target.hedge * 0.09;
+    const liquidityPenalty = Math.max(0, 48 - target.liquidity) * 0.16;
+    const eventTone = event.category === "risk" ? -1 : event.category === "falseDawn" ? -0.35 : 1;
+    const fragilityPenalty = eventTone < 0 ? concentrationPenalty + debtPenalty + crowdingPenalty + stressPenalty : (concentrationPenalty + debtPenalty + crowdingPenalty) * 0.35;
+    const performanceDelta = weightedMove * multiplier - leveragePenalty + hedgeSupport - liquidityPenalty - fragilityPenalty;
+
+    return {
+      performanceDelta: performanceDelta,
+      nextVarRisk: clamp(
+        target.varRisk + event.effects.varRisk * multiplier + (target.stocks - target.cash) * 0.06 + (target.leverage - 1) * 18 - target.hedge * 0.08 + concentrationPenalty * 1.8 + debtPenalty * 1.5 + target.crowding * 0.08,
+        0,
+        100
+      ),
+      nextLiquidity: clamp(
+        target.liquidity + event.effects.liquidity * multiplier + target.cash * 0.06 - target.stocks * 0.035 - target.leverage * 2.4 - target.crowding * 0.04 - Math.max(0, finance.debtRatio - 25) * 0.08,
+        0,
+        100
+      ),
+      nextCapital: 0,
+    };
+  }
+
+  function finalizeImpact(target, event, multiplier) {
+    const partial = calculateImpact(target, event, multiplier);
+    partial.nextCapital = clamp(
+      target.capital + event.effects.capital * multiplier + partial.performanceDelta * 0.52 - Math.max(0, 58 - partial.nextLiquidity) * 0.22 - Math.max(0, target.crowding - 40) * 0.05,
+      0,
+      100
+    );
+    return partial;
+  }
+
+  function buildRoundNarrative(action, event, result) {
+    const resilient = result.nextCapital > 50 && result.nextLiquidity > 42;
+    const pressure = result.nextVarRisk > 70 || result.nextCapital < 35;
+    if (resilient) {
+      return "你用「" + action.title + "」把 " + event.title + " 的衝擊留在可控範圍，展現出先求生存再求表現的風控紀律。";
+    }
+    if (pressure) {
+      return "雖然你打出「" + action.title + "」，但 " + event.title + " 仍讓組合承受明顯壓力，顯示流動性與資本緩衝仍不足。";
+    }
+    return "「" + action.title + "」讓你部分吸收 " + event.title + " 的衝擊，但仍需留意後續回合的連鎖風險。";
+  }
+
+  function summarizeDelta(label, value, suffix) {
+    const sign = value > 0 ? "+" : "";
+    return label + " " + sign + value.toFixed(1) + (suffix || "");
+  }
+
+  function openRoundModal(action, beforeState, result) {
+    elements.roundModalTitle.textContent = "第 " + state.round + " 回合：" + currentEvent.title;
+    const impacts = [
+      state.lastRoundRating,
+      summarizeDelta("累積績效", state.performance - beforeState.performance, "%"),
+      summarizeDelta("風險值", state.varRisk - beforeState.varRisk, ""),
+      summarizeDelta("流動性", state.liquidity - beforeState.liquidity, ""),
+      summarizeDelta("資本緩衝", state.capital - beforeState.capital, ""),
+    ];
+    elements.roundImpactList.innerHTML = impacts.map((text) => '<span class="impact-pill">' + text + "</span>").join("");
+    elements.roundExplainer.textContent = buildRoundNarrative(action, currentEvent, result);
+    elements.roundModal.classList.remove("hidden");
+  }
+
+  function closeRoundModal() {
+    elements.roundModal.classList.add("hidden");
+  }
+
+  function findBestActionForEvent(event) {
+    let best = actions[0];
+    let bestScore = -Infinity;
+    actions.forEach((action) => {
+      const simulated = clone(state);
+      applyImmediateTo(simulated, action);
+      const result = finalizeImpact(simulated, event, eventMultiplier(action, event));
+      const score = result.nextCapital * 0.45 + result.nextLiquidity * 0.35 - result.nextVarRisk * 0.2 + result.performanceDelta * 2.4;
+      if (score > bestScore) {
+        bestScore = score;
+        best = action;
+      }
+    });
+    return best;
+  }
+
+  function evaluateRoundRating(action, event, result) {
+    const bestAction = findBestActionForEvent(event);
+    const simulated = clone(state);
+    applyImmediateTo(simulated, bestAction);
+    const bestResult = finalizeImpact(simulated, event, eventMultiplier(bestAction, event));
+    const bestScore = bestResult.nextCapital * 0.45 + bestResult.nextLiquidity * 0.35 - bestResult.nextVarRisk * 0.2 + bestResult.performanceDelta * 2.4;
+    const actionScore = result.nextCapital * 0.45 + result.nextLiquidity * 0.35 - result.nextVarRisk * 0.2 + result.performanceDelta * 2.4;
+    const ratio = actionScore / Math.max(bestScore, 1);
+    if (ratio >= 0.95) {
+      return { label: "精準判斷", streakDelta: 1 };
+    }
+    if (ratio >= 0.84) {
+      return { label: "穩健應對", streakDelta: 1 };
+    }
+    if (ratio >= 0.72) {
+      return { label: "勉強守住", streakDelta: -1 };
+    }
+    return { label: "冒進失手", streakDelta: -2 };
+  }
+
+  function updateStreak(rating) {
+    if (rating.streakDelta > 0) {
+      state.streak += 1;
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+    } else if (rating.streakDelta < 0) {
+      state.streak = Math.max(0, state.streak + rating.streakDelta);
+    }
+    state.lastRoundRating = rating.label;
+  }
+
+  function showTurnSplash() {
+    if (!currentEvent) {
+      return;
+    }
+    if (turnSplashTimer) {
+      clearTimeout(turnSplashTimer);
+    }
+    const categoryLabel = {
+      risk: "防守回合",
+      mixed: "混合情境",
+      tailwind: "順風視窗",
+      repair: "修復視窗",
+      falseDawn: "誘惑回合",
+    };
+    elements.turnSplashTitle.textContent = currentEvent.title;
+    elements.turnSplashSubtitle.textContent = (categoryLabel[currentEvent.category] || "市場警報") + "｜" + currentEvent.concepts.slice(0, 2).join("・");
+    elements.turnSplash.classList.remove("hidden", "show");
+    void elements.turnSplash.offsetWidth;
+    elements.turnSplash.classList.add("show");
+    turnSplashTimer = setTimeout(function () {
+      elements.turnSplash.classList.remove("show");
+      elements.turnSplash.classList.add("hidden");
+    }, 1900);
+  }
+
+  function showImpactFlash(result) {
+    const defensiveWin = result.nextLiquidity >= 48 && result.nextCapital >= 42;
+    const tone = defensiveWin ? "positive" : "negative";
+    elements.impactFlashTitle.textContent = defensiveWin ? "防線穩住" : "局勢惡化";
+    elements.impactFlashSubtitle.textContent = defensiveWin
+      ? "流動性與資本緩衝仍在可控區間"
+      : "立即調整配置，避免下一回合連鎖失血";
+    elements.impactFlash.className = "impact-flash " + tone;
+    void elements.impactFlash.offsetWidth;
+    elements.impactFlash.classList.add("show");
+    setTimeout(function () {
+      elements.impactFlash.className = "impact-flash hidden";
+    }, 1400);
+  }
+
+  function actionRarity(action) {
+    if (action.id === "reverse_stress") {
+      return "稀有演練";
+    }
+    if (action.id === "chase_hot") {
+      return "高波動牌";
+    }
+    if (action.id === "stress_test" || action.id === "hedge_on") {
+      return "控制戰術";
+    }
+    return "常備策略";
+  }
+
+  function resolveRound(actionId) {
+    if (waitingForContinue) {
+      return;
+    }
+    const action = actions.find((item) => item.id === actionId);
+    const beforeState = clone(state);
+    selectedActionId = actionId;
+    applyImmediateTo(state, action);
+    const result = finalizeImpact(state, currentEvent, eventMultiplier(action, currentEvent));
+    const rating = evaluateRoundRating(action, currentEvent, result);
+    state.performance = clamp(state.performance + result.performanceDelta, -100, 100);
+    state.varRisk = result.nextVarRisk;
+    state.liquidity = result.nextLiquidity;
+    state.capital = result.nextCapital;
+    const shockDrift = currentEvent.category === "risk" ? 10 : currentEvent.category === "falseDawn" ? 6 : currentEvent.category === "repair" ? -7 : currentEvent.category === "tailwind" ? -4 : -2;
+    state.shockMemory = clamp(state.shockMemory + shockDrift, 0, 100);
+    if (currentEvent.category === "falseDawn") {
+      state.crowding = clamp(state.crowding + 8, 0, 100);
+    } else if (currentEvent.category === "repair") {
+      state.crowding = clamp(state.crowding - 6, 0, 100);
+    } else if (currentEvent.category === "tailwind") {
+      state.crowding = clamp(state.crowding + 2, 0, 100);
+    }
+    updateStreak(rating);
+    state.round += 1;
+    state.history.unshift({
+      round: state.round,
+      event: currentEvent.title,
+      action: action.title,
+      note: rating.label + "｜" + buildRoundNarrative(action, currentEvent, result),
+    });
+    state.history = state.history.slice(0, 8);
+    waitingForContinue = true;
+    showImpactFlash(result);
+    openRoundModal(action, beforeState, result);
+    render();
+  }
+
+  function statusLabel() {
+    if (state.capital < 28 || state.liquidity < 24) {
+      return "瀕臨失守";
+    }
+    if (state.varRisk > 68 || state.leverage > 1.75) {
+      return "高壓警戒";
+    }
+    if (state.performance > 8 && state.capital > 58) {
+      return "韌性領先";
+    }
+    return "穩健巡航";
+  }
+
+  function finalAssessment() {
+    const finance = financialSnapshot();
+    const reasons = [];
+    const strengths = [];
+    const teachingQuestions = [];
+    const nextActions = [];
+    let title = "勉強收官";
+    let narrative = "你撐過了這輪市場波動，但資產負債表與風險承受度仍有明顯可修正空間。";
+    let theme = "steady";
+    let badge = "仍待修正";
+    let honor = "波動觀察員";
+    let teachingSummary = "這局最值得討論的是：風險管理不是讓報酬消失，而是讓組合在壓力下還有選擇權。";
+
+    if (state.capital < 30 || state.liquidity < 24) {
+      title = "防線崩潰";
+      narrative = "組合最終失守，主因是流動性或資本緩衝過低，無法承受連續衝擊。";
+      theme = "collapse";
+      badge = "風控失守";
+      honor = state.leverage > 1.65 ? "槓桿失速者" : "踩踏中的追價者";
+      teachingSummary = "這個結果適合拿來說明：當流動性與資本緩衝不足時，再好的資產也可能因為被迫賣出而失去防守能力。";
+      reasons.push("流動性不足，無法在壓力情境下維持操作彈性。");
+      teachingQuestions.push("如果市場突然無法順利成交，你的第一個動作應該是什麼？");
+      teachingQuestions.push("為什麼『好資產』在踩踏時也可能成為先被賣掉的部位？");
+      nextActions.push("提前保留更高現金與可立即動用的流動性。");
+      nextActions.push("在黑天鵝前先做逆向壓力測試，找出最脆弱的曝險。");
+    }
+    if (state.leverage > 1.65) {
+      reasons.push("槓桿偏高，放大了每次事件造成的回撤。");
+      teachingQuestions.push("槓桿如何把原本可承受的波動放大成資本壓力？");
+      nextActions.push("在升息或信用惡化情境下，優先練習降低槓桿。");
+    } else {
+      strengths.push("槓桿控制得當，沒有被單次衝擊放大損失。");
+    }
+    if (finance.debtRatio > 36) {
+      reasons.push("融資負債比偏高，資產價格回落時更容易轉成資本壓力。");
+      teachingQuestions.push("當總資產裡有一大塊是借來的錢時，組合會先在哪裡失真？");
+      nextActions.push("下次可比較『提高現金部位』與『降低槓桿』對負債比的差異。");
+    }
+    if (state.crowding > 34) {
+      reasons.push("擁擠交易偏高，順風時雖然好看，但一旦反轉更容易出現踩踏。");
+      teachingQuestions.push("為什麼市場最熱的時候，往往也是流動性最容易突然消失的時候？");
+      nextActions.push("下次可比較『追逐熱門資產』與『分散配置』對後續脆弱度的影響。");
+    }
+    if (state.hedge < 6) {
+      reasons.push("避險部位偏低，尾端風險來臨時保護不足。");
+      teachingQuestions.push("避險成本為什麼常常在平時看起來『不划算』？");
+      nextActions.push("在高不確定情境下，嘗試把避險當成保費而非報酬拖累。");
+    } else {
+      strengths.push("避險配置提供了尾端風險保護。");
+    }
+    if (state.stocks > 58) {
+      reasons.push("股票集中度過高，缺乏足夠分散。");
+      teachingQuestions.push("集中押注在順風時很亮眼，但為何在黑天鵝時特別危險？");
+      nextActions.push("下一局可比較『追逐熱門資產』與『分散配置』的長尾差異。");
+    } else {
+      strengths.push("配置分散，降低了單一資產拖累全局的機率。");
+    }
+    if (state.performance > 8 && state.capital > 52 && state.liquidity > 44 && finance.debtRatio < 30) {
+      title = "韌性優等";
+      narrative = "你在控制風險的同時保住合理報酬，展現兼顧生存與表現的投資治理能力。";
+      theme = "triumph";
+      badge = "教學示範級";
+      honor = state.bestStreak >= 4 ? "黑天鵝總指揮" : "韌性編隊長";
+      teachingSummary = "這是最適合課堂示範的結果：你沒有只追求報酬，而是兼顧流動性、資本緩衝與風險承受度，展現『活下來才能長期獲利』的核心觀念。";
+      teachingQuestions.push("你是如何在不過度保守的情況下，仍守住資本緩衝的？");
+      teachingQuestions.push("哪些決策同時改善了生存能力與長期表現？");
+      nextActions.push("回放其中一回合，比較穩健選項與追價選項的差異。");
+      nextActions.push("用教師模式帶學生討論每次保守決策的真正代價。");
+    } else if (state.performance > -2 && state.capital > 45 && state.liquidity > 38 && finance.debtRatio < 36 && theme !== "collapse") {
+      title = "穩健過關";
+      narrative = "你守住了核心防線，也保留一定報酬，屬於偏穩健、可教學複製的決策路線。";
+      theme = "steady";
+      badge = "穩健守成";
+      honor = state.bestStreak >= 3 ? "資本緩衝守門人" : "風控調度員";
+      teachingSummary = "這個結果很適合說明：風控的目標不一定是贏最多，而是在風險與報酬之間做出可複製、可治理的選擇。";
+      teachingQuestions.push("若想把績效再往上拉，哪些地方可以承擔更多風險？");
+      nextActions.push("下次可在風險可控時保留更多參與反彈的部位。");
+    } else if (state.performance < -5 && title !== "防線崩潰") {
+      narrative = "你雖然活了下來，但過度保守犧牲了不少表現，顯示風險與報酬的平衡仍可再調整。";
+      theme = "survive";
+      badge = "驚險存活";
+      honor = "驚險生還者";
+      teachingSummary = "這個結果能幫學生理解：只求防守雖然能活下來，但若長期錯失回升與風險溢酬，也會讓組合難以有效增值。";
+      teachingQuestions.push("過度保守與真正穩健之間，差別在哪裡？");
+      nextActions.push("嘗試在政策救市或反彈回合保留部分參與空間。");
+    }
+
+    if (reasons.length === 0) {
+      reasons.push("分散、流動性與避險配置整體得當，沒有出現明顯致命缺口。");
+    }
+    if (strengths.length === 0) {
+      strengths.push("仍保有一定資本緩衝，具備後續修正空間。");
+    }
+    if (teachingQuestions.length === 0) {
+      teachingQuestions.push("這一局裡，哪一個決策最能體現『先求生存、再求表現』？");
+    }
+    if (nextActions.length === 0) {
+      nextActions.push("重新挑戰時，刻意選一張風險較高的牌，觀察整體韌性如何變化。");
+    }
+
+    return {
+      title: title,
+      narrative: narrative,
+      reasons: reasons,
+      strengths: strengths,
+      theme: theme,
+      badge: badge,
+      honor: honor,
+      teachingSummary: teachingSummary,
+      teachingQuestions: teachingQuestions.slice(0, 3),
+      nextActions: nextActions.slice(0, 3),
+    };
+  }
+
+  function finalVisualSvg(theme) {
+    const art = {
+      triumph:
+        '<svg viewBox="0 0 240 180" aria-hidden="true"><defs><linearGradient id="win" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#71d8c2"/><stop offset="100%" stop-color="#58b6ff"/></linearGradient></defs><circle cx="120" cy="90" r="62" fill="url(#win)" opacity=".18"/><path d="M54 126c16-28 38-42 66-42 24 0 43 9 66 32" fill="none" stroke="url(#win)" stroke-width="10" stroke-linecap="round"/><path d="M94 88l20 20 34-42" fill="none" stroke="#f1fbff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="188" cy="54" r="14" fill="#f7d77c" opacity=".85"/></svg>',
+      steady:
+        '<svg viewBox="0 0 240 180" aria-hidden="true"><defs><linearGradient id="steady" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7db8ff"/><stop offset="100%" stop-color="#71d8c2"/></linearGradient></defs><rect x="42" y="40" width="156" height="100" rx="26" fill="url(#steady)" opacity=".15"/><path d="M58 116c22-20 39-30 60-30 19 0 35 8 64 28" fill="none" stroke="url(#steady)" stroke-width="10" stroke-linecap="round"/><path d="M74 72h92" stroke="#dff4ff" stroke-width="8" stroke-linecap="round"/><path d="M74 90h64" stroke="#dff4ff" stroke-width="8" stroke-linecap="round"/></svg>',
+      survive:
+        '<svg viewBox="0 0 240 180" aria-hidden="true"><defs><linearGradient id="survive" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffd16f"/><stop offset="100%" stop-color="#ff8e6f"/></linearGradient></defs><circle cx="120" cy="92" r="56" fill="url(#survive)" opacity=".14"/><path d="M62 120c14-12 28-18 44-18 16 0 28 7 44 7 12 0 24-4 32-10" fill="none" stroke="url(#survive)" stroke-width="10" stroke-linecap="round"/><path d="M90 54 78 92h28l-8 34 42-52h-28l10-20" fill="none" stroke="#fff0cf" stroke-width="8" stroke-linejoin="round"/></svg>',
+      collapse:
+        '<svg viewBox="0 0 240 180" aria-hidden="true"><defs><linearGradient id="collapse" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff6b77"/><stop offset="100%" stop-color="#ffb16f"/></linearGradient></defs><rect x="38" y="34" width="164" height="112" rx="28" fill="url(#collapse)" opacity=".12"/><path d="M60 64h120M76 110l28-28 18 18 34-34" fill="none" stroke="#ffd7c9" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M92 124h56" stroke="#ffd7c9" stroke-width="8" stroke-linecap="round"/></svg>',
+    };
+    return art[theme] || art.steady;
+  }
+
+  function openFinalModal() {
+    const assessment = finalAssessment();
+    const finance = financialSnapshot();
+    elements.finalModal.className = "modal-backdrop final-theme-" + assessment.theme + " final-modal-open";
+    elements.finalTitle.textContent = assessment.title;
+    elements.finalScore.textContent = "累積績效 " + state.performance.toFixed(1) + "%｜總資產 " + formatEok(finance.totalAssets) + "｜融資負債 " + formatEok(finance.debt);
+    elements.finalHonor.textContent = assessment.honor;
+    elements.finalBadge.textContent = assessment.badge;
+    elements.finalVisual.innerHTML = finalVisualSvg(assessment.theme);
+    elements.finalNarrative.textContent = assessment.narrative;
+    elements.finalReasons.innerHTML = assessment.reasons.map((item) => "<li>" + item + "</li>").join("");
+    elements.finalStrengths.innerHTML = assessment.strengths.map((item) => "<li>" + item + "</li>").join("");
+    elements.finalTeachingSummary.textContent = assessment.teachingSummary;
+    elements.finalTeachingQuestions.innerHTML = assessment.teachingQuestions.map((item) => "<li>" + item + "</li>").join("");
+    elements.finalTeachingActions.innerHTML = assessment.nextActions.map((item) => "<li>" + item + "</li>").join("");
+    elements.finalModal.classList.remove("hidden");
+  }
+
+  function closeFinalModal() {
+    elements.finalModal.className = "modal-backdrop hidden";
+    elements.finalModal.classList.add("hidden");
+  }
+
+  function nextRound() {
+    closeRoundModal();
+    waitingForContinue = false;
+    if (state.round >= TOTAL_ROUNDS || state.capital <= 0 || state.liquidity <= 0 || financialSnapshot().debtRatio >= 58) {
+      openFinalModal();
+      return;
+    }
+    currentEvent = roundDeck[state.round];
+    currentActionChoices = drawActionChoices();
+    selectedActionId = null;
+    render();
+    showTurnSplash();
+  }
+
+  function metricLevel(value, key) {
+    if (key === "performance") {
+      return value > 5 ? "good" : value < -5 ? "bad" : "mid";
+    }
+    if (key === "varRisk") {
+      return value < 40 ? "good" : value > 70 ? "bad" : "mid";
+    }
+    if (key === "leverage") {
+      return value < 1.25 ? "good" : value > 1.7 ? "bad" : "mid";
+    }
+    return value > 65 ? "good" : value < 35 ? "bad" : "mid";
+  }
+
+  function metricIcon(key) {
+    const icons = {
+      stocks: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 33 18 23l6 6 14-14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 15h8v8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      bonds: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="12" width="30" height="24" rx="6" fill="none" stroke="currentColor" stroke-width="4"/><path d="M17 19h14M17 25h8M17 31h10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+      cash: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="13" width="32" height="22" rx="7" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="24" cy="24" r="5" fill="none" stroke="currentColor" stroke-width="3"/><path d="M14 19h1M33 29h1" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+      gold: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 29h24l-5 9H17l-5-9Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M17 20h14l5 9H12l5-9Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>',
+      hedge: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 8 36 14v9c0 8-5.4 13-12 17-6.6-4-12-9-12-17v-9L24 8Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="m18 24 4 4 8-8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      varRisk: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 9 40 37H8L24 9Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 19v8M24 32h.01" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+      liquidity: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 30c2.4-4.6 6.6-7 11-7 6.2 0 9.4 4.3 11 8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M16 17c1.8-3.2 4.7-5 8-5 4.6 0 7.7 3.2 9 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+      capital: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 10 34 15v9c0 6.5-4.3 10.6-10 14-5.7-3.4-10-7.5-10-14v-9l10-5Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 18v12M18 24h12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+      performance: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M11 32c4-1 7-5 10-8l6 4 10-12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 16h4v4" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+      leverage: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 28h24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M24 12v24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><circle cx="24" cy="24" r="14" fill="none" stroke="currentColor" stroke-width="3" opacity=".35"/></svg>',
+    };
+    return icons[key] || "";
+  }
+
+  function actionIcon(id) {
+    const icons = {
+      raise_cash: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="15" width="32" height="18" rx="6" fill="none" stroke="currentColor" stroke-width="4"/><path d="M18 24h12M24 18v12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+      diversify: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="15" cy="18" r="5" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="33" cy="18" r="5" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="24" cy="31" r="5" fill="none" stroke="currentColor" stroke-width="4"/><path d="M19 21l4 6M29 21l-4 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+      hedge_on: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 8 36 14v9c0 8-5.4 13-12 17-6.6-4-12-9-12-17v-9L24 8Z" fill="none" stroke="currentColor" stroke-width="4"/><path d="m18 24 4 4 8-8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+      deleverage: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M11 24h26" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="m31 18 6 6-6 6" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 16v16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+      defensive: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 10 35 16v8c0 7-4.8 11.5-11 15-6.2-3.5-11-8-11-15v-8l11-6Z" fill="none" stroke="currentColor" stroke-width="4"/><path d="M24 18v12M18 24h12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+      stress_test: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 35V13M24 35V19M36 35V11" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="m10 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      reverse_stress: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 13v22M24 19v16M36 11v24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="m32 33 6 6 6-6" transform="translate(-8 -2)" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      chase_hot: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 8c2 6 8 8 8 14 0 3.7-2.7 7-8 10-5.3-3-8-6.3-8-10 0-4.5 3-7 5-10-1 5 2 6 3 8 2-2 3-5 0-12Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>',
+    };
+    return icons[id] || "";
+  }
+
+  function eventIllustration(event) {
+    const palette = {
+      inflation: ["#ff8e6f", "#ffd16f"],
+      rate_hike: ["#79c3ff", "#71d8c2"],
+      credit_spread: ["#a69cff", "#71d8c2"],
+      geopolitics: ["#ff7c8f", "#ffd16f"],
+      fx_shock: ["#8fd2ff", "#8fa7ff"],
+      liquidity_dryup: ["#ff8e6f", "#8fd2ff"],
+      ai_bubble: ["#71d8c2", "#7ba0ff"],
+      black_swan: ["#f7d77c", "#ff6b77"],
+      policy_rescue: ["#71d8c2", "#58b6ff"],
+      supply_chain: ["#f7d77c", "#71d8c2"],
+      non_bank_run: ["#ff6b77", "#a69cff"],
+      sovereign_debt: ["#ffd16f", "#8fd2ff"],
+    };
+    const tones = palette[event.id] || ["#71d8c2", "#58b6ff"];
+    return (
+      '<svg viewBox="0 0 220 140" aria-hidden="true">' +
+      '<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="' + tones[0] + '"/><stop offset="100%" stop-color="' + tones[1] + '"/></linearGradient></defs>' +
+      '<rect x="10" y="14" width="200" height="112" rx="24" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.08)"/>' +
+      '<circle cx="58" cy="54" r="26" fill="url(#g)" opacity=".22"/>' +
+      '<path d="M28 94c18-14 33-21 46-21 14 0 24 8 34 18 12-20 28-33 46-33 13 0 25 8 38 24" fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round"/>' +
+      '<path d="M34 109h148" stroke="rgba(255,255,255,.18)" stroke-width="4" stroke-linecap="round"/>' +
+      '<circle cx="160" cy="43" r="18" fill="url(#g)" opacity=".18"/>' +
+      '<text x="110" y="82" text-anchor="middle" fill="rgba(238,244,255,.92)" font-size="34" font-family="Segoe UI, Microsoft JhengHei, sans-serif">' + event.icon + "</text>" +
+      "</svg>"
+    );
+  }
+
+  function actionEffectsPreview(action) {
+    const chips = [];
+    if (action.immediate.cash !== 0) {
+      chips.push("現金 " + (action.immediate.cash > 0 ? "+" : "") + action.immediate.cash);
+    }
+    if (action.immediate.hedge !== 0) {
+      chips.push("避險 " + (action.immediate.hedge > 0 ? "+" : "") + action.immediate.hedge);
+    }
+    if (action.immediate.liquidity !== 0) {
+      chips.push("流動性 " + (action.immediate.liquidity > 0 ? "+" : "") + action.immediate.liquidity);
+    }
+    if (action.immediate.performance !== 0) {
+      chips.push("績效 " + (action.immediate.performance > 0 ? "+" : "") + action.immediate.performance);
+    }
+    return chips.slice(0, 3);
+  }
+
+  function metricHint(key) {
+    const hints = {
+      stocks: "成長引擎較強，但黑天鵝時通常先承受波動。",
+      bonds: "能分散股市震盪，但升息與信用風險時未必安全。",
+      cash: "保留應變彈性，代價是平時可能錯過部分行情。",
+      gold: "偏防禦與避險情境資產，但不一定每回合都上漲。",
+      hedge: "像保費，平時拖累一點績效，壓力時換取保護。",
+      varRisk: "越高代表單回合劇烈損失的機率與幅度越大。",
+      liquidity: "越高越有空間應付贖回、保證金與被迫賣出風險。",
+      capital: "就是緩衝墊，太薄時小衝擊也可能變成大失血。",
+      performance: "看長期成果，但不應用短期亮眼取代生存能力。",
+      leverage: "槓桿會放大勝負，市場失序時尤其危險。",
+    };
+    return hints[key] || "";
+  }
+
+  function actionHoverNote(action) {
+    return "取捨：" + action.tradeoff + "。在「" + currentEvent.title + "」下，重點是先處理 " + currentEvent.concepts[0] + "。";
+  }
+
+  function financialSnapshot() {
+    const equity = Math.max(0.18, BASE_EQUITY_EOK * (1 + state.performance / 100));
+    const totalAssets = equity * state.leverage;
+    const debt = Math.max(0, totalAssets - equity);
+    const debtRatio = totalAssets > 0 ? debt / totalAssets * 100 : 0;
+    return {
+      equity: equity,
+      totalAssets: totalAssets,
+      debt: debt,
+      debtRatio: debtRatio,
+    };
+  }
+
+  function formatEok(value) {
+    return value.toFixed(2) + " 億";
+  }
+
+  function renderMetrics() {
+    elements.metricsGrid.innerHTML = "";
+    riskMetricDefinitions.forEach((metric) => {
+      const card = document.createElement("div");
+      const value = metric.key === "leverage" ? state[metric.key].toFixed(2) : state[metric.key].toFixed(0);
+      const meterValue = metric.key === "performance"
+        ? clamp((state[metric.key] + 20) / 40 * 100, 0, 100)
+        : metric.key === "leverage"
+          ? clamp((2.4 - state[metric.key]) / 1.6 * 100, 0, 100)
+          : metric.key === "varRisk"
+            ? clamp(100 - state[metric.key], 0, 100)
+            : clamp(state[metric.key], 0, 100);
+      card.className = "metric-card " + metricLevel(state[metric.key], metric.key);
+      card.innerHTML =
+        '<div class="metric-top"><div class="metric-icon">' +
+        metricIcon(metric.key) +
+        '</div><div><span class="metric-label">' +
+        metric.label +
+        "</span><strong>" +
+        value +
+        metric.suffix +
+        '</strong><div class="metric-note">' +
+        metricHint(metric.key) +
+        '</div></div></div><div class="metric-meter"><div class="metric-meter-fill" style="width:' +
+        meterValue +
+        '%"></div></div>';
+      elements.metricsGrid.appendChild(card);
+    });
+  }
+
+  function renderAllocations() {
+    const finance = financialSnapshot();
+    const slices = [
+      { key: "stocks", color: "#ff8e6f" },
+      { key: "bonds", color: "#7db8ff" },
+      { key: "cash", color: "#71d8c2" },
+      { key: "gold", color: "#f7d77c" },
+      { key: "hedge", color: "#a98dff" },
+    ];
+    let currentStop = 0;
+    const donutStops = slices
+      .map((slice) => {
+        const start = currentStop;
+        currentStop += state[slice.key];
+        return slice.color + " " + start + "% " + currentStop + "%";
+      })
+      .join(", ");
+    elements.allocationPeek.innerHTML =
+      '<div class="allocation-peek-pill wide"><i style="background:linear-gradient(135deg,#58b6ff,#71d8c2)"></i><span>總資產</span><strong>' +
+      formatEok(finance.totalAssets) +
+      "</strong></div>" +
+      slices
+        .map((slice) => {
+          const label = allocationDefinitions.find((metric) => metric.key === slice.key).label;
+          return (
+            '<div class="allocation-peek-pill"><i style="background:' +
+            slice.color +
+            '"></i><span>' +
+            label +
+            '</span><strong>' +
+            state[slice.key].toFixed(0) +
+            "%</strong></div>"
+          );
+        })
+        .join("");
+    elements.allocationVisual.innerHTML =
+      '<div class="allocation-donut" style="background:conic-gradient(' +
+      donutStops +
+      ')"><div class="allocation-donut-core"><span>總體韌性</span><strong>' +
+      statusLabel() +
+      '</strong></div></div><div class="allocation-summary-cards"><div class="mini-stat-card"><span>總資產</span><strong>' +
+      formatEok(finance.totalAssets) +
+      '</strong></div><div class="mini-stat-card"><span>淨值（自有資本）</span><strong>' +
+      formatEok(finance.equity) +
+      '</strong></div><div class="mini-stat-card"><span>融資負債</span><strong>' +
+      formatEok(finance.debt) +
+      '</strong></div><div class="mini-stat-card"><span>負債比</span><strong>' +
+      finance.debtRatio.toFixed(0) +
+      "%</strong></div></div>";
+    elements.allocationBars.innerHTML = "";
+    allocationDefinitions
+      .forEach((metric) => {
+        const row = document.createElement("div");
+        row.className = "allocation-row";
+        row.innerHTML =
+          '<div class="allocation-meta"><span>' +
+          metric.label +
+          "</span><strong>" +
+          state[metric.key].toFixed(0) +
+          '%</strong></div><div class="allocation-track"><div class="allocation-fill ' +
+          metric.tone +
+          '" style="width:' +
+          state[metric.key] +
+          '%"></div></div>';
+        elements.allocationBars.appendChild(row);
+      });
+  }
+
+  function renderEventCard() {
+    elements.eventSeverityChip.textContent = currentEvent.severity;
+    elements.eventSeverityChip.className = "event-chip severity-" + (currentEvent.severity === "極高" ? "critical" : currentEvent.severity === "高" ? "high" : "mid");
+    elements.eventStage.className = "glass-panel event-stage severity-" + (currentEvent.severity === "極高" ? "critical" : currentEvent.severity === "高" ? "high" : "mid");
+    elements.eventCard.classList.remove("reveal");
+    void elements.eventCard.offsetWidth;
+    elements.eventCard.classList.add("reveal");
+    elements.eventCard.innerHTML =
+      '<div class="event-illustration">' +
+      eventIllustration(currentEvent) +
+      '</div><div class="event-content"><div class="event-header-line"><div class="event-icon">' +
+      currentEvent.icon +
+      '</div><div><p class="eyebrow">本回合事件</p><h3>' +
+      currentEvent.title +
+      '</h3></div></div><p class="event-summary">' +
+      currentEvent.summary +
+      '</p><div class="concept-chips">' +
+      currentEvent.concepts.map((concept) => '<span>' + concept + "</span>").join("") +
+      '</div></div>';
+  }
+
+  function renderActions() {
+    elements.actionGrid.innerHTML = "";
+    currentActionChoices.forEach((action) => {
+      const actionCard = document.createElement("button");
+      actionCard.className = "action-card dealing" + (selectedActionId === action.id ? " selected" : "");
+      actionCard.disabled = waitingForContinue;
+      actionCard.style.animationDelay = currentActionChoices.indexOf(action) * 0.06 + "s";
+      const chips = actionEffectsPreview(action).map((chip) => '<span>' + chip + "</span>").join("");
+      actionCard.innerHTML =
+        '<div class="action-head"><div class="action-symbol">' +
+        actionIcon(action.id) +
+        '</div><div class="action-title-block"><h4>' +
+        action.title +
+        '</h4><span class="action-rarity">' +
+        actionRarity(action) +
+        '</span><span class="action-badge">' +
+        action.tradeoff +
+        '</span></div></div><p class="action-summary">' +
+        action.summary +
+        '</p><div class="action-chip-row">' +
+        chips +
+        '</div><div class="action-hover-panel"><strong>策略提醒</strong><span>' +
+        actionHoverNote(action) +
+        "</span></div>";
+      actionCard.addEventListener("click", function () {
+        resolveRound(action.id);
+      });
+      elements.actionGrid.appendChild(actionCard);
+    });
+  }
+
+  function renderHistory() {
+    elements.historyList.innerHTML = "";
+    if (state.history.length === 0) {
+      elements.historyList.innerHTML = '<div class="history-item muted">尚未有回合紀錄，先做出第一個決策。</div>';
+      return;
+    }
+    state.history.slice(0, 4).forEach((item) => {
+      const entry = document.createElement("div");
+      entry.className = "history-item";
+      entry.innerHTML =
+        '<div class="history-top"><div class="history-dot"></div><div><strong>第 ' +
+        item.round +
+        " 回合｜" +
+        item.event +
+        "</strong><span>" +
+        item.action +
+        "</span></div></div><p>" +
+        item.note +
+        "</p>";
+      elements.historyList.appendChild(entry);
+    });
+  }
+
+  function renderBriefList() {
+    const finance = financialSnapshot();
+    const recommendations = [
+      { title: "目前生存狀態", text: statusLabel() + "，風險值 " + state.varRisk.toFixed(0) + "、流動性 " + state.liquidity.toFixed(0) + "。" },
+      { title: "本回合焦點", text: currentEvent ? currentEvent.title + "：優先處理 " + currentEvent.concepts[0] + "。" : "等待開局。" },
+      { title: "資產負債", text: "總資產 " + formatEok(finance.totalAssets) + "、融資負債 " + formatEok(finance.debt) + "、負債比 " + finance.debtRatio.toFixed(0) + "%。" },
+      { title: "市場脆弱度", text: "擁擠度 " + state.crowding.toFixed(0) + "、壓力記憶 " + state.shockMemory.toFixed(0) + "。" },
+      { title: "決策提醒", text: state.teacherMode ? "教師模式開啟中，可直接用右側說明帶討論。" : "若要做課堂講解，可切到教師模式看概念解說。" },
+      { title: "目前氣勢", text: state.lastRoundRating + "｜韌性連擊 x" + state.streak + "。" },
+    ];
+    elements.briefList.innerHTML = recommendations.map((item) => '<div class="brief-item"><strong>' + item.title + '</strong><span>' + item.text + '</span></div>').join("");
+  }
+
+  function renderSideTabs() {
+    const tabs = {
+      teacher: [elements.tabTeacherButton, elements.teacherPane],
+      history: [elements.tabHistoryButton, elements.historyPane],
+      brief: [elements.tabBriefButton, elements.briefPane],
+    };
+    Object.keys(tabs).forEach((key) => {
+      const pair = tabs[key];
+      pair[0].classList.toggle("active", state.sideTab === key);
+      pair[1].classList.toggle("hidden", state.sideTab !== key);
+    });
+  }
+
+  function renderTeacherPanel() {
+    elements.teacherToggleButton.textContent = "教學：" + (state.teacherMode ? "開" : "關");
+    elements.teacherModeBadge.textContent = state.teacherMode ? "教學開啟" : "教學關閉";
+    if (!state.teacherMode) {
+      elements.teacherPanel.classList.add("hidden");
+      elements.compactTip.classList.remove("hidden");
+      return;
+    }
+    const bestAction = findBestActionForEvent(currentEvent);
+    elements.teacherPanel.classList.remove("hidden");
+    elements.compactTip.classList.add("hidden");
+    elements.teacherPanel.innerHTML =
+      '<div class="teacher-block"><span class="mini-label">事件代表什麼</span><p>' +
+      currentEvent.marketMeaning +
+      '</p><div class="teacher-inline-note">把這張牌當成總體情境，不是單一資產新聞，學生比較容易連結到風險來源。</div></div><div class="teacher-block"><span class="mini-label">較穩健的方向</span><p>' +
+      currentEvent.robustPlay +
+      '</p><div class="teacher-inline-note">穩健不代表報酬最高，而是先保住下回合還能調整的空間。</div></div><div class="teacher-block"><span class="mini-label">本回合可示範的概念</span><p>' +
+      currentEvent.concepts.join("｜") +
+      '</p><div class="teacher-inline-note">建議讓學生比較：如果忽略這個概念，最先失守的會是哪個指標。</div></div><div class="teacher-highlight">若要偏向教學示範，這回合可優先比較「' +
+      bestAction.title +
+      '」與「追逐熱門資產」的差異。</div>';
+  }
+
+  function renderTopbar() {
+    const displayRound = Math.min(state.round + 1, TOTAL_ROUNDS);
+    elements.roundTitle.textContent = "第 " + displayRound + " / " + TOTAL_ROUNDS + " 回合";
+    elements.roundProgressFill.style.width = state.round / TOTAL_ROUNDS * 100 + "%";
+    elements.statusBadge.textContent = statusLabel();
+    elements.streakBadge.textContent = state.lastRoundRating + "｜韌性連擊 x" + state.streak;
+  }
+
+  function render() {
+    applyLayoutModes();
+    renderTopbar();
+    renderMetrics();
+    renderAllocations();
+    renderEventCard();
+    renderActions();
+    renderHistory();
+    renderBriefList();
+    renderTeacherPanel();
+    renderSideTabs();
+  }
+
+  function showGame() {
+    elements.hero.classList.add("compact");
+    document.body.classList.add("playing");
+    elements.gameLayout.classList.remove("hidden");
+  }
+
+  function startGame() {
+    resetState();
+    showGame();
+    closeFinalModal();
+    closeRoundModal();
+    render();
+    showTurnSplash();
+  }
+
+  function openTutorial() {
+    elements.tutorialModal.classList.remove("hidden");
+  }
+
+  function closeTutorial() {
+    elements.tutorialModal.classList.add("hidden");
+  }
+
+  function autoplayGame() {
+    startGame();
+    while (state.round < TOTAL_ROUNDS && state.capital > 0 && state.liquidity > 0) {
+      const bestAction = findBestActionForEvent(currentEvent);
+      resolveRound(bestAction.id);
+      nextRound();
+    }
+  }
+
+  function gameToText() {
+    return JSON.stringify(
+      {
+        round: state.round,
+        event: currentEvent ? currentEvent.title : null,
+        metrics: {
+          stocks: Number(state.stocks.toFixed(1)),
+          bonds: Number(state.bonds.toFixed(1)),
+          cash: Number(state.cash.toFixed(1)),
+          gold: Number(state.gold.toFixed(1)),
+          hedge: Number(state.hedge.toFixed(1)),
+          varRisk: Number(state.varRisk.toFixed(1)),
+          liquidity: Number(state.liquidity.toFixed(1)),
+          capital: Number(state.capital.toFixed(1)),
+          performance: Number(state.performance.toFixed(1)),
+          leverage: Number(state.leverage.toFixed(2)),
+        },
+        history: state.history.slice(0, 3),
+      },
+      null,
+      2
+    );
+  }
+
+  elements.startGameButton.addEventListener("click", startGame);
+  elements.openTutorialButton.addEventListener("click", openTutorial);
+  elements.closeTutorialButton.addEventListener("click", closeTutorial);
+  elements.tutorialStartButton.addEventListener("click", function () {
+    closeTutorial();
+    startGame();
+  });
+  elements.continueButton.addEventListener("click", nextRound);
+  elements.finalRestartButton.addEventListener("click", startGame);
+  elements.finalCloseButton.addEventListener("click", closeFinalModal);
+  elements.teacherToggleButton.addEventListener("click", function () {
+    state.teacherMode = !state.teacherMode;
+    renderTeacherPanel();
+  });
+  elements.densityToggleButton.addEventListener("click", function () {
+    state.compactUI = !state.compactUI;
+    render();
+  });
+  elements.focusToggleButton.addEventListener("click", function () {
+    state.focusMode = !state.focusMode;
+    render();
+  });
+  elements.allocationToggleButton.addEventListener("click", function () {
+    state.allocationExpanded = !state.allocationExpanded;
+    render();
+  });
+  [elements.tabTeacherButton, elements.tabHistoryButton, elements.tabBriefButton].forEach(function (button) {
+    button.addEventListener("click", function () {
+      state.sideTab = button.getAttribute("data-panel");
+      renderSideTabs();
+    });
+  });
+  elements.restartButton.addEventListener("click", startGame);
+
+  window.render_game_to_text = gameToText;
+  window.advanceTime = function (milliseconds) {
+    return milliseconds || 0;
+  };
+
+  if (new URLSearchParams(window.location.search).get("autoplay") === "1") {
+    autoplayGame();
+  }
+})();
+
+    </script>
+  </body>
+</html>
+
