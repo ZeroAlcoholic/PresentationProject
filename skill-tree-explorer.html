@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DocAI Skills</title>
+  <title>文件智慧技能樹</title>
   <style>
     :root{--bg:#f3ede2;--panel:#fcfaf4;--line:#d7cfbf;--soft:rgba(21,34,49,.12);--ink:#152231;--muted:#6b7787;--accent:#0b5d7a;--warm:#9b5d2d;--shadow:0 20px 44px rgba(21,34,49,.08)}
     *{box-sizing:border-box}body{margin:0;font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;color:var(--ink);background:radial-gradient(circle at top left,rgba(255,247,233,.96),transparent 30%),linear-gradient(180deg,#f8f2e9 0,var(--bg) 100%)}button,select{font:inherit}
@@ -11,9 +11,9 @@
     .eyebrow{margin:0 0 6px;font-size:.76rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}h1,h2,h3,h4,p{margin:0}.brand h1{font-size:1.9rem;line-height:1.05}.brand p{margin-top:8px;color:var(--muted)}
     .box{padding:16px;border:1px solid var(--soft);border-radius:22px;background:rgba(255,255,255,.72);box-shadow:var(--shadow)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{padding:12px;border:1px solid var(--soft);border-radius:16px;background:#fff}.stat strong{display:block}.stat span{font-size:.82rem;color:var(--muted)}
     .controls{display:grid;gap:10px}.control{display:grid;gap:6px}.control label{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}select{padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:#fff}.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer}.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-    .hero{padding:22px 24px;border:1px solid var(--soft);border-radius:28px;background:linear-gradient(140deg,rgba(255,255,255,.94),rgba(248,243,234,.84));box-shadow:var(--shadow);display:grid;gap:12px}.hero h2{font-size:1.72rem;line-height:1.08}.pillrow,.badges{display:flex;flex-wrap:wrap;gap:8px}.pill,.badges span{padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:.82rem;color:var(--muted)}
+    .hero{padding:22px 24px;border:1px solid var(--soft);border-radius:28px;background:linear-gradient(140deg,rgba(255,255,255,.94),rgba(248,243,234,.84));box-shadow:var(--shadow);display:grid;gap:12px}.hero h2{font-size:1.72rem;line-height:1.08}.pillrow,.badges,.markrow,.node-marks{display:flex;flex-wrap:wrap;gap:8px}.pill,.badges span{padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:.82rem;color:var(--muted)}.markrow span,.node-marks span{padding:4px 7px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:.69rem;color:var(--muted)}
     .layout{display:grid;grid-template-columns:minmax(0,1.25fr) 360px;gap:18px}.treepanel,.detail{padding:20px;border:1px solid var(--soft);border-radius:28px;background:rgba(252,250,244,.88);box-shadow:var(--shadow)}.treepanel{display:grid;gap:16px}.forest{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.branch{padding:16px;border:1px solid var(--soft);border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.84),rgba(248,243,234,.92))}.branch h3{font-size:1rem}.tree{list-style:none;margin:12px 0 0;padding:0 0 0 18px;display:grid;gap:10px}.tree li{position:relative;display:grid;gap:8px}.tree li::before{content:"";position:absolute;left:-12px;top:-10px;bottom:8px;width:1px;background:var(--soft)}.tree li::after{content:"";position:absolute;left:-12px;top:22px;width:10px;height:1px;background:var(--soft)}
-    .node{width:100%;text-align:left;padding:11px 12px;border:1px solid var(--soft);border-radius:16px;background:#fff;cursor:pointer;transition:.18s ease}.node:hover{transform:translateY(-1px)}.node strong{display:block;font-size:.93rem}.node span{display:block;margin-top:4px;font-size:.82rem;color:var(--muted)}.node small{display:inline-flex;margin-top:8px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--warm)}.node.active{border-color:var(--accent);box-shadow:0 16px 30px rgba(11,93,122,.16);background:linear-gradient(180deg,rgba(11,93,122,.08),#fff)}.node.related{background:#fff7ef;border-color:rgba(155,93,45,.24)}.node.dim{opacity:.18;box-shadow:none}
+    .node{width:100%;text-align:left;padding:11px 12px;border:1px solid var(--soft);border-radius:16px;background:#fff;cursor:pointer;transition:.18s ease}.node:hover{transform:translateY(-1px)}.node strong{display:block;font-size:.93rem}.node span{display:block;margin-top:4px;font-size:.82rem;color:var(--muted)}.node .node-marks{margin-top:8px}.node small{display:inline-flex;margin-top:8px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--warm)}.node.active{border-color:var(--accent);box-shadow:0 16px 30px rgba(11,93,122,.16);background:linear-gradient(180deg,rgba(11,93,122,.08),#fff)}.node.related{background:#fff7ef;border-color:rgba(155,93,45,.24)}.node.dim{opacity:.18;box-shadow:none}
     .detail{display:grid;gap:14px;position:sticky;top:24px;height:max-content}.detail .lead{color:var(--muted);line-height:1.7}.section{display:grid;gap:8px}.section h4{font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}.list{display:grid;gap:6px;padding-left:18px;margin:0;color:var(--muted);line-height:1.58}.list li{margin:0}.note{padding:14px;border-radius:18px;background:linear-gradient(180deg,rgba(155,93,45,.08),rgba(255,255,255,.8));border:1px solid rgba(155,93,45,.16);color:#7a4c29}
     @media (max-width:1100px){.page{grid-template-columns:1fr}.side{border-right:none;border-bottom:1px solid var(--soft)}.layout{grid-template-columns:1fr}.detail{position:static}}@media (max-width:760px){.main,.side{padding:16px}.hero h2{font-size:1.46rem}}
   </style>
@@ -37,11 +37,11 @@
         <aside class="detail">
           <div><p class="eyebrow">節點</p><h2 id="title"></h2></div>
           <p class="lead" id="summary"></p>
-          <div class="badges" id="tags"></div>
+          <div class="badges" id="tags"></div><div class="markrow" id="marks"></div>
           <div class="section"><h4>輸出與指標</h4><div class="badges" id="signals"></div></div>
           <div class="section"><h4>優勢</h4><ul class="list" id="strengths"></ul></div>
           <div class="section"><h4>風險</h4><ul class="list" id="risks"></ul></div>
-          <div class="section"><h4>應用場景</h4><div class="badges" id="uses"></div></div>
+          <div class="section"><h4>應用場景</h4><div class="badges" id="uses"></div></div><div class="section"><h4>開發判讀</h4><ul class="list" id="implementation"></ul></div>
           <div class="section"><h4>代表來源</h4><div class="badges" id="refs"></div></div>
           <div class="note" id="cardNote"></div>
         </aside>
@@ -209,6 +209,30 @@
         "tag": "技術標記",
         "use_case": "應用場景",
         "preset": "預設視角"
+      },
+      "implementation": {
+        "delivery": {
+          "self-build": "企業可自建",
+          "integration": "整合優先",
+          "research": "超出一般自建"
+        },
+        "stack": {
+          "ops": "工程",
+          "dl": "DL",
+          "llm": "LLM",
+          "hybrid": "混合"
+        },
+        "adaptation": {
+          "none": "免微調",
+          "prompt": "提示優先",
+          "finetune": "需微調",
+          "domain-data": "需域資料"
+        },
+        "effort": {
+          "low": "低",
+          "medium": "中",
+          "high": "高"
+        }
       }
     },
     "view": {
@@ -382,7 +406,31 @@
           }
         ]
       }
-    ]
+    ],
+    "implementation_rubric": {
+      "summary": "這裡的自建以一般金融企業的數據/AI 團隊為準，不假設擁有大型基座模型研發團隊。",
+      "delivery": {
+        "self-build": "一般金融企業可承接的自建，通常是流程編排、資料契約、治理、規則引擎，或基於現成模型做輕量微調，而不是重做 foundation model。",
+        "integration": "已有成熟 API 或開源基座時，企業主工作通常是整合、驗收、回退與成本控制。",
+        "research": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合 PoC、合作研發或前沿探索。"
+      },
+      "adaptation": {
+        "none": "可先用既有 pretrained / API / 規則起步，把重點放在評測與門檻設定。",
+        "prompt": "先用 prompt、query 或 tool routing 驗證需求，需求穩定後再評估微調。",
+        "finetune": "對一般企業來說，這通常代表可承受的小中型微調，例如 YOLO、分類器、KIE backbone 或 OCR 後處理適配，而不是從零訓練大模型。",
+        "domain-data": "不一定要訓練模型，但一定需要域內樣本、錯誤切片與規則校正。"
+      },
+      "evidence": [
+        "Azure Document Intelligence custom models",
+        "Google Document AI custom extractor overview",
+        "Google Document AI custom-based extraction",
+        "Azure prebuilt general document/layout guidance",
+        "AWS Textract AnalyzeDocument / Queries",
+        "LayoutLMv3",
+        "TrOCR",
+        "FUNSD"
+      ]
+    }
   },
   "nodes": [
     {
@@ -425,7 +473,15 @@
       "references": [
         "whitepaper.md",
         "report.md"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "high",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "input-routing",
@@ -461,7 +517,15 @@
       "references": [
         "pdfminer.six",
         "Google Document AI overview"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "一般金融企業可自己做好的是分流策略與路由決策，不是從零做 PDF/OCR 基座。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "preprocessing",
@@ -497,7 +561,15 @@
       "references": [
         "Google Enterprise OCR deskew",
         "OCRmyPDF"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "none",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "可先用既有 pretrained、API 或規則起步，先把評測與門檻做紮實。"
+      }
     },
     {
       "id": "recognition",
@@ -533,7 +605,15 @@
       "references": [
         "Azure Read OCR",
         "Textract"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "structure",
@@ -572,7 +652,15 @@
         "DocLayNet",
         "LayoutLMv3",
         "PubTables-1M"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
     },
     {
       "id": "parsing",
@@ -608,7 +696,15 @@
       "references": [
         "OmniDocBench",
         "document parsing survey"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "multimodal",
@@ -647,7 +743,15 @@
         "LayoutLLM",
         "DocLLM",
         "DocVLM"
-      ]
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "hybrid",
+        "adaptation": "prompt",
+        "effort": "high",
+        "build_reason": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合研究、PoC 或外部合作。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
     },
     {
       "id": "ops",
@@ -683,7 +787,15 @@
       "references": [
         "Azure Document Intelligence",
         "AWS Textract"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "evaluation-data",
@@ -721,7 +833,15 @@
         "OCR-D",
         "TEDS",
         "OmniDocBench"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "native-pdf",
@@ -769,7 +889,15 @@
       ],
       "references": [
         "pdfminer.six"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "PDF 文字層抽取已有成熟工具，通常不值得從零實作 parser。",
+        "tuning_reason": "文字層抽取本身不需要微調，重點在閱讀順序與後處理。"
+      }
     },
     {
       "id": "scanned-pdf",
@@ -811,7 +939,15 @@
       "depth": 2,
       "references": [
         "OCRmyPDF"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "它主要是文件入口型別，不是單獨訓練目標；重點在路由到後續 OCR 管線。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "camera-doc",
@@ -851,7 +987,15 @@
       "depth": 2,
       "references": [
         "mobile capture best practices"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必重訓模型，但一定要用真實拍照件校正品質門檻與前處理。"
+      }
     },
     {
       "id": "multilingual-doc",
@@ -891,7 +1035,15 @@
       "depth": 2,
       "references": [
         "CASIA"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "high",
+        "build_reason": "繁中、多語、混排與字集規則通常要自己定義驗收與正規化。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "quality-gate",
@@ -940,7 +1092,15 @@
       ],
       "references": [
         "Google Document AI quality detection"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "品質門檻、分流規則與人工覆核條件高度依賴你的文件風險與成本模型。",
+        "tuning_reason": "可先用既有 pretrained、API 或規則起步，先把評測與門檻做紮實。"
+      }
     },
     {
       "id": "deskew-dewarp",
@@ -981,7 +1141,15 @@
       "references": [
         "document rectification",
         "mobile document capture"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "none",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "可先用既有 pretrained、API 或規則起步，先把評測與門檻做紮實。"
+      }
     },
     {
       "id": "image-enhancement",
@@ -1022,7 +1190,15 @@
       "references": [
         "OCR preprocessing survey",
         "super-resolution for OCR"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "none",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "可先用既有 pretrained、API 或規則起步，先把評測與門檻做紮實。"
+      }
     },
     {
       "id": "roi-detection",
@@ -1074,7 +1250,15 @@
       ],
       "references": [
         "Ultralytics detect/seg/OBB/pose"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "這屬於企業可做的 YOLO 類微調範圍，尤其當 ROI 與欄位區塊直接決定下游品質時。",
+        "tuning_reason": "ROI 定義和標註規格高度依賴任務；若欄位或區塊邊界是關鍵，通常要做域內微調。"
+      }
     },
     {
       "id": "printed-ocr",
@@ -1128,7 +1312,15 @@
         "Azure Read OCR",
         "Google OCR",
         "Textract"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "對一般金融企業來說，印刷 OCR 通常先整合 EasyOCR、PaddleOCR 或雲端 OCR，比自訓 recognizer 更合理。",
+        "tuning_reason": "若是繁中、特殊字體或掃描品質有明顯落差，可以做有限度適配或後處理校正，但通常不需重做整個 OCR 模型。"
+      }
     },
     {
       "id": "deep-ocr",
@@ -1169,7 +1361,15 @@
       "references": [
         "docTR",
         "PaddleOCR"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "transformer-ocr",
@@ -1208,7 +1408,15 @@
       "depth": 2,
       "references": [
         "TrOCR"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "TrOCR 類方法本身就是預訓練後再用人標資料 fine-tune 到印刷或手寫任務。"
+      }
     },
     {
       "id": "handwriting-htr",
@@ -1254,7 +1462,15 @@
       "references": [
         "HTR survey",
         "CASIA"
-      ]
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "手寫字形、語言與版型差異很大，沒有域內標註通常不會穩。"
+      }
     },
     {
       "id": "scene-text",
@@ -1294,7 +1510,15 @@
       "references": [
         "CRAFT",
         "scene text survey"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "cloud-ocr",
@@ -1337,7 +1561,15 @@
         "Azure Document Intelligence",
         "Google Document AI",
         "AWS Textract"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "這類能力的優勢就是直接買現成服務，不該從零重做。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "edge-ocr",
@@ -1380,7 +1612,15 @@
         "ML Kit",
         "Apple Vision",
         "Windows OCR"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "layout-segmentation",
@@ -1427,7 +1667,15 @@
       "references": [
         "PubLayNet",
         "DocLayNet"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "這通常超出一般企業直接從零做的範圍，比較像在既有 backbone 或服務上做適配。",
+        "tuning_reason": "LayoutLMv3 類模型是預訓練基座，但企業文件域轉移強，若要自做通常也是小規模域內適配。"
+      }
     },
     {
       "id": "reading-order",
@@ -1470,7 +1718,15 @@
       ],
       "references": [
         "OCR-D"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "閱讀順序常需要規則、幾何與業務文件假設混合處理，自己做可控性更高。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
     },
     {
       "id": "table-detection",
@@ -1518,7 +1774,15 @@
       "references": [
         "PubTables-1M",
         "TableBank"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "若金融文件中的表格區塊穩定且高價值，這也是企業可承接的檢測微調任務。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
     },
     {
       "id": "table-structure",
@@ -1570,7 +1834,15 @@
         "PubTabNet",
         "PubTables-1M",
         "TEDS"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "這比表格 detection 更難，對一般金融企業通常不是首選自建，較適合基於現成模型再做適配。",
+        "tuning_reason": "PubTables/PubTabNet 提供基座，但商務表格域差大，若真的要做，通常需要域內微調與額外標註。"
+      }
     },
     {
       "id": "key-value-extraction",
@@ -1621,7 +1893,15 @@
         "LayoutLM",
         "BROS",
         "FUNSD"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "這是企業會很想自建的地方，但真正落地通常是用既有 backbone 或平台能力，再配合自己的欄位 schema 做適配。",
+        "tuning_reason": "FUNSD 類任務本身就依賴 entity/linking 標註；欄位 schema 一變，通常就要再適配。"
+      }
     },
     {
       "id": "layout-aware-models",
@@ -1663,7 +1943,15 @@
       "references": [
         "LayoutLMv3",
         "BROS"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "這類模型是通用 pretrained backbone，真正落地通常要靠下游 fine-tuning。"
+      }
     },
     {
       "id": "document-parsing",
@@ -1714,7 +2002,15 @@
       "references": [
         "OmniDocBench",
         "document parsing survey"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "真正產品價值在輸出 schema、evidence、chunk 與多模組拼接，通常要自己設計。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "document-vqa",
@@ -1762,7 +2058,15 @@
       ],
       "references": [
         "DocVQA"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "llm",
+        "adaptation": "prompt",
+        "effort": "medium",
+        "build_reason": "一般企業較合理的做法是用現有 LLM / VLM 能力加 prompt 和 evidence 設計，而不是自建 VQA 模型。",
+        "tuning_reason": "先用 prompt 或 query 驗證；只有題型固定且量大時再考慮小型任務微調。"
+      }
     },
     {
       "id": "query-extraction",
@@ -1809,7 +2113,15 @@
       "depth": 2,
       "references": [
         "Textract Queries"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "llm",
+        "adaptation": "prompt",
+        "effort": "low",
+        "build_reason": "Textract Queries 與 LLM query-based extraction 已很成熟，通常先整合即可。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "schema-mapping",
@@ -1855,7 +2167,15 @@
       "references": [
         "schema mapping design",
         "document ETL"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "ocr-first-pipeline",
@@ -1900,7 +2220,15 @@
       "references": [
         "document parsing survey",
         "OmniDocBench"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "模組串接、evidence 保留、回退與 SLA 設計本身就是自建價值所在。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
     },
     {
       "id": "ocr-free",
@@ -1942,7 +2270,15 @@
       "depth": 2,
       "references": [
         "Donut"
-      ]
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合研究、PoC 或外部合作。",
+        "tuning_reason": "OCR-free 路線對文件型態與輸出 schema 非常敏感，通常要靠任務資料微調。"
+      }
     },
     {
       "id": "vlm-ocr-fusion",
@@ -1987,7 +2323,15 @@
       "depth": 2,
       "references": [
         "DocVLM"
-      ]
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "hybrid",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合研究、PoC 或外部合作。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
     },
     {
       "id": "layout-aware-llm",
@@ -2032,7 +2376,15 @@
       "references": [
         "LayoutLLM",
         "DocLLM"
-      ]
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "llm",
+        "adaptation": "prompt",
+        "effort": "high",
+        "build_reason": "對一般金融企業來說，這通常不算可自建核心模型，而是研究或實驗性整合方向。",
+        "tuning_reason": "應用開發可先用 prompt + layout serialization 驗證；若要穩定固定欄位任務，再評估小規模微調。"
+      }
     },
     {
       "id": "agentic-ocr",
@@ -2073,7 +2425,15 @@
       "depth": 2,
       "references": [
         "AgenticOCR"
-      ]
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "llm",
+        "adaptation": "prompt",
+        "effort": "high",
+        "build_reason": "這通常超出一般企業穩定量產的能力範圍，較適合探索性 PoC。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
     },
     {
       "id": "edge-onprem",
@@ -2117,7 +2477,15 @@
         "ML Kit",
         "Apple Vision",
         "Windows OCR"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "high",
+        "build_reason": "地端部署真正難的是系統整合、權限、更新與審計，不是模型論文本身。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "cloud-managed",
@@ -2161,7 +2529,15 @@
         "Azure Document Intelligence",
         "Google Document AI",
         "AWS Textract"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "observability",
@@ -2201,7 +2577,15 @@
       "depth": 2,
       "references": [
         "confidence routing best practices"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "human-review",
@@ -2247,7 +2631,15 @@
       "references": [
         "human in the loop workflow",
         "document QA operations"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "ocr-metrics",
@@ -2291,7 +2683,15 @@
       ],
       "references": [
         "OCR-D"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "layout-metrics",
@@ -2332,7 +2732,15 @@
         "PubLayNet",
         "DocLayNet",
         "OCR-D"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "table-metrics",
@@ -2372,7 +2780,15 @@
       "references": [
         "TEDS",
         "PubTables-1M"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "kie-metrics",
@@ -2411,7 +2827,15 @@
       "depth": 2,
       "references": [
         "FUNSD"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "e2e-parsing-eval",
@@ -2452,7 +2876,15 @@
       "depth": 2,
       "references": [
         "OmniDocBench"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "datasets-benchmarks",
@@ -2494,7 +2926,15 @@
         "FUNSD",
         "DocVQA",
         "OmniDocBench"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "labeling-spec",
@@ -2536,7 +2976,15 @@
       "references": [
         "Google Document schema",
         "Azure labeling guidance"
-      ]
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "pdfminer",
@@ -2570,7 +3018,15 @@
       "depth": 3,
       "references": [
         "pdfminer.six"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "trocr",
@@ -2604,7 +3060,15 @@
       "depth": 3,
       "references": [
         "TrOCR"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "donut",
@@ -2638,7 +3102,15 @@
       "depth": 3,
       "references": [
         "Donut"
-      ]
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合研究、PoC 或外部合作。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
     },
     {
       "id": "layoutlm",
@@ -2675,7 +3147,15 @@
         "LayoutLM",
         "LayoutLMv3",
         "BROS"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
     },
     {
       "id": "pubtables",
@@ -2712,7 +3192,15 @@
         "PubTables-1M",
         "PubTabNet",
         "TEDS"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
     },
     {
       "id": "docvqa-benchmark",
@@ -2746,7 +3234,15 @@
       "depth": 3,
       "references": [
         "DocVQA"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "omnidocbench",
@@ -2784,7 +3280,15 @@
       "evaluation_metrics": [
         "multi-level parsing score",
         "文件類型分層結果"
-      ]
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
     },
     {
       "id": "document-classification",
@@ -2829,6 +3333,14 @@
       "deployment_mode": [
         "hybrid"
       ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "medium",
+        "build_reason": "這很適合一般企業 AI 團隊自建，因為分類類別和路由通常高度貼近內部文件體系。",
+        "tuning_reason": "這類任務通常是小型分類微調，屬於企業可承受範圍；Azure custom classification 也明確把它做成帶訓練文件的任務。"
+      },
       "depth": 2
     },
     {
@@ -2877,6 +3389,14 @@
       "deployment_mode": [
         "hybrid"
       ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "checkbox、章戳、勾選框等元素若和內部流程高度綁定，企業可用 YOLO 類方法自行微調。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      },
       "depth": 2
     },
     {
@@ -2930,6 +3450,14 @@
       "deployment_mode": [
         "hybrid"
       ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "這是資料契約與索引設計問題，自己做比換模型更重要。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      },
       "depth": 2
     },
     {
@@ -2973,6 +3501,14 @@
         "cloud",
         "hybrid"
       ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      },
       "depth": 2
     },
     {
@@ -3013,6 +3549,14 @@
         "cloud",
         "hybrid"
       ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      },
       "depth": 2
     },
     {
@@ -3056,6 +3600,14 @@
       "deployment_mode": [
         "hybrid"
       ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      },
       "depth": 2
     }
   ],
@@ -3918,7 +4470,7 @@
     }
   }
 },nodes=new Map(data.nodes.map(n=>[n.id,n])),children=new Map();data.nodes.forEach(n=>{if(n.parent){if(!children.has(n.parent))children.set(n.parent,[]);children.get(n.parent).push(n.id);}});
-    const taxonomy=data.metadata.taxonomy||{},familyLabel=id=>taxonomy.families?.[id]||id,tagLabel=id=>taxonomy.tags?.[id]||id,useCaseLabel=id=>taxonomy.use_cases?.[id]||id,viewModeLabels=taxonomy.view_modes||{};
+    const taxonomy=data.metadata.taxonomy||{},familyLabel=id=>taxonomy.families?.[id]||id,tagLabel=id=>taxonomy.tags?.[id]||id,useCaseLabel=id=>taxonomy.use_cases?.[id]||id,viewModeLabels=taxonomy.view_modes||{},implLabels=taxonomy.implementation||{},implLabel=(group,id)=>implLabels?.[group]?.[id]||id;
     const defaultSelected=data.metadata.default_selected_id||((children.get(data.metadata.root_id)||[])[0])||data.metadata.root_id;
     const state={selected:defaultSelected,mode:'selected',tag:'',useCase:'',preset:''};
     const topBranches=children.get(data.metadata.root_id)||[];const tagSet=[...new Set(data.nodes.flatMap(n=>n.tags||[]))].sort((a,b)=>tagLabel(a).localeCompare(tagLabel(b),'zh-Hant'));const useCaseSet=[...new Set(data.nodes.flatMap(n=>n.use_cases||[]))].sort((a,b)=>useCaseLabel(a).localeCompare(useCaseLabel(b),'zh-Hant'));const el=id=>document.getElementById(id);
@@ -3927,10 +4479,10 @@
     const directDependents=id=>data.nodes.filter(node=>(node.dependencies||[]).includes(id)).map(node=>node.id);const presetMatches=preset=>new Set(preset.focus.nodes||[]);
     const activeSet=()=>{const node=nodes.get(state.selected);if(!node)return new Set();if(node.id===data.metadata.root_id&&state.mode==='selected')return new Set([node.id]);if(state.mode==='subtree'){const set=descendants(node.id);ancestors(node.id).forEach(id=>set.add(id));return set;}if(state.mode==='family')return new Set(data.nodes.filter(item=>item.family===node.family).map(item=>item.id));if(state.mode==='layer')return new Set(data.nodes.filter(item=>item.layer===node.layer).map(item=>item.id));if(state.mode==='tag'&&state.tag)return new Set(data.nodes.filter(item=>(item.tags||[]).includes(state.tag)).map(item=>item.id));if(state.mode==='use_case'&&state.useCase)return new Set(data.nodes.filter(item=>(item.use_cases||[]).includes(state.useCase)).map(item=>item.id));if(state.mode==='preset'&&state.preset){const preset=data.highlight_presets.find(item=>item.id===state.preset);return preset?presetMatches(preset):new Set([node.id]);}const set=new Set([node.id]);ancestors(node.id).forEach(id=>set.add(id));(children.get(node.id)||[]).forEach(id=>set.add(id));(node.dependencies||[]).forEach(id=>set.add(id));directDependents(node.id).forEach(id=>set.add(id));return set;};
     const badgeHTML=(items,mapFn,fallback='未填')=>(items&&items.length?items:[fallback]).map(v=>`<span>${mapFn?mapFn(v):v}</span>`).join('');
-    const listHTML=(items,fallback='未填')=>(items&&items.length?items:[fallback]).slice(0,4).map(v=>`<li>${v}</li>`).join('');
-    const renderNode=id=>{const node=nodes.get(id),active=activeSet(),isActive=active.has(id)||id===state.selected,kids=children.get(id)||[];return `<li><button class="node ${id===state.selected?'active':''} ${active.size&&!isActive?'dim':''} ${isActive&&id!==state.selected?'related':''}" data-id="${id}"><strong>${node.label}</strong><span>${node.summary}</span><small>${node.layer} · ${familyLabel(node.family)}</small></button>${kids.length?`<ul class="tree">${kids.map(child=>renderNode(child)).join('')}</ul>`:''}</li>`;};
+    const listHTML=(items,fallback='未填')=>(items&&items.length?items:[fallback]).slice(0,4).map(v=>`<li>${v}</li>`).join('');const markHTML=node=>{const impl=node.implementation||{};return [['delivery',impl.delivery],['stack',impl.stack],['adaptation',impl.adaptation]].filter(([,v])=>v).map(([g,v])=>`<span>${implLabel(g,v)}</span>`).join('');};
+    const renderNode=id=>{const node=nodes.get(id),active=activeSet(),isActive=active.has(id)||id===state.selected,kids=children.get(id)||[];return `<li><button class="node ${id===state.selected?'active':''} ${active.size&&!isActive?'dim':''} ${isActive&&id!==state.selected?'related':''}" data-id="${id}"><strong>${node.label}</strong><span>${node.summary}</span><div class="node-marks">${markHTML(node)}</div><small>${node.layer} · ${familyLabel(node.family)}</small></button>${kids.length?`<ul class="tree">${kids.map(child=>renderNode(child)).join('')}</ul>`:''}</li>`;};
     const renderForest=()=>{el('forest').innerHTML=topBranches.map(id=>{const node=nodes.get(id);return `<section class="branch"><p class="eyebrow">${familyLabel(node.family)}</p><h3>${node.label}</h3><ul class="tree">${renderNode(id)}</ul></section>`;}).join('');el('forest').querySelectorAll('.node').forEach(btn=>btn.addEventListener('click',()=>{state.selected=btn.dataset.id;render();}));};
-    const renderDetail=()=>{const node=nodes.get(state.selected);const card=data.technique_cards?.[node.id]||{};const risks=[...(node.weaknesses||[]),...(node.failure_modes||[])];const signals=[...(node.output||[]),...(node.evaluation_metrics||[]),...(card.evaluation_metrics||[])];el('title').textContent=node.label;el('summary').textContent=card.definition||node.summary;el('tags').innerHTML=badgeHTML(node.tags,tagLabel,'尚未標記');el('signals').innerHTML=badgeHTML([...new Set(signals)],null,'未定義');el('strengths').innerHTML=listHTML(node.strengths,'待補');el('risks').innerHTML=listHTML(risks,'待補');el('uses').innerHTML=badgeHTML(node.use_cases,useCaseLabel,'未指定');el('refs').innerHTML=badgeHTML(node.references,null,'共享資料');el('cardNote').textContent=node.id===data.metadata.root_id?(data.metadata.whitepaper_axes||[]).map(a=>`${a.label}：${a.summary}`).join(' / '):(card.engineering_notes||[`機制：${card.mechanism||'依賴 ${node.dependencies?.length||0}，子節點 ${(children.get(node.id)||[]).length}。'}`]).join(' / ');};
+    const renderDetail=()=>{const node=nodes.get(state.selected);const card=data.technique_cards?.[node.id]||{};const risks=[...(node.weaknesses||[]),...(node.failure_modes||[])];const signals=[...(node.output||[]),...(node.evaluation_metrics||[]),...(card.evaluation_metrics||[])];el('title').textContent=node.label;el('summary').textContent=card.definition||node.summary;el('tags').innerHTML=badgeHTML(node.tags,tagLabel,'尚未標記');el('marks').innerHTML=markHTML(node);el('signals').innerHTML=badgeHTML([...new Set(signals)],null,'未定義');el('strengths').innerHTML=listHTML(node.strengths,'待補');el('risks').innerHTML=listHTML(risks,'待補');el('uses').innerHTML=badgeHTML(node.use_cases,useCaseLabel,'未指定');el('implementation').innerHTML=listHTML([`開發模式：${implLabel('delivery',node.implementation?.delivery)||'未定義'} · 難度 ${implLabel('effort',node.implementation?.effort)||'未定義'}`,`技術型態：${implLabel('stack',node.implementation?.stack)||'未定義'}`,`調整需求：${implLabel('adaptation',node.implementation?.adaptation)||'未定義'}`,node.implementation?.build_reason||'待補自建 / 整合判斷',node.implementation?.tuning_reason||'待補微調判斷'],'待補');el('refs').innerHTML=badgeHTML(node.references,null,'共享資料');el('cardNote').textContent=node.id===data.metadata.root_id?(data.metadata.whitepaper_axes||[]).map(a=>`${a.label}：${a.summary}`).join(' / '):(card.engineering_notes||[`機制：${card.mechanism||'依賴 ${node.dependencies?.length||0}，子節點 ${(children.get(node.id)||[]).length}。'}`]).join(' / ');};
     const renderChrome=()=>{const node=nodes.get(state.selected);el('heroTitle').textContent=node.label;el('heroPills').innerHTML=[`層級 ${node.layer}`,`家族 ${familyLabel(node.family)}`,`指標 ${(node.evaluation_metrics||[]).length}`,`聚焦 ${(activeSet().size||1)}`].map(i=>`<span class="pill">${i}</span>`).join('');el('stats').innerHTML=[[data.nodes.length,'節點'],[topBranches.length,'主幹'],[data.highlight_presets.length,'視角'],[(children.get(node.id)||[]).length,'子節點']].map(([v,l])=>`<div class="stat"><strong>${v}</strong><span>${l}</span></div>`).join('');};
     const renderControls=()=>{el('mode').innerHTML=[['selected',viewModeLabels.selected||'鄰近關聯'],['subtree',viewModeLabels.subtree||'子樹'],['family',viewModeLabels.family||'技術家族'],['layer',viewModeLabels.layer||'層級'],['tag',viewModeLabels.tag||'技術標記'],['use_case',viewModeLabels.use_case||'應用場景'],['preset',viewModeLabels.preset||'預設視角']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');el('mode').value=state.mode;el('tag').innerHTML=`<option value="">全部技術標記</option>${tagSet.map(tag=>`<option value="${tag}">${tagLabel(tag)}</option>`).join('')}`;el('tag').value=state.tag;el('useCase').innerHTML=`<option value="">全部應用場景</option>${useCaseSet.map(v=>`<option value="${v}">${useCaseLabel(v)}</option>`).join('')}`;el('useCase').value=state.useCase;el('presets').innerHTML=data.highlight_presets.map(p=>`<button class="chip ${state.mode==='preset'&&state.preset===p.id?'active':''}" data-id="${p.id}" title="${p.description}">${p.label}</button>`).join('');el('presets').querySelectorAll('.chip').forEach(btn=>btn.addEventListener('click',()=>{state.mode='preset';state.preset=btn.dataset.id;render();}));el('mode').onchange=e=>{state.mode=e.target.value;render();};el('tag').onchange=e=>{state.tag=e.target.value;state.mode='tag';render();};el('useCase').onchange=e=>{state.useCase=e.target.value;state.mode='use_case';render();};};
     const render=()=>{renderControls();renderChrome();renderForest();renderDetail();};render();
