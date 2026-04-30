@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>從傳統 Coding 到 Spec-Driven Agentic Coding｜企業 AI 部門轉型方法論</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:    #080f09;
+      --surf:  #0e1a10;
+      --s2:    #141f16;
+      --s3:    #1a2b1d;
+      --s4:    #213325;
+      --bd:    #1e3323;
+      --bd2:   #2d4d33;
+      --ac:    #4ade80;
+      --ac2:   #22c55e;
+      --acm:   #14532d;
+      --tx:    #f3f9f4;
+      --tx2:   #b3d4bb;
+      --tx3:   #5e8a6a;
+      --code:  #060e07;
+      --hl:    #bbf7d0;
+      --warn:  #fcd34d;
+      --err:   #fb7185;
+      --blue:  #67e8f9;
+      --purp:  #c084fc;
+      --org:   #fb923c;
+      --nav-h: 60px;
+      --mw:    1100px;
+      --r:     8px;
+      --rl:    14px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: var(--bg);
+      color: var(--tx);
+      line-height: 1.88;
+      font-size: 19px;
+    }
+
+    /* ── TYPOGRAPHY ───────────────────────────── */
+    h1 { font-size: clamp(2.2rem, 4.8vw, 3.3rem); font-weight: 700; line-height: 1.15; }
+    h2 { font-size: clamp(1.75rem, 3.2vw, 2.35rem); font-weight: 700; line-height: 1.25; }
+    h3 { font-size: 1.25rem; font-weight: 600; }
+    h4 { font-size: 1rem; font-weight: 600; }
+    p  { margin-bottom: .8rem; }
+    strong { font-weight: 700; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── LAYOUT ──────────────────────────────── */
+    .ct { max-width: var(--mw); margin: 0 auto; padding: 0 1.75rem; }
+    section { padding: 5.5rem 0; }
+    section:nth-child(even) { background: var(--surf); }
+
+    .sec-lbl {
+      font-size: .75rem; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase;
+      color: var(--ac); margin-bottom: .7rem;
+    }
+    .sec-h  { margin-bottom: .75rem; }
+    .sec-d  { color: var(--tx2); font-size: 1.13rem; max-width: 660px; margin-bottom: 2.75rem; line-height: 1.85; }
+    .div    { height: 1px; background: var(--bd); margin: 1.1rem 0; }
+
+    /* ── SCROLL REVEAL ───────────────────────── */
+    .rv {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity .65s ease, transform .65s ease;
+    }
+    .rv.vis { opacity: 1; transform: translateY(0); }
+    .rv-d1 { transition-delay: .1s; }
+    .rv-d2 { transition-delay: .2s; }
+    .rv-d3 { transition-delay: .3s; }
+    .rv-d4 { transition-delay: .4s; }
+    .rv-d5 { transition-delay: .5s; }
+
+    /* ── NAV ─────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      background: rgba(8,15,9,.94);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--bd);
+      display: flex; align-items: center;
+    }
+    .nav-in { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; }
+    .nav-brand { font-size: .85rem; font-weight: 700; color: var(--ac); text-decoration: none; white-space: nowrap; letter-spacing: .02em; }
+    .nav-links { display: flex; align-items: center; gap: .1rem; list-style: none; overflow-x: auto; scrollbar-width: none; }
+    .nav-links::-webkit-scrollbar { display: none; }
+    .nav-links a {
+      color: var(--tx3); text-decoration: none;
+      font-size: .78rem; padding: .32rem .6rem;
+      border-radius: 5px; white-space: nowrap;
+      transition: color .18s, background .18s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--ac); background: var(--acm); }
+
+    /* ── HERO ─────────────────────────────────── */
+    #hero {
+      padding-top: calc(var(--nav-h) + 4.5rem);
+      padding-bottom: 5.5rem;
+      position: relative; overflow: hidden;
+    }
+    #hero::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(74,222,128,.09) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 30% at 80% 50%, rgba(74,222,128,.04) 0%, transparent 60%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: .55rem;
+      background: var(--acm); border: 1px solid var(--ac2);
+      color: var(--ac); font-size: .76rem; font-weight: 700;
+      padding: .32rem .85rem; border-radius: 100px; margin-bottom: 1.75rem;
+      letter-spacing: .04em;
+    }
+    .hero-badge::before { content:''; width:7px; height:7px; background:var(--ac); border-radius:50%; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
+
+    .hero-title {
+      margin-bottom: 1.4rem;
+      background: linear-gradient(130deg, var(--tx) 30%, var(--ac) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub { font-size: 1.12rem; color: var(--tx2); max-width: 660px; margin-bottom: 2.25rem; line-height: 1.8; }
+    .hero-thesis {
+      background: linear-gradient(135deg, rgba(74,222,128,.06), rgba(74,222,128,.02));
+      border-left: 3px solid var(--ac); border-radius: 0 var(--r) var(--r) 0;
+      padding: 1.25rem 1.6rem; max-width: 720px; font-size: 1rem;
+      margin-bottom: 3rem; color: var(--tx); line-height: 1.85;
+    }
+    .hero-thesis strong { color: var(--ac); }
+
+    /* flow diagram */
+    .flow-group { margin-bottom: 1rem; }
+    .flow-lbl { font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin-bottom: .6rem; }
+    .flow-row  { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .fb {
+      background: var(--s3); border: 1px solid var(--bd);
+      border-radius: var(--r); padding: .44rem .88rem;
+      font-size: .84rem; color: var(--tx2);
+      transition: transform .18s, border-color .18s;
+    }
+    .fb:hover { transform: translateY(-2px); border-color: var(--bd2); }
+    .fb.hi { border-color: var(--ac); color: var(--ac); background: rgba(74,222,128,.06); }
+    .fa { color: var(--bd2); font-size: 1.05rem; }
+
+    /* agentic flow animation */
+    .flow-row .fb { opacity: 0; animation: fadeSlideIn .4s ease forwards; }
+    .flow-row .fb:nth-child(1)  { animation-delay: .05s; }
+    .flow-row .fb:nth-child(2)  { animation-delay: .10s; }
+    .flow-row .fb:nth-child(3)  { animation-delay: .15s; }
+    .flow-row .fb:nth-child(4)  { animation-delay: .20s; }
+    .flow-row .fb:nth-child(5)  { animation-delay: .25s; }
+    .flow-row .fb:nth-child(6)  { animation-delay: .30s; }
+    .flow-row .fa { opacity: 0; animation: fadeIn .3s ease forwards; }
+    .flow-row .fa:nth-child(2)  { animation-delay: .08s; }
+    .flow-row .fa:nth-child(4)  { animation-delay: .13s; }
+    .flow-row .fa:nth-child(6)  { animation-delay: .18s; }
+    .flow-row .fa:nth-child(8)  { animation-delay: .23s; }
+    .flow-row .fa:nth-child(10) { animation-delay: .28s; }
+    @keyframes fadeSlideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    /* ── CARDS ───────────────────────────────── */
+    .card-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1.25rem; }
+    .card {
+      background: var(--s2); border: 1px solid var(--bd);
+      border-radius: var(--rl); padding: 1.6rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .card:hover { border-color: var(--bd2); transform: translateY(-2px); }
+    .card h3 { margin-bottom: .5rem; }
+    .card p  { color: var(--tx2); font-size: .93rem; margin-bottom: 0; }
+
+    /* ── TAKEAWAY ─────────────────────────────── */
+    .takeaway {
+      display: flex; align-items: flex-start; gap: 1.1rem;
+      background: linear-gradient(135deg, rgba(74,222,128,.07), rgba(74,222,128,.02));
+      border: 1px solid var(--bd2); border-left: 3px solid var(--ac);
+      border-radius: 0 var(--rl) var(--rl) 0;
+      padding: 1.3rem 1.6rem; margin-top: 3rem;
+    }
+    .tw-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: .05rem; }
+    .tw-lbl { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ac); margin-bottom: .3rem; }
+    .tw-txt { font-size: 1.05rem; color: var(--tx); line-height: 1.82; }
+    .tw-txt strong { color: var(--ac); }
+
+    /* ── PIPELINE COVERAGE CHART ──────────────── */
+    .pc-wrap { margin: 2rem 0 1rem; }
+    .pc-head {
+      display: grid; grid-template-columns: 160px 1fr 110px;
+      gap: .75rem; margin-bottom: .4rem; align-items: center;
+    }
+    .pc-stages { display: flex; border: 1px solid var(--bd); border-radius: 4px; overflow: hidden; }
+    .pc-stage {
+      flex: 1; text-align: center; font-size: .68rem; font-weight: 600;
+      color: var(--tx3); padding: .4rem .2rem; letter-spacing: .03em;
+      border-right: 1px solid var(--bd);
+    }
+    .pc-stage:last-child { border-right: none; }
+    .pc-row {
+      display: grid; grid-template-columns: 160px 1fr 110px;
+      gap: .75rem; align-items: center; margin-bottom: .65rem;
+    }
+    .pc-lbl { font-size: .86rem; font-weight: 600; text-align: right; line-height: 1.3; }
+    .pc-track {
+      position: relative; height: 40px;
+      background: var(--s3); border-radius: 6px; overflow: hidden;
+    }
+    .pc-bar {
+      position: absolute; top: 6px; bottom: 6px;
+      left: var(--s); width: 0; border-radius: 4px;
+      transition: width 1.1s cubic-bezier(.25,.46,.45,.94);
+      display: flex; align-items: center; padding: 0 .6rem;
+      overflow: hidden;
+    }
+    .pc-bar.anim { width: var(--w); }
+    .pc-bar-txt { font-size: .67rem; font-weight: 700; color: rgba(0,0,0,.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pc-scope { font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: var(--tx3); line-height: 1.4; }
+    .pc-note { font-size: .78rem; color: var(--tx3); margin-top: .75rem; display: flex; align-items: flex-start; gap: .5rem; }
+    .pc-note::before { content: '↑'; color: var(--tx3); flex-shrink: 0; }
+
+    /* ── COMPARISON TABLE ─────────────────────── */
+    .tbl-wrap { overflow-x: auto; margin-top: 2rem; border: 1px solid var(--bd); border-radius: var(--rl); }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th {
+      text-align: left; padding: .75rem 1rem;
+      background: var(--s3); border-bottom: 2px solid var(--bd2);
+      font-weight: 600; font-size: .76rem; color: var(--tx2);
+      letter-spacing: .05em; white-space: nowrap;
+    }
+    td { padding: .72rem 1rem; border-bottom: 1px solid var(--bd); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--s3); }
+    .mbadge { display: inline-block; padding: .14rem .55rem; border-radius: 5px; font-size: .73rem; font-weight: 700; white-space: nowrap; }
+
+    /* ── SDD FLOW ─────────────────────────────── */
+    .sdd-flow { display: flex; flex-wrap: wrap; margin: 2rem 0; position: relative; }
+    .sf-step {
+      background: var(--s2); border: 1px solid var(--bd);
+      padding: 1rem 1.1rem; text-align: center; min-width: 108px;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .sf-step:hover { border-color: var(--bd2); background: var(--s3); }
+    .sf-step:first-child { border-radius: var(--r) 0 0 var(--r); }
+    .sf-step:last-child  { border-radius: 0 var(--r) var(--r) 0; }
+    .sf-icon { font-size: 1.3rem; margin-bottom: .25rem; }
+    .sf-name { font-size: .8rem; font-weight: 700; color: var(--ac); }
+    .sf-desc { font-size: .67rem; color: var(--tx3); margin-top: .12rem; line-height: 1.5; }
+    .sf-arr {
+      display: flex; align-items: center; padding: 0 .25rem;
+      color: var(--bd2); font-size: 1.15rem;
+      background: var(--s2); border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd);
+      animation: arrowPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes arrowPulse { 0%,100%{color:var(--bd2)} 50%{color:var(--ac2)} }
+
+    /* ── ITERATION LAYERS ─────────────────────── */
+    .iter-wrap {
+      display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+      background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl);
+      padding: 1.6rem; margin: 2rem 0;
+    }
+    .iter-layer {
+      flex: 1; min-width: 160px; background: var(--s3); border: 1px solid var(--bd);
+      border-radius: var(--r); padding: 1.1rem;
+    }
+    .il-num {
+      width: 30px; height: 30px; background: var(--acm); border: 1px solid var(--ac);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: .82rem; font-weight: 700; color: var(--ac); margin-bottom: .6rem;
+    }
+    .il-name { font-weight: 700; font-size: .95rem; margin-bottom: .3rem; }
+    .il-desc { font-size: .82rem; color: var(--tx2); line-height: 1.7; }
+    .iter-cyc { font-size: 1.75rem; color: var(--ac2); flex-shrink: 0; animation: spin 3s linear infinite; opacity: .6; }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    /* ── RESPONSIBILITY ───────────────────────── */
+    .resp { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; background: var(--s2); margin: 2rem 0; }
+    .resp-col { padding: 1.6rem; }
+    .resp-col + .resp-col { border-left: 1px solid var(--bd); }
+    .resp-h { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: .9rem; padding-bottom: .5rem; border-bottom: 1px solid var(--bd); }
+    .ri { display: flex; align-items: flex-start; gap: .5rem; font-size: .88rem; color: var(--tx2); margin-bottom: .5rem; }
+    .ri::before { content:'●'; font-size:.45rem; margin-top:.6rem; flex-shrink:0; }
+    .ri.ac  { color: var(--ac); }
+    .ri.err { color: var(--err); }
+
+    /* ── DEMO LAB ─────────────────────────────── */
+    #demo { background: var(--bg); }
+    .demo-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .demo-tab {
+      padding: .5rem 1.1rem; border: 1px solid var(--bd);
+      background: var(--s2); color: var(--tx2);
+      border-radius: var(--r); cursor: pointer; font-size: .86rem;
+      font-family: inherit; transition: all .18s;
+    }
+    .demo-tab:hover { border-color: var(--ac); color: var(--tx); }
+    .demo-tab.active { background: var(--acm); border-color: var(--ac); color: var(--ac); font-weight: 700; }
+    .demo-panel { display: none; animation: fadeIn .3s ease; }
+    .demo-panel.active { display: block; }
+
+    /* Demo A */
+    .va-btns { display: flex; gap: .7rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .vb {
+      background: var(--s3); border: 2px solid var(--bd);
+      color: var(--tx); padding: .6rem 1.1rem; border-radius: var(--r);
+      cursor: pointer; font-family: inherit; font-size: .9rem;
+      transition: all .2s; font-weight: 500;
+    }
+    .vb:hover { border-color: var(--ac2); transform: translateY(-2px); }
+    .vb.sel { background: var(--acm); border-color: var(--ac); color: var(--ac); }
+
+    .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+    @media(max-width:640px){ .ba { grid-template-columns: 1fr; } }
+    .bef, .aft { border-radius: var(--rl); overflow: hidden; }
+    .bef { border: 1px solid rgba(251,113,133,.4); }
+    .aft { border: 1px solid rgba(74,222,128,.4); }
+    .bh { padding: .6rem 1rem; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .bef .bh { background: rgba(251,113,133,.1); color: var(--err); }
+    .aft .bh { background: rgba(74,222,128,.07); color: var(--ac); }
+    .bb { padding: 1.1rem 1.25rem; background: var(--s2); font-size: .88rem; }
+    .sf  { margin-bottom: .8rem; }
+    .sfl { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ac); margin-bottom: .22rem; }
+    .sfv { color: var(--tx2); line-height: 1.7; }
+    .tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .25rem; }
+    .tag  { background: var(--s3); border: 1px solid var(--bd); color: var(--tx2); font-size: .72rem; padding: .12rem .48rem; border-radius: 4px; }
+    .ac-i { display: flex; align-items: flex-start; gap: .45rem; font-size: .85rem; color: var(--tx2); margin-bottom: .35rem; }
+    .ac-i::before { content:'✓'; color: var(--ac); flex-shrink: 0; font-weight: 700; }
+
+    /* Demo B - Mode Switcher */
+    .mode-tabs { display: flex; overflow-x: auto; scrollbar-width: none; border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; margin-bottom: 1.25rem; }
+    .mode-tabs::-webkit-scrollbar { display: none; }
+    .mtb {
+      flex: 1; min-width: 90px; padding: .7rem .5rem;
+      background: var(--s2); border: none; border-right: 1px solid var(--bd);
+      color: var(--tx2); cursor: pointer; font-family: inherit;
+      font-size: .8rem; font-weight: 500; transition: all .18s; text-align: center;
+    }
+    .mtb:last-child { border-right: none; }
+    .mtb:hover { background: var(--s3); color: var(--tx); }
+    .mtb.active { font-weight: 700; }
+    .mode-det { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; }
+    .mdh { padding: 1.3rem 1.6rem; border-bottom: 1px solid var(--bd); }
+    .mdt { font-size: 1.3rem; font-weight: 700; margin-bottom: .25rem; }
+    .mds { font-size: .85rem; color: var(--tx2); }
+    .mds strong { color: var(--tx); }
+    .mdg { display: grid; grid-template-columns: 1fr 1fr; }
+    @media(max-width:600px){ .mdg { grid-template-columns: 1fr; } }
+    .mdc { padding: 1.1rem 1.3rem; border-right: 1px solid var(--bd); border-bottom: 1px solid var(--bd); }
+    .mdc:nth-child(even) { border-right: none; }
+    .mdcl { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--tx3); margin-bottom: .45rem; }
+    .mdcv { font-size: .9rem; color: var(--tx2); }
+    .mdcv ul { list-style: none; }
+    .mdcv ul li { font-size: .87rem; color: var(--tx2); padding: .15rem 0; }
+    .mdcv ul li::before { content: '→ '; color: var(--ac2); }
+    .fail-txt { color: var(--err) !important; }
+
+    /* Demo C */
+    .pain { background: var(--s3); border-left: 3px solid var(--warn); border-radius: 0 var(--r) var(--r) 0; padding: 1rem 1.25rem; margin-bottom: 1.4rem; font-style: italic; color: var(--tx2); font-size: .95rem; }
+    .pain strong { color: var(--warn); font-style: normal; }
+    .convert-arrow { text-align: center; font-size: 2rem; color: var(--ac2); margin: 1rem 0; animation: arrowPulse 2s ease-in-out infinite; }
+    .wp { background: var(--s2); border: 1px solid rgba(74,222,128,.35); border-radius: var(--rl); overflow: hidden; }
+    .wph { background: rgba(74,222,128,.07); padding: .9rem 1.3rem; border-bottom: 1px solid var(--bd); display: flex; align-items: center; gap: .75rem; }
+    .wph h4 { color: var(--ac); font-size: 1rem; }
+    .wpb { padding: 1.3rem; }
+    .wps { margin-bottom: 1.2rem; }
+    .wps:last-child { margin-bottom: 0; }
+    .wpsl { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ac); margin-bottom: .5rem; padding-bottom: .35rem; border-bottom: 1px solid var(--bd); }
+    .tl { list-style: none; }
+    .ti { display: flex; align-items: center; gap: .75rem; padding: .5rem 0; border-bottom: 1px solid var(--bd); font-size: .88rem; }
+    .ti:last-child { border-bottom: none; }
+    .tid { background: var(--s3); border: 1px solid var(--bd); color: var(--tx2); font-size: .7rem; font-weight: 700; padding: .1rem .42rem; border-radius: 4px; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+    .tn { color: var(--tx); flex: 1; }
+    .te { color: var(--tx3); font-size: .78rem; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
+
+    /* Demo D */
+    .cg { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media(max-width:640px){ .cg { grid-template-columns: 1fr; } }
+    .cc { border-radius: var(--rl); overflow: hidden; }
+    .cc.bad  { border: 1px solid rgba(251,113,133,.4); }
+    .cc.good { border: 1px solid rgba(74,222,128,.4); }
+    .cch { padding: .7rem 1.1rem; font-size: .82rem; font-weight: 700; }
+    .bad .cch  { background: rgba(251,113,133,.1); color: var(--err); }
+    .good .cch { background: rgba(74,222,128,.07); color: var(--ac); }
+    .ccb { background: var(--s2); padding: 1.1rem; }
+    .ci  { margin-bottom: .85rem; font-size: .88rem; }
+    .cil { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: .28rem; }
+    .bad .cil  { color: var(--err); }
+    .good .cil { color: var(--ac); }
+    .civ { color: var(--tx2); line-height: 1.75; }
+    .ptag { display: inline-block; background: rgba(74,222,128,.1); border: 1px solid var(--ac2); color: var(--ac); font-size: .72rem; padding: .1rem .45rem; border-radius: 4px; margin: .1rem .2rem .1rem 0; }
+    .ctag { display: inline-block; background: rgba(251,113,133,.1); border: 1px solid var(--err); color: var(--err); font-size: .72rem; padding: .1rem .45rem; border-radius: 4px; margin: .1rem .2rem .1rem 0; }
+
+    /* Demo E */
+    .ace { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; align-items: start; }
+    @media(max-width:640px){ .ace { grid-template-columns: 1fr; } }
+    .fg { margin-bottom: 1rem; }
+    .fl { display: block; font-size: .82rem; font-weight: 600; color: var(--tx2); margin-bottom: .38rem; }
+    select, textarea {
+      width: 100%; background: var(--s3); border: 1px solid var(--bd);
+      border-radius: var(--r); color: var(--tx); font-family: inherit;
+      font-size: .9rem; padding: .6rem .9rem; outline: none; resize: vertical;
+      transition: border-color .18s;
+    }
+    select:focus, textarea:focus { border-color: var(--ac2); }
+    select option { background: var(--s3); }
+    .ace-prev { background: var(--code); border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; }
+    .ace-ph { display: flex; align-items: center; justify-content: space-between; padding: .65rem 1.1rem; background: var(--s2); border-bottom: 1px solid var(--bd); font-size: .76rem; font-weight: 600; color: var(--tx2); }
+    .ace-pc { padding: 1.1rem; font-family: 'JetBrains Mono', monospace; font-size: .84rem; line-height: 1.85; white-space: pre-wrap; color: var(--tx); min-height: 150px; }
+
+    /* ── ENTERPRISE ACCEPTANCE ────────────────── */
+    .ea-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1.25rem; }
+    .ea-card {
+      background: var(--s2); border: 1px solid var(--bd);
+      border-radius: var(--rl); padding: 1.5rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .ea-card:hover { border-color: var(--bd2); transform: translateY(-2px); }
+    .ea-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--acm); border: 1px solid var(--ac);
+      color: var(--ac); font-size: .82rem; font-weight: 700;
+      margin-bottom: .75rem;
+    }
+    .ea-title { font-weight: 700; font-size: 1.02rem; margin-bottom: .4rem; }
+    .ea-desc { font-size: .88rem; color: var(--tx2); line-height: 1.75; margin-bottom: 0; }
+    .ea-check { font-size: .78rem; color: var(--tx3); margin-top: .6rem; font-family: 'JetBrains Mono', monospace; }
+    .ea-check span { color: var(--ac); }
+
+    /* production gap */
+    .prod-gap { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin: 2rem 0; }
+    @media(max-width:640px){ .prod-gap { grid-template-columns: 1fr; } }
+    .pg-stage { border-radius: var(--rl); overflow: hidden; border: 1px solid var(--bd); }
+    .pg-head { padding: .75rem 1.1rem; font-size: .78rem; font-weight: 700; }
+    .pg-body { background: var(--s2); padding: 1.1rem; font-size: .84rem; color: var(--tx2); line-height: 1.75; }
+    .pg-arrow { display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: var(--bd2); }
+    @media(max-width:640px){ .pg-arrow { transform: rotate(90deg); } }
+    /* replaced 3-col grid with 5-col for arrows */
+    .prod-gap-5 { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: .75rem; align-items: center; margin: 2rem 0; }
+    @media(max-width:640px){ .prod-gap-5 { grid-template-columns: 1fr; } }
+
+    /* ── USE CASES ────────────────────────────── */
+    .uc-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(295px,1fr)); gap: 1.25rem; }
+    .uc { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); padding: 1.5rem; transition: border-color .2s, transform .2s; }
+    .uc:hover { border-color: var(--bd2); transform: translateY(-2px); }
+    .uc-icon { font-size: 2rem; margin-bottom: .7rem; }
+    .uc h3 { font-size: 1rem; margin-bottom: .35rem; }
+    .uc .sc { font-size: .88rem; color: var(--tx2); margin-bottom: .8rem; line-height: 1.75; }
+    .metas { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .mt { background: var(--s3); border: 1px solid var(--bd); color: var(--tx2); font-size: .7rem; padding: .12rem .48rem; border-radius: 4px; }
+
+    /* ── ROLES ────────────────────────────────── */
+    .role-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(295px,1fr)); gap: 1.25rem; }
+    .role { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; transition: border-color .2s; }
+    .role:hover { border-color: var(--bd2); }
+    .role-h { padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--bd); }
+    .role-t { font-size: 1.1rem; font-weight: 700; margin-bottom: .15rem; }
+    .role-s { font-size: .8rem; color: var(--tx2); }
+    .role-b { padding: 1.3rem 1.4rem; }
+    .rs { margin-bottom: 1rem; }
+    .rs:last-child { margin-bottom: 0; }
+    .rsl { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: .4rem; }
+    .rsl.from { color: var(--tx3); }
+    .rsl.to   { color: var(--ac); }
+    .rit { list-style: none; }
+    .rit li { font-size: .88rem; color: var(--tx2); padding: .2rem 0; display: flex; align-items: flex-start; gap: .4rem; }
+    .rit li.from::before { content:'—'; color: var(--tx3); flex-shrink:0; }
+    .rit li.to::before   { content:'→'; color: var(--ac);  flex-shrink:0; }
+    .rshift { background: var(--s3); border: 1px solid var(--bd); border-radius: var(--r); padding: .6rem .9rem; font-size: .84rem; color: var(--tx2); margin-top: .65rem; }
+    .rshift strong { color: var(--tx); }
+
+    /* ── PLAYBOOK ─────────────────────────────── */
+    .pb { display: flex; flex-direction: column; }
+    .pb-step { display: flex; align-items: flex-start; gap: 1.2rem; padding: 1.25rem 1.4rem; border: 1px solid var(--bd); border-bottom: none; transition: background .18s; }
+    .pb-step:first-child { border-radius: var(--rl) var(--rl) 0 0; }
+    .pb-step:last-child  { border-bottom: 1px solid var(--bd); border-radius: 0 0 var(--rl) var(--rl); }
+    .pb-step:hover { background: var(--s3); }
+    .snum { width: 36px; height: 36px; background: var(--acm); border: 1px solid var(--ac); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 700; color: var(--ac); flex-shrink: 0; }
+    .sc2 { flex: 1; }
+    .st  { font-weight: 700; font-size: 1.07rem; margin-bottom: .3rem; }
+    .sd  { font-size: .95rem; color: var(--tx2); line-height: 1.82; margin-bottom: 0; }
+    .stips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+    .stip { background: var(--s3); border: 1px solid var(--bd); color: var(--tx3); font-size: .7rem; padding: .1rem .45rem; border-radius: 4px; font-family: 'JetBrains Mono', monospace; }
+    /* Compact refs */
+    .ref-compact { color: var(--tx3); font-size: .9rem; line-height: 2.2; }
+    .ref-compact .ref-tag { margin-right: .2rem; }
+    /* Role start callout */
+    .role-start-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 2.8rem; }
+    .rs-box { background: var(--s2); border: 1px solid var(--bd2); border-radius: var(--rl); padding: 1.2rem 1.4rem; transition: border-color .2s; }
+    .rs-box:hover { border-color: var(--ac); }
+    .rs-ico { font-size: 1.5rem; margin-bottom: .45rem; }
+    .rs-role { font-size: .88rem; font-weight: 700; color: var(--ac); margin-bottom: .5rem; letter-spacing: .02em; }
+    .rs-desc { font-size: .9rem; color: var(--tx2); line-height: 1.72; }
+
+    /* ── TEMPLATES ────────────────────────────── */
+    .tpl-g { display: flex; flex-direction: column; gap: 1.5rem; }
+    .tpl { background: var(--code); border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; }
+    .tplh { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1.25rem; background: var(--s2); border-bottom: 1px solid var(--bd); }
+    .tplt { font-weight: 700; font-size: .95rem; }
+    .tplb { padding: 1.2rem 1.4rem; font-family: 'JetBrains Mono', monospace; font-size: .8rem; line-height: 1.85; color: var(--tx2); white-space: pre-wrap; overflow-x: auto; }
+
+    /* ── REFERENCES ───────────────────────────── */
+    #refs { background: var(--surf); }
+    .ref-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 1.25rem; }
+    .ref-cat { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); padding: 1.4rem; }
+    .ref-cat-title { font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ac); margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--bd); }
+    .ref-item { margin-bottom: .85rem; }
+    .ref-item:last-child { margin-bottom: 0; }
+    .ref-name { font-weight: 600; font-size: .9rem; margin-bottom: .15rem; }
+    .ref-desc { font-size: .82rem; color: var(--tx2); line-height: 1.65; }
+    .ref-tag { display: inline-block; background: var(--acm); color: var(--ac); font-size: .66rem; font-weight: 700; padding: .08rem .4rem; border-radius: 3px; margin-right: .35rem; vertical-align: middle; }
+
+    /* ── COPY BUTTON ──────────────────────────── */
+    .cpb {
+      background: var(--s3); border: 1px solid var(--bd); color: var(--tx2);
+      padding: .3rem .72rem; border-radius: 5px; cursor: pointer;
+      font-family: inherit; font-size: .73rem; font-weight: 600;
+      transition: all .18s; display: inline-flex; align-items: center; gap: .32rem;
+    }
+    .cpb:hover { border-color: var(--ac2); color: var(--ac); }
+    .cpb.ok { border-color: var(--ac); color: var(--ac); background: var(--acm); }
+
+    /* ── TOAST ────────────────────────────────── */
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--acm); border: 1px solid var(--ac); color: var(--ac); padding: .6rem 1.1rem; border-radius: var(--r); font-size: .86rem; font-weight: 600; z-index: 999; opacity: 0; transform: translateY(.5rem); transition: opacity .2s, transform .2s; pointer-events: none; }
+    #toast.on { opacity: 1; transform: translateY(0); }
+
+    /* ── DORA QUOTE ───────────────────────────── */
+    .dora-quote {
+      background: linear-gradient(135deg, rgba(103,232,249,.06), rgba(103,232,249,.02));
+      border: 1px solid rgba(103,232,249,.2); border-left: 3px solid var(--blue);
+      border-radius: 0 var(--rl) var(--rl) 0;
+      padding: 1.4rem 1.6rem; margin: 2rem 0;
+    }
+    .dq-text { font-size: 1.08rem; color: var(--tx); line-height: 1.85; margin-bottom: .6rem; font-style: italic; }
+    .dq-text strong { color: var(--blue); font-style: normal; }
+    .dq-src { font-size: .76rem; color: var(--tx3); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── FOOTER ───────────────────────────────── */
+    footer { background: var(--surf); border-top: 1px solid var(--bd); padding: 2rem 0; text-align: center; color: var(--tx3); font-size: .82rem; }
+    footer a { color: var(--tx2); text-decoration: none; }
+    footer a:hover { color: var(--ac); }
+    footer p + p { margin-top: .4rem; }
+
+    /* ── UTILS ────────────────────────────────── */
+    .ac   { color: var(--ac); }
+    .mu   { color: var(--tx2); }
+    .err  { color: var(--err); }
+    .warn { color: var(--warn); }
+    .xs   { font-size: .78rem; }
+    .sm   { font-size: .9rem; }
+    .code-il { background: var(--code); border: 1px solid var(--bd); border-radius: 3px; padding: .04em .34em; font-family: 'JetBrains Mono', monospace; font-size: .88em; color: var(--ac); }
+
+    /* ── RESPONSIVE ───────────────────────────── */
+    @media(max-width:768px){
+      .resp { grid-template-columns: 1fr; }
+      .resp-col + .resp-col { border-left: none; border-top: 1px solid var(--bd); }
+      .sdd-flow { flex-direction: column; }
+      .sf-step:first-child { border-radius: var(--r) var(--r) 0 0; }
+      .sf-step:last-child  { border-radius: 0 0 var(--r) var(--r); }
+      .sf-step { text-align: left; display: flex; align-items: center; gap: .75rem; }
+      .sf-icon { margin-bottom: 0; font-size: 1.1rem; }
+      .sf-arr { border-left: 1px solid var(--bd); border-right: 1px solid var(--bd); border-top: none; border-bottom: none; justify-content: center; padding: .15rem 1rem; }
+      .pc-head, .pc-row { grid-template-columns: 100px 1fr 80px; }
+      .iter-wrap { flex-direction: column; }
+      .iter-cyc { transform: rotate(90deg); }
+      .prod-gap-5 { grid-template-columns: 1fr; gap: .5rem; }
+    }
+    @media(max-width:480px){ section { padding: 4rem 0; } }
+  </style>
+</head>
+<body>
+
+<!-- ══ NAV ══════════════════════════════════════ -->
+<nav>
+  <div class="ct nav-in">
+    <a class="nav-brand" href="#hero">Agentic Coding × SDD</a>
+    <ul class="nav-links">
+      <li><a href="#why">為何現在</a></li>
+      <li><a href="#scope">模式地圖</a></li>
+      <li><a href="#sdd">SDD 方法</a></li>
+      <li><a href="#demo">互動 Demo</a></li>
+      <li><a href="#apply">企業應用</a></li>
+      <li><a href="#pb">導入路線</a></li>
+      <li><a href="#resource">模板資源</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ══ HERO ═════════════════════════════════════ -->
+<section id="hero">
+  <div class="ct">
+    <div class="hero-badge">企業 AI 部門技術轉型方法論</div>
+    <h1 class="hero-title rv">從傳統 Coding<br>到 Spec-Driven Agentic Coding</h1>
+    <p class="hero-sub rv rv-d1">
+      現代開發的價值不在「把 code 寫快一點」，<br>
+      而在「把公司問題變成可驗收的技術交付」。
+    </p>
+    <div class="hero-thesis rv rv-d2">
+      <strong>核心論點：</strong>Agentic Coding 不是讓 AI 更快幫人寫 code，
+      而是把企業問題轉成 AI agent 可理解、可執行、可驗收的技術工作包。
+      SDD 是這套模式的核心方法，負責把模糊需求轉成 spec → plan → tasks → verification 的工程閉環。
+    </div>
+
+    <div class="rv rv-d3">
+      <div class="flow-group">
+        <div class="flow-lbl" style="color:var(--tx3)">傳統 Coding：工程師接到的是被切好的 coding slices</div>
+        <div class="flow-row">
+          <span class="fb">業務痛點</span><span class="fa">→</span>
+          <span class="fb">BA / PM 梳理</span><span class="fa">→</span>
+          <span class="fb">架構規劃</span><span class="fa">→</span>
+          <span class="fb">工程師接 slices</span><span class="fa">→</span>
+          <span class="fb">QA / UAT</span><span class="fa">→</span>
+          <span class="fb" style="color:var(--err)">回修迴圈</span>
+        </div>
+      </div>
+      <div class="flow-group" style="margin-top:1.1rem">
+        <div class="flow-lbl ac">Spec-Driven Agentic：從痛點到交付的可迭代閉環</div>
+        <div class="flow-row">
+          <span class="fb hi">痛點釐清</span><span class="fa">→</span>
+          <span class="fb hi">SDD Spec</span><span class="fa">→</span>
+          <span class="fb hi">Plan / Tasks</span><span class="fa">→</span>
+          <span class="fb">Agent Build</span><span class="fa">→</span>
+          <span class="fb">企業驗收</span><span class="fa">→</span>
+          <span class="fb hi">交付 ✓</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ WHY NOW ══════════════════════════════════ -->
+<section id="why">
+  <div class="ct">
+    <div class="sec-lbl">為何現在</div>
+    <h2 class="sec-h rv">瓶頸已經移位了</h2>
+    <p class="sec-d rv rv-d1">傳統軟體的生產瓶頸是「誰來寫」。Agentic Coding 讓瓶頸轉移到「誰能把問題拆清楚、規格定準、驗收設好」。</p>
+
+    <div class="dora-quote rv rv-d1">
+      <p class="dq-text">「AI 是 <strong>放大器（amplifier）</strong>——它會放大強流程，也會放大弱流程。越早練會問題拆解、規格撰寫與任務切分，越早把 AI 從局部工具升級成部門交付能力。」</p>
+      <div class="dq-src">— DORA 2025 State of DevOps Report</div>
+    </div>
+
+    <div class="card-g">
+      <div class="card rv rv-d1">
+        <h3 class="mu">傳統 Coding 的瓶頸</h3>
+        <div class="div"></div>
+        <div class="ri">人力不足：工程師人數決定產出上限</div>
+        <div class="ri">技術債累積：每次改動需重理解歷史脈絡</div>
+        <div class="ri">交付週期長：需求 → 上線平均數週</div>
+        <div class="ri">測試覆蓋低：人工測試耗時，覆蓋率難提升</div>
+        <div class="ri">回修迴圈：QA/UAT → ticket → re-code → 再驗收</div>
+      </div>
+      <div class="card rv rv-d2" style="border-color:var(--bd2)">
+        <h3 class="ac">Agentic Coding 的新瓶頸</h3>
+        <div class="div" style="background:var(--bd2)"></div>
+        <div class="ri">問題定義模糊：spec 不清，AI 會猜，猜錯快速放大</div>
+        <div class="ri">驗收標準缺失：「完成」定義不明，無法驗收</div>
+        <div class="ri">Non-goals 未定：範疇邊界模糊，agent 越界</div>
+        <div class="ri">repo context 不完整：agent 需理解系統才能正確操作</div>
+        <div class="ri">無迭代框架：缺少 spec → task → 驗收的閉環機制</div>
+      </div>
+    </div>
+
+    <div class="takeaway rv rv-d3">
+      <div class="tw-icon">💡</div>
+      <div>
+        <div class="tw-lbl">核心論點</div>
+        <p class="tw-txt">要改變的不是「誰寫 code」，而是「<strong>誰能把問題變成可交付的技術工作包</strong>」。AI PM、AI 資料科學家與 AI 工程師的能力邊界都在上移，不是消失。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SCOPE MAP ═════════════════════════════════ -->
+<section id="scope">
+  <div class="ct">
+    <div class="sec-lbl">開發模式地圖</div>
+    <h2 class="sec-h rv">五種模式，覆蓋範圍截然不同</h2>
+    <p class="sec-d rv rv-d1">問題不是「哪種最好」，而是「這個任務在整個交付流程的哪個位置，適合哪種模式接手」。越往下，覆蓋的交付範圍越大，起始點也越往前移。</p>
+
+    <!-- Pipeline Coverage Chart -->
+    <div class="pc-wrap rv rv-d2">
+      <div class="pc-head">
+        <div></div>
+        <div class="pc-stages">
+          <div class="pc-stage">問題<br>識別</div>
+          <div class="pc-stage">規格<br>定義</div>
+          <div class="pc-stage">計畫<br>拆解</div>
+          <div class="pc-stage">程式碼<br>實作</div>
+          <div class="pc-stage">測試<br>驗收</div>
+          <div class="pc-stage">整合<br>交付</div>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="pc-row" style="--delay:0s">
+        <div class="pc-lbl" style="color:#94a3b8">傳統 Coding</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:52%;--w:17%;background:linear-gradient(90deg,#475569,#64748b);transition-delay:0s">
+            <span class="pc-bar-txt">coding slices</span>
+          </div>
+        </div>
+        <div class="pc-scope">function<br>module</div>
+      </div>
+
+      <div class="pc-row">
+        <div class="pc-lbl" style="color:#38bdf8">AI 輔助 Coding</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:50%;--w:31%;background:linear-gradient(90deg,#0369a1,#0ea5e9);transition-delay:.12s">
+            <span class="pc-bar-txt">snippet + assist</span>
+          </div>
+        </div>
+        <div class="pc-scope">snippet<br>local diff</div>
+      </div>
+
+      <div class="pc-row">
+        <div class="pc-lbl" style="color:#c084fc">Vibe Coding</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:34%;--w:47%;background:linear-gradient(90deg,#7e22ce,#a855f7);transition-delay:.24s">
+            <span class="pc-bar-txt">快速生成 prototype</span>
+          </div>
+        </div>
+        <div class="pc-scope">prototype<br>demo</div>
+      </div>
+
+      <div class="pc-row">
+        <div class="pc-lbl" style="color:#fbbf24">Agentic Coding</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:17%;--w:72%;background:linear-gradient(90deg,#b45309,#f59e0b);transition-delay:.36s">
+            <span class="pc-bar-txt">repo-level tasks → delivery</span>
+          </div>
+        </div>
+        <div class="pc-scope">task / PR<br>feature slice</div>
+      </div>
+
+      <div class="pc-row">
+        <div class="pc-lbl" style="color:#4ade80">Spec-Driven<br>Agentic（SDD）</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:0%;--w:100%;background:linear-gradient(90deg,#14532d,#15803d,#22c55e);transition-delay:.48s">
+            <span class="pc-bar-txt">問題 → 規格 → 任務 → 實作 → 驗收 → 交付</span>
+          </div>
+        </div>
+        <div class="pc-scope">verified<br>workflow</div>
+      </div>
+
+      <p class="pc-note">越往下，起始點越往左，代表該模式可以更早介入交付流程。傳統 Coding 僅接手已切好的程式碼片段；SDD 從問題識別階段就開始介入，負責完整閉環。</p>
+    </div>
+
+    <!-- Mode Comparison Table -->
+    <div class="tbl-wrap rv rv-d3">
+      <table>
+        <thead>
+          <tr>
+            <th>模式</th><th>介入起點</th><th>核心交付</th>
+            <th>人的主要工作</th><th>AI 的主要工作</th><th>失敗模式</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(100,116,139,.25);color:#94a3b8">傳統 Coding</span></td>
+            <td class="xs" style="color:var(--tx3)">程式碼實作</td>
+            <td class="mono xs">function / module</td>
+            <td class="sm">設計、撰寫、測試、除錯</td>
+            <td class="sm mu">無（或語法補全）</td>
+            <td class="sm err">速度瓶頸、人力不足</td>
+          </tr>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(14,165,233,.2);color:#38bdf8">AI 輔助 Coding</span></td>
+            <td class="xs" style="color:var(--tx3)">程式碼實作</td>
+            <td class="mono xs">snippet / diff</td>
+            <td class="sm">引導方向、確認補全</td>
+            <td class="sm">程式補全、解釋錯誤</td>
+            <td class="sm err">局部正確整體不一致</td>
+          </tr>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(168,85,247,.2);color:#c084fc">Vibe Coding</span></td>
+            <td class="xs" style="color:var(--tx3)">計畫拆解</td>
+            <td class="mono xs">prototype / demo</td>
+            <td class="sm">下 prompt、微調結果</td>
+            <td class="sm">快速生成 prototype</td>
+            <td class="sm err">難維護、難驗收</td>
+          </tr>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(245,158,11,.2);color:#fbbf24">Agentic Coding</span></td>
+            <td class="xs" style="color:var(--tx3)">規格定義</td>
+            <td class="mono xs">task / PR / slice</td>
+            <td class="sm">定義任務、設定驗收</td>
+            <td class="sm">讀 repo、規劃、實作</td>
+            <td class="sm err">目標不清錯誤放大</td>
+          </tr>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(74,222,128,.15);color:#4ade80">Spec-Driven（SDD）</span></td>
+            <td class="xs" style="color:var(--ac)">問題識別</td>
+            <td class="mono xs">verified workflow</td>
+            <td class="sm">問題定義、spec、驗收設計</td>
+            <td class="sm">repo-level 任務交付</td>
+            <td class="sm warn">規格品質決定交付品質</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="takeaway rv rv-d4">
+      <div class="tw-icon">🎯</div>
+      <div>
+        <div class="tw-lbl">核心論點</div>
+        <p class="tw-txt">Vibe Coding 可以讓 prototype 快速出現，但<strong>企業需要的是能進入既有系統、通過驗收、可維護的功能與流程</strong>。可以快速看到東西 ≠ 可以放進企業流程長期運作。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SDD ═══════════════════════════════════════ -->
+<section id="sdd">
+  <div class="ct">
+    <div class="sec-lbl">SDD 方法</div>
+    <h2 class="sec-h rv">SDD 是 Agentic Coding 的控制面</h2>
+    <p class="sec-d rv rv-d1">沒有 SDD，AI 會猜。有 SDD，AI 有明確的問題、範圍、任務邊界與驗收標準。SDD 不是多寫文件——它是把模糊需求轉成可執行、可驗收、可重跑的技術工作包。</p>
+
+    <!-- SDD Flow -->
+    <div class="sdd-flow rv rv-d2">
+      <div class="sf-step"><div class="sf-icon">🎯</div><div class="sf-name">痛點釐清</div><div class="sf-desc">業務影響<br>量化標準</div></div>
+      <div class="sf-arr">→</div>
+      <div class="sf-step"><div class="sf-icon">📋</div><div class="sf-name">寫 Spec</div><div class="sf-desc">Goal / Non-goals<br>Acceptance Criteria</div></div>
+      <div class="sf-arr">→</div>
+      <div class="sf-step"><div class="sf-icon">🗂️</div><div class="sf-name">拆 Plan</div><div class="sf-desc">任務切分<br>依賴關係</div></div>
+      <div class="sf-arr">→</div>
+      <div class="sf-step"><div class="sf-icon">⚙️</div><div class="sf-name">Agent Build</div><div class="sf-desc">讀 repo<br>修改 / 測試</div></div>
+      <div class="sf-arr">→</div>
+      <div class="sf-step"><div class="sf-icon">✅</div><div class="sf-name">驗收</div><div class="sf-desc">跑 AC<br>CI pipeline</div></div>
+      <div class="sf-arr">→</div>
+      <div class="sf-step"><div class="sf-icon">👁️</div><div class="sf-name">人工審查</div><div class="sf-desc">取捨判斷<br>最終確認</div></div>
+      <div class="sf-arr">→</div>
+      <div class="sf-step"><div class="sf-icon">🚀</div><div class="sf-name">交付</div><div class="sf-desc">文件化<br>Handoff</div></div>
+    </div>
+
+    <!-- 3-Layer Iteration -->
+    <h3 style="margin-bottom:.75rem;color:var(--tx2);font-size:.95rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-size:.78rem" class="rv rv-d2">中間不是單次通關，而是三層迭代</h3>
+    <div class="iter-wrap rv rv-d3">
+      <div class="iter-layer">
+        <div class="il-num">1</div>
+        <div class="il-name">規格迭代</div>
+        <p class="il-desc">Spec 不清楚就修改 Spec，而不是重寫 code。良好的 spec 是後續所有迭代的基礎。</p>
+      </div>
+      <div class="iter-cyc">↻</div>
+      <div class="iter-layer">
+        <div class="il-num">2</div>
+        <div class="il-name">任務迭代</div>
+        <p class="il-desc">測試不過就調整任務拆解，而不是放棄驗收。每個任務都要有獨立的驗收條件。</p>
+      </div>
+      <div class="iter-cyc">↻</div>
+      <div class="iter-layer">
+        <div class="il-num">3</div>
+        <div class="il-name">驗收迭代</div>
+        <p class="il-desc">UAT 不過就回到 Spec，而不是繞過驗收。好的 Agentic Flow 不怕多次迭代。</p>
+      </div>
+    </div>
+    <p class="sm mu rv rv-d3" style="text-align:center;margin-top:.5rem">良好的 Agentic Flow 不怕多次迭代——它怕的是「沒有規格、沒有任務邊界、沒有驗收證據」的反覆試錯</p>
+
+    <!-- Responsibility Split -->
+    <div class="resp rv rv-d4">
+      <div class="resp-col">
+        <div class="resp-h" style="color:var(--tx2)">人（Human）聚焦於</div>
+        <div style="font-size:.75rem;color:var(--tx3);margin-bottom:.7rem;font-weight:600">傳統 Coding 中，人負責一切：</div>
+        <div class="ri">需求理解與澄清</div>
+        <div class="ri">系統架構設計</div>
+        <div class="ri">每一行程式碼的撰寫</div>
+        <div class="ri">測試案例設計與執行</div>
+        <div class="ri">Bug 定位與修復</div>
+        <div style="margin-top:1rem;font-size:.75rem;color:var(--ac);margin-bottom:.65rem;font-weight:600">SDD Agentic 中，人上移至：</div>
+        <div class="ri ac">問題定義與範疇設定</div>
+        <div class="ri ac">Spec 撰寫（Non-goals 最難最重要）</div>
+        <div class="ri ac">驗收標準設計</div>
+        <div class="ri ac">架構判斷與取捨</div>
+        <div class="ri ac">最終審查與交付確認</div>
+      </div>
+      <div class="resp-col">
+        <div class="resp-h" style="color:var(--ac)">AI Agent 接手</div>
+        <div style="font-size:.75rem;color:var(--tx3);margin-bottom:.7rem;font-weight:600">Agentic / SDD 中，agent 執行：</div>
+        <div class="ri">讀取並理解整個 repo 結構</div>
+        <div class="ri">根據 spec 制定實作計畫</div>
+        <div class="ri">跨檔案修改與新增</div>
+        <div class="ri">執行測試並分析失敗原因</div>
+        <div class="ri">根據測試失敗反覆修正</div>
+        <div class="ri">提交可審查的候選結果</div>
+        <div style="margin-top:1rem;font-size:.75rem;color:var(--err);margin-bottom:.65rem;font-weight:600">Agent 不替代的事：</div>
+        <div class="ri err">決定問題的業務優先級</div>
+        <div class="ri err">判斷 Non-goals 的邊界</div>
+        <div class="ri err">最終交付的人工審查判斷</div>
+      </div>
+    </div>
+
+    <div class="takeaway rv rv-d5">
+      <div class="tw-icon">⚙️</div>
+      <div>
+        <div class="tw-lbl">核心論點</div>
+        <p class="tw-txt">SDD 不等於全部 Agentic Coding；<strong>SDD 是讓 Agentic Coding 變成企業可交付流程的核心方法</strong>。不是把 coding slice 丟給 AI，而是讓 AI agent 在明確規格與驗收標準下承接多步驟工程任務。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DEMO LAB ══════════════════════════════════ -->
+<section id="demo">
+  <div class="ct">
+    <div class="sec-lbl">互動 Demo</div>
+    <h2 class="sec-h rv">動手體驗方法論的差異</h2>
+    <p class="sec-d rv rv-d1">以下 Demo 的目的是讓你親身感受「有 SDD」與「沒有 SDD」的差距，而不只是讀說明文字。</p>
+
+    <div class="demo-tabs rv rv-d2">
+      <button class="demo-tab active" onclick="sd('a',this)">A · 模糊需求 → SDD Spec</button>
+      <button class="demo-tab" onclick="sd('b',this)">B · 模式切換器</button>
+      <button class="demo-tab" onclick="sd('c',this)">C · 痛點 → 工作包</button>
+      <button class="demo-tab" onclick="sd('d',this)">D · Prompt vs SDD</button>
+      <button class="demo-tab" onclick="sd('e',this)">E · 驗收條件產生器</button>
+    </div>
+
+    <!-- Demo A -->
+    <div class="demo-panel active" id="dp-a">
+      <p class="sm mu" style="margin-bottom:1.25rem">選擇一個模糊需求，看看 SDD 如何把它變成可執行的規格：</p>
+      <div class="va-btns">
+        <button class="vb sel" onclick="selA('report',this)">每週手工報表</button>
+        <button class="vb" onclick="selA('pdf',this)">整理這些 PDF</button>
+        <button class="vb" onclick="selA('api',this)">串接物流 API</button>
+      </div>
+      <div class="ba">
+        <div class="bef">
+          <div class="bh">模糊需求（Before）</div>
+          <div class="bb">
+            <p id="da-vague" style="color:var(--tx);font-style:italic;margin-bottom:1rem;font-size:1rem">「我們每週要手動做報表，很麻煩，能不能做一個自動的？」</p>
+            <div style="padding-top:.9rem;border-top:1px solid var(--bd)">
+              <div class="xs mu" style="margin-bottom:.55rem;font-weight:700">AI 面臨的問題：</div>
+              <div class="sm err" style="margin-bottom:.3rem">✗ 哪些資料？哪些欄位？哪個系統？</div>
+              <div class="sm err" style="margin-bottom:.3rem">✗ 「自動」是指完全自動還是半自動？</div>
+              <div class="sm err" style="margin-bottom:.3rem">✗「完成」的定義是什麼？誰來驗收？</div>
+              <div class="sm err">✗ 不包含什麼？AI 只能猜，猜錯一路放大</div>
+            </div>
+          </div>
+        </div>
+        <div class="aft">
+          <div class="bh">SDD Spec（After）</div>
+          <div class="bb" id="da-spec"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo B -->
+    <div class="demo-panel" id="dp-b">
+      <p class="sm mu" style="margin-bottom:1.25rem">點選不同模式，了解每種方法的適用場景、起始點與失敗模式：</p>
+      <div class="mode-tabs" id="mode-tabs"></div>
+      <div class="mode-det" id="mode-det"></div>
+    </div>
+
+    <!-- Demo C -->
+    <div class="demo-panel" id="dp-c">
+      <p class="sm mu" style="margin-bottom:1.25rem">看看一個企業痛點如何被轉化成 Agent-ready 工作包：</p>
+      <div class="pain">
+        <strong>業務痛點：</strong>「我們客服每天收到大量 PDF 申請表，要手動讀取並輸入系統，每份大約 8 分鐘，一天 50 份，不只浪費時間，錯誤率還很高，常常影響後面的流程。」
+      </div>
+      <div class="convert-arrow">↓ SDD 轉化</div>
+      <div class="wp">
+        <div class="wph"><h4>Agent-ready 工作包</h4><span class="xs mu">PDF 申請表自動化處理系統</span></div>
+        <div class="wpb">
+          <div class="wps">
+            <div class="wpsl">問題陳述</div>
+            <p class="sm mu">客服每日手動處理 50+ 份 PDF 申請表，每份約需 8 分鐘，月均錯誤率 ~3%，影響後續 CRM 資料品質，造成下游流程頻繁人工修正。</p>
+          </div>
+          <div class="wps">
+            <div class="wpsl">目標 &amp; Non-Goals</div>
+            <div class="sm ac" style="margin-bottom:.4rem">✓ Goal：自動解析 PDF，欄位準確率 ≥ 95%，縮短人工作業 80%</div>
+            <div class="sm" style="color:var(--tx3);margin-bottom:.2rem">✗ Non-goal：不處理掃描圖片 PDF（手寫辨識排第二版）</div>
+            <div class="sm" style="color:var(--tx3)">✗ Non-goal：不包含 UI 重設計（現有 CRM 介面維持）</div>
+          </div>
+          <div class="wps">
+            <div class="wpsl">資料合約（Data Contract）</div>
+            <div class="sm mu">Input：A 格式 / B 格式 PDF（數位原生）｜Output：結構化 JSON → CRM 寫入 + 異常標記佇列</div>
+          </div>
+          <div class="wps">
+            <div class="wpsl">Task Breakdown</div>
+            <ul class="tl">
+              <li class="ti"><span class="tid">T1</span><span class="tn">PDF 欄位解析器（A/B 格式）</span><span class="te">3d</span></li>
+              <li class="ti"><span class="tid">T2</span><span class="tn">欄位驗證與異常標記邏輯</span><span class="te">1d</span></li>
+              <li class="ti"><span class="tid">T3</span><span class="tn">CRM 寫入整合（含錯誤重試）</span><span class="te">2d</span></li>
+              <li class="ti"><span class="tid">T4</span><span class="tn">人工複核佇列介面</span><span class="te">2d</span></li>
+              <li class="ti"><span class="tid">T5</span><span class="tn">E2E 測試與驗收（100 份測試集）</span><span class="te">1d</span></li>
+            </ul>
+          </div>
+          <div class="wps">
+            <div class="wpsl">驗收條件</div>
+            <div class="ac-i">欄位準確率 ≥ 95%（100 份歷史 PDF 測試集）</div>
+            <div class="ac-i">異常欄位自動標記，遺漏率 &lt; 5%</div>
+            <div class="ac-i">CRM 寫入失敗自動重試 3 次並記錄 error log</div>
+            <div class="ac-i">每份 PDF 處理時間 &lt; 30 秒</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo D -->
+    <div class="demo-panel" id="dp-d">
+      <p class="sm mu" style="margin-bottom:1.25rem">同一個需求，Prompt-only vs SDD + Agent，差距有多大：</p>
+      <div class="cg">
+        <div class="cc bad">
+          <div class="cch">❌ Prompt-only 做法</div>
+          <div class="ccb">
+            <div class="ci">
+              <div class="cil">Prompt</div>
+              <div class="civ" style="font-style:italic;font-family:'JetBrains Mono',monospace;font-size:.8rem;background:var(--code);padding:.5rem .75rem;border-radius:5px;border:1px solid var(--bd)">「幫我建一個 PDF 解析功能，把表單資料存到資料庫」</div>
+            </div>
+            <div class="ci"><div class="cil">AI 的處境</div><div class="civ"><span class="ctag">範疇不明</span><span class="ctag">無驗收標準</span><span class="ctag">只能猜格式</span><span class="ctag">不知何時完成</span></div></div>
+            <div class="ci"><div class="cil">輸出結果</div><div class="civ">產生一段 code，可能對某種 PDF 格式有效。換格式就壞了。無錯誤處理。不知道「是否完成」。</div></div>
+            <div class="ci" style="margin-bottom:0">
+              <div class="cil">三個致命問題</div>
+              <div class="civ">
+                <div class="sm err" style="margin-bottom:.3rem">✗「這個資料庫」是哪個？哪種 schema？</div>
+                <div class="sm err" style="margin-bottom:.3rem">✗ 準確率 95%？沒測試集怎麼驗？</div>
+                <div class="sm err">✗ 什麼時候算完成？誰來確認？</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cc good">
+          <div class="cch">✓ SDD + Agent 做法</div>
+          <div class="ccb">
+            <div class="ci"><div class="cil">前置：SDD Spec</div><div class="civ"><span class="ptag">Problem 明確</span><span class="ptag">Goal 可量化</span><span class="ptag">Non-goals 排除</span><span class="ptag">I/O 定義</span><span class="ptag">Acceptance Criteria</span></div></div>
+            <div class="ci"><div class="cil">AI 的處境</div><div class="civ">有明確的問題範疇、技術邊界、驗收標準與測試方法，可以安全執行並驗證結果。</div></div>
+            <div class="ci"><div class="cil">輸出結果</div><div class="civ">完整實作 5 個任務，各自有獨立驗收。最終跑完整測試套件，準確率 97.3%，通過驗收。</div></div>
+            <div class="ci" style="margin-bottom:0">
+              <div class="cil">三個關鍵優勢</div>
+              <div class="civ">
+                <div class="sm ac" style="margin-bottom:.3rem">✓ 明確的完成定義，不用猜</div>
+                <div class="sm ac" style="margin-bottom:.3rem">✓ 可重跑、可追溯、可量化</div>
+                <div class="sm ac">✓ 失敗可定位到具體任務</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo E -->
+    <div class="demo-panel" id="dp-e">
+      <p class="sm mu" style="margin-bottom:1.25rem">用 Given / When / Then 格式，寫出可執行的驗收條件：</p>
+      <div class="ace">
+        <div>
+          <div class="fg">
+            <label class="fl">情境類型（選擇後自動填入範例）</label>
+            <select id="ace-sc" onchange="fillSc()">
+              <option value="">— 選擇情境類型 —</option>
+              <option value="fn">✓ 功能正常執行</option>
+              <option value="ed">⚡ 邊界條件處理</option>
+              <option value="er">⚠ 錯誤與失敗處理</option>
+              <option value="pf">⏱ 效能要求</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Given（前置條件）</label>
+            <textarea id="ace-g" rows="2" oninput="upACE()" placeholder="系統的前置狀態..."></textarea>
+          </div>
+          <div class="fg">
+            <label class="fl">When（觸發動作）</label>
+            <textarea id="ace-w" rows="2" oninput="upACE()" placeholder="使用者或系統執行的操作..."></textarea>
+          </div>
+          <div class="fg">
+            <label class="fl">Then（預期結果）</label>
+            <textarea id="ace-t" rows="2" oninput="upACE()" placeholder="可量化的預期結果..."></textarea>
+          </div>
+          <div class="fg">
+            <label class="fl">Verify by（驗證指令）</label>
+            <textarea id="ace-v" rows="2" oninput="upACE()" placeholder="npm test / 人工步驟..."></textarea>
+          </div>
+        </div>
+        <div>
+          <div class="ace-prev">
+            <div class="ace-ph">
+              <span>驗收條件預覽</span>
+              <button class="cpb" onclick="copyACE()">複製</button>
+            </div>
+            <div class="ace-pc" id="ace-out">在左側填寫條件，這裡會即時顯示格式化結果...</div>
+          </div>
+          <div style="margin-top:1rem;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:1rem">
+            <div class="xs mu" style="margin-bottom:.5rem;font-weight:700">格式提示</div>
+            <div class="sm mu">
+              <div style="margin-bottom:.35rem">• <strong>Given</strong>：描述系統測試前的狀態</div>
+              <div style="margin-bottom:.35rem">• <strong>When</strong>：描述觸發的動作或事件</div>
+              <div style="margin-bottom:.35rem">• <strong>Then</strong>：描述可量化的預期結果</div>
+              <div>• <strong>Verify by</strong>：說明如何自動或手動驗證</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ APPLY ══════════════════════════════════════ -->
+<section id="apply">
+  <div class="ct">
+    <div class="sec-lbl">企業應用</div>
+    <h2 class="sec-h rv">從 Prototype 到企業交付：場景、驗收、角色</h2>
+    <p class="sec-d rv rv-d1">Agentic Coding 改變的不只是寫 code 的速度，而是整個部門承接業務問題的能力。落地關鍵在三件事：選對場景、通過企業驗收框架、讓每個角色找到新定位。</p>
+
+    <!-- Production Gap -->
+    <div class="prod-gap-5 rv rv-d1">
+      <div class="pg-stage" style="border-color:rgba(168,85,247,.3)">
+        <div class="pg-head" style="background:rgba(168,85,247,.1);color:#c084fc">🎨 Vibe Prototype</div>
+        <div class="pg-body">能跑、可展示。但缺資料契約、邊界處理、測試與 handoff 文件。</div>
+      </div>
+      <div class="pg-arrow">→</div>
+      <div class="pg-stage" style="border-color:rgba(251,191,36,.3)">
+        <div class="pg-head" style="background:rgba(251,191,36,.1);color:#fbbf24">⚙️ 補強六大驗收面向</div>
+        <div class="pg-body">功能、資料可信、AI 評估、系統品質、安全制度、交接可運作。</div>
+      </div>
+      <div class="pg-arrow">→</div>
+      <div class="pg-stage" style="border-color:rgba(74,222,128,.3)">
+        <div class="pg-head" style="background:rgba(74,222,128,.08);color:#4ade80">✓ Production-level 交付</div>
+        <div class="pg-body">可維護、可監控、可交接，進入企業既有系統與流程。</div>
+      </div>
+    </div>
+
+    <!-- 6 Enterprise Acceptance Criteria -->
+    <div class="ea-g rv rv-d2">
+      <div class="ea-card">
+        <div class="ea-num">1</div>
+        <div class="ea-title">功能正確</div>
+        <p class="ea-desc">符合 spec 規格，邊界條件正確處理，主要流程與異常路徑都有測試覆蓋。</p>
+        <div class="ea-check"><span>✓</span> AC 測試通過率 100%</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">2</div>
+        <div class="ea-title">資料可信</div>
+        <p class="ea-desc">輸入/輸出有量化指標，資料合約明確，異常資料有對應處理機制。</p>
+        <div class="ea-check"><span>✓</span> 準確率 ≥ 閾值</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">3</div>
+        <div class="ea-title">AI 模型評估</div>
+        <p class="ea-desc">模型效果有評估框架，結果可重現，有 baseline 比較，知道能力邊界。</p>
+        <div class="ea-check"><span>✓</span> Evaluation harness 通過</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">4</div>
+        <div class="ea-title">系統品質</div>
+        <p class="ea-desc">效能符合規格，有穩定性測試，錯誤有適當重試機制，不靜默失敗。</p>
+        <div class="ea-check"><span>✓</span> 延遲 / 吞吐量 / 監控</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">5</div>
+        <div class="ea-title">安全與制度</div>
+        <p class="ea-desc">符合資安政策與法遵要求，敏感資料處理合規，存取控制正確設置。</p>
+        <div class="ea-check"><span>✓</span> 資安掃描 / 法遵確認</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">6</div>
+        <div class="ea-title">交接可運作</div>
+        <p class="ea-desc">有文件、監控告警、維運 SOP，後續人員能夠接手，不依賴原始開發者。</p>
+        <div class="ea-check"><span>✓</span> Handoff Checklist 通過</div>
+      </div>
+    </div>
+
+    <!-- Use Cases -->
+    <h3 class="rv rv-d2" style="margin:2.5rem 0 .5rem;color:var(--tx2);font-size:.85rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">六種適合試點的任務類型</h3>
+    <p class="rv rv-d2" style="color:var(--tx3);font-size:.95rem;margin-bottom:1.4rem">選擇首批試點的關鍵：I/O 清楚、有測試資料、非安全關鍵、改壞了容易回滾。</p>
+    <div class="uc-g rv rv-d2">
+      <div class="uc"><div class="uc-icon">🛠️</div><h3>內部工具快速建置</h3><p class="sc">業務單位需要查詢系統，IT 排隊等候。SDD + Agent 快速交付可用版本。</p><div class="metas"><span class="mt">清楚 I/O</span><span class="mt">低風險</span></div></div>
+      <div class="uc"><div class="uc-icon">📊</div><h3>報表查詢系統</h3><p class="sc">整合多資料來源的定期報表。規格明確、輸出固定，最適合起步。</p><div class="metas"><span class="mt">可量化驗收</span><span class="mt">高重複性</span></div></div>
+      <div class="uc"><div class="uc-icon">📄</div><h3>文件處理自動化</h3><p class="sc">PDF/Word 解析、分類、摘要、欄位提取。準確率可量化，測試資料易準備。</p><div class="metas"><span class="mt">準確率指標</span><span class="mt">測試集驗收</span></div></div>
+      <div class="uc"><div class="uc-icon">🔄</div><h3>資料 Pipeline 建構</h3><p class="sc">ETL 流程、資料清理、格式轉換。資料合約清楚後，agent 可安全實作。</p><div class="metas"><span class="mt">資料合約驅動</span><span class="mt">可重跑</span></div></div>
+      <div class="uc"><div class="uc-icon">🤖</div><h3>AI Prototype 產品化</h3><p class="sc">把 notebook 或 vibe demo 包成可維護服務。SDD 定義介面與六大驗收。</p><div class="metas"><span class="mt">介面定義</span><span class="mt">可維護性</span></div></div>
+      <div class="uc"><div class="uc-icon">🏗️</div><h3>Legacy 系統改造</h3><p class="sc">先用 SDD 記錄現有行為，再讓 agent 逐步改造，確保有回滾保障。</p><div class="metas"><span class="mt">行為記錄先行</span><span class="mt">逐步改造</span></div></div>
+    </div>
+
+    <!-- Roles -->
+    <h3 class="rv rv-d3" style="margin:3rem 0 .5rem;color:var(--tx2);font-size:.85rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">三個角色的能力重心上移</h3>
+    <p class="rv rv-d3" style="color:var(--tx3);font-size:.95rem;margin-bottom:1.4rem">這不是「AI 取代工程師」——而是工作重心從「實作層」上移到「定義層」。</p>
+    <div class="role-g rv rv-d3">
+      <div class="role">
+        <div class="role-h"><div class="role-t">AI PM</div><div class="role-s">產品經理 / 專案管理</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">把模糊業務問題轉成清楚的問題陳述</li>
+            <li class="to">撰寫 SDD Spec（Non-goals 是最難也最關鍵的部分）</li>
+            <li class="to">定義可量化的驗收標準（Acceptance Criteria）</li>
+          </ul></div>
+          <div class="rshift">從<strong>「管人」</strong>到<strong>「管規格」</strong></div>
+        </div>
+      </div>
+      <div class="role">
+        <div class="role-h"><div class="role-t">AI 資料科學家</div><div class="role-s">Data Scientist / ML Engineer</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">把分析實驗包成可重複執行的 pipeline</li>
+            <li class="to">設計 Evaluation Harness：量化模型表現</li>
+            <li class="to">定義資料合約：Input / Output schema 明確</li>
+          </ul></div>
+          <div class="rshift">從<strong>「做分析」</strong>到<strong>「設計可量化驗收」</strong></div>
+        </div>
+      </div>
+      <div class="role">
+        <div class="role-h"><div class="role-t">AI 工程師</div><div class="role-s">Software / ML / Platform Engineer</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">設計 Agentic Workflow：規劃 agent 執行流程</li>
+            <li class="to">建立 Repo Context（CLAUDE.md / AGENTS.md）</li>
+            <li class="to">設計自動化驗收迴圈與 CI pipeline</li>
+          </ul></div>
+          <div class="rshift">從<strong>「親自實作」</strong>到<strong>「設計 agent 可執行的系統」</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway rv rv-d4">
+      <div class="tw-icon">🏗️</div>
+      <div>
+        <div class="tw-lbl">落地核心</div>
+        <p class="tw-txt">從 prototype 到 production，補上的不是更多 code，而是六個可量化的驗收面向。<strong>能把問題定清楚、驗收設好的人，是 Agentic 時代最有槓桿的角色</strong>——無論是 PM、資料科學家還是工程師。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PLAYBOOK ═══════════════════════════════════ -->
+<section id="pb">
+  <div class="ct">
+    <div class="sec-lbl">導入路線</div>
+    <h2 class="sec-h rv">五步建立新型態工作模式</h2>
+    <p class="sec-d rv rv-d1">轉型不是一次性的工具學習，而是逐步建立的工作習慣。從第一個試點開始，讓每個步驟都有可驗收的成果。</p>
+    <div class="pb rv rv-d2">
+      <div class="pb-step">
+        <div class="snum">1</div>
+        <div class="sc2">
+          <div class="st">校準認知，對齊團隊</div>
+          <p class="sd">這不是「讓 AI 幫你寫更多 code」，而是「讓部門能接住更大範圍的業務問題」。在開始前，讓所有相關人員對新工作方式有共識：誰負責定義問題、誰設計驗收標準、AI 在哪個環節介入、人在哪個環節把關。對齊步驟跳過，是導入失敗最常見的原因。</p>
+          <div class="stips"><span class="stip">工作方式對齊先行</span><span class="stip">角色分工說清楚</span><span class="stip">人定義，AI 執行</span></div>
+        </div>
+      </div>
+      <div class="pb-step">
+        <div class="snum">2</div>
+        <div class="sc2">
+          <div class="st">選擇試點任務：從容易量化的開始</div>
+          <p class="sd">第一個試點最重要的任務是「讓流程跑通一次」，而不是選最複雜的問題。選符合條件的工作：輸入 / 輸出清楚、有測試資料、非安全關鍵、改壞了容易回滾。報表、文件處理、資料清洗是最適合的起點。</p>
+          <div class="stips"><span class="stip">清楚 I/O</span><span class="stip">有測試資料</span><span class="stip">低風險可回滾</span></div>
+        </div>
+      </div>
+      <div class="pb-step">
+        <div class="snum">3</div>
+        <div class="sc2">
+          <div class="st">先規劃，先定義驗收</div>
+          <p class="sd">動手之前，先把問題寫清楚（SDD Spec），再定義「什麼算完成」（Acceptance Criteria）。Non-goals 比 Goals 更難寫，也更重要——它決定了範疇邊界，讓 AI 不會越界。Verification 指令要在動手前就設計好，測試資料也要事先準備。沒有 Spec、沒有 AC 就開始，是 AI 輸出偏離、大量重做的根本原因。</p>
+          <div class="stips"><span class="stip">Non-goals 是護欄</span><span class="stip">AC 要可量化</span><span class="stip">先準備測試資料</span></div>
+        </div>
+      </div>
+      <div class="pb-step">
+        <div class="snum">4</div>
+        <div class="sc2">
+          <div class="st">執行 + 把關風險</div>
+          <p class="sd">建立 CLAUDE.md / AGENTS.md（架構、慣例、禁止事項），再把 spec 拆成 3–7 個可獨立執行的任務。執行時，告訴 AI「不能做什麼」比告訴它「要做什麼」更重要——禁區設定是最容易被跳過的步驟。AI 輸出要當作草稿：關鍵數據人工抽驗、關鍵業務邏輯第二人確認、灰色判斷保留人工把關。</p>
+          <div class="stips"><span class="stip">CLAUDE.md 必備</span><span class="stip">明確禁止事項</span><span class="stip">交叉驗證關鍵輸出</span></div>
+        </div>
+      </div>
+      <div class="pb-step">
+        <div class="snum">5</div>
+        <div class="sc2">
+          <div class="st">驗收交付 → 複製流程 → 部門服務化</div>
+          <p class="sd">通過六大企業驗收面向後，試點完成。接下來不是馬上擴大規模，而是把這次的 spec 格式、task 拆解、驗收清單整理成可複製的模板。讓第二個問題的導入成本大幅降低。當三到五個問題跑過這個流程，團隊就建立了真正的 Agentic 交付能力——不只是個別工具使用者，而是具備整合能力的 AI 工程部門。</p>
+          <div class="stips"><span class="stip">流程模板化</span><span class="stip">第二個問題更快</span><span class="stip">部門能力而非個人技能</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="takeaway rv rv-d3">
+      <div class="tw-icon">🗺️</div>
+      <div>
+        <div class="tw-lbl">導入結論</div>
+        <p class="tw-txt">新型態工作模式的核心習慣只有四個：<strong>先對齊、先規劃、訂立驗收、把關風險</strong>。這四個習慣決定了 AI 最終能幫到你多少。前三個月先求一個試點跑通，建立信心與可複製的流程，再逐步擴大。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ RESOURCE ════════════════════════════════════ -->
+<section id="resource">
+  <div class="ct">
+    <div class="sec-lbl">模板與資源</div>
+    <h2 class="sec-h rv">可直接使用的模板與延伸閱讀</h2>
+    <p class="sec-d rv rv-d1">以下模板可直接複製後修改，適用於 CLAUDE.md、Spec 文件、Task 說明或 Agent Prompt。</p>
+    <div class="tpl-g rv rv-d2">
+
+      <div class="tpl">
+        <div class="tplh"><span class="tplt">📋 SDD Feature Spec 模板</span><button class="cpb" onclick="cpT('t1')">複製</button></div>
+        <pre class="tplb" id="t1">## SDD Feature Spec
+
+Feature: [功能名稱]
+Date:    [YYYY-MM-DD]
+Author:  [撰寫者]
+
+### Problem
+[描述業務問題，說明影響誰、影響多大、業務損失如何量化]
+
+### Goal
+[本功能要解決什麼，可量化的成功標準]
+
+### Non-goals（明確排除在本次範圍外）
+- [排除項目 1]
+- [排除項目 2]
+
+### Users &amp; Workflow
+使用者：[角色]
+主要流程：
+  1. [步驟 1]
+  2. [步驟 2]
+
+### Interfaces
+Input:  [輸入格式、來源、schema]
+Output: [輸出格式、目標系統、schema]
+
+### Rules &amp; Constraints
+- [業務規則或技術限制]
+
+### Acceptance Criteria
+- Given [前置條件], When [操作], Then [可量化結果]
+- Given [前置條件], When [操作], Then [可量化結果]
+
+### Verification
+Automated: npm test / npx playwright test
+Manual:    [人工驗收步驟]</pre>
+      </div>
+
+      <div class="tpl">
+        <div class="tplh"><span class="tplt">🗂️ Task Breakdown 模板</span><button class="cpb" onclick="cpT('t2')">複製</button></div>
+        <pre class="tplb" id="t2">## Task Breakdown
+
+Spec:         [對應 spec 名稱]
+Total Tasks:  [n 個]
+
+---
+
+### Task T1: [任務名稱]
+Goal:         [這個任務要達成什麼]
+Files:        [會修改或新增的檔案]
+Dependencies: [前置 task 或「無」]
+Estimated:    [預計工時，如 0.5d / 1d / 2d]
+
+Steps:
+  1. [實作步驟 1]
+  2. [實作步驟 2]
+
+Acceptance:
+  - [驗收條件 1]
+  - [驗收條件 2]
+
+Verification: npm test [測試路徑]
+Risks:        [潛在風險]
+
+---
+
+### Task T2: [任務名稱]
+（重複以上格式）</pre>
+      </div>
+
+      <div class="tpl">
+        <div class="tplh"><span class="tplt">✅ Verification Checklist 模板</span><button class="cpb" onclick="cpT('t3')">複製</button></div>
+        <pre class="tplb" id="t3">## Verification Checklist
+
+Feature: [功能名稱]
+Date:    [YYYY-MM-DD]
+
+### 自動化驗收
+- [ ] npm test               — 全部通過
+- [ ] npm run lint           — 無錯誤
+- [ ] npx tsc --noEmit      — 無型別錯誤
+- [ ] npm run build          — 建置成功
+- [ ] CI pipeline            — 通過（如有）
+
+### 六大企業驗收面向
+- [ ] 功能正確：主要流程 + 邊界條件 + 錯誤路徑
+- [ ] 資料可信：準確率 ≥ 閾值，異常率 &lt; 上限
+- [ ] AI 評估：evaluation harness 通過，結果可重現
+- [ ] 系統品質：效能、穩定性、錯誤重試、監控
+- [ ] 安全制度：資安掃描、法遵確認、存取控制
+- [ ] 交接可運作：文件、監控告警、維運 SOP
+
+### Spec AC 確認
+- [ ] [來自 spec 的 AC 1]
+- [ ] [來自 spec 的 AC 2]
+
+### 交付確認
+- [ ] Code review 完成
+- [ ] 文件更新（CHANGELOG / API doc）
+- [ ] CLAUDE.md 更新（如有新規則）
+- [ ] 相關人員已通知</pre>
+      </div>
+
+      <div class="tpl">
+        <div class="tplh"><span class="tplt">🤖 Agent-ready Prompt 模板</span><button class="cpb" onclick="cpT('t4')">複製</button></div>
+        <pre class="tplb" id="t4">## Discovery Prompt（探索，不修改任何檔案）
+
+請探索這個 repo 並回答以下問題，不要修改任何檔案：
+1. 相關功能目前在哪些檔案中實作？
+2. 使用的測試框架和執行指令是什麼？
+3. 有哪些現有的資料模型或 schema 與此任務相關？
+
+請先讀取 CLAUDE.md 了解系統架構，再回答上述問題。
+
+---
+
+## Planning Prompt（制定計畫，不實作）
+
+根據以下 spec，為我制定實作計畫：
+
+[貼上 SDD Feature Spec]
+
+請列出：
+1. 需要修改或新增的檔案清單
+2. 建議的實作順序與理由
+3. 需要注意的風險點
+
+不要開始實作，只需提供計畫供我確認。
+
+---
+
+## Task Execution Prompt（執行任務）
+
+請執行以下任務：
+Task:  [任務名稱]
+Goal:  [任務目標]
+Files: [相關檔案]
+
+Steps:
+  1. [步驟 1]
+  2. [步驟 2]
+
+Verification: npm test [測試路徑]
+
+完成後請跑 Verification 指令並回報結果。
+測試失敗請分析原因並修正後重跑，不要放棄驗收。</pre>
+      </div>
+
+      <div class="tpl">
+        <div class="tplh"><span class="tplt">🚀 Handoff Checklist 模板</span><button class="cpb" onclick="cpT('t5')">複製</button></div>
+        <pre class="tplb" id="t5">## Handoff Checklist
+
+Feature: [功能名稱]
+Spec:    [對應 spec 文件位置]
+Date:    [YYYY-MM-DD]
+
+### 交付品質確認
+- [ ] 所有 Acceptance Criteria 通過
+- [ ] 六大企業驗收面向全部通過
+- [ ] 無已知 bug（或已記錄為 known issues）
+- [ ] 效能符合 spec 要求
+
+### 文件確認
+- [ ] CHANGELOG 已更新
+- [ ] API 文件已更新（如有 API 變動）
+- [ ] CLAUDE.md / AGENTS.md 已更新（如有新規則）
+- [ ] SDD spec 已歸檔至 docs/specs/
+
+### 移交確認
+- [ ] 相關人員已知曉（列出：_________）
+- [ ] 監控 / 告警已設置
+- [ ] 後續維護負責人確認（_________）
+- [ ] rollback 方式已確認
+- [ ] 維運 SOP 文件已交付
+
+### 備註
+[任何需要後續追蹤的事項]</pre>
+      </div>
+
+
+    <!-- Compact refs -->
+    <h3 class="rv rv-d3" style="margin:3rem 0 .8rem;color:var(--tx2);font-size:.85rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">延伸閱讀</h3>
+    <div class="ref-compact rv rv-d3">
+      <span class="ref-tag">必讀</span> Claude Code Best Practices（Anthropic）·
+      <span class="ref-tag">必讀</span> DORA 2025 State of DevOps Report ·
+      GitHub Spec Kit · Thoughtworks Technology Radar（SDD 技術推薦）·
+      OpenAI Codex Best Practices · GitHub Copilot Coding Agent Docs ·
+      McKinsey：AI and the Future of Software Development
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══════════════════════════════════════ -->
+<footer>
+  <div class="ct">
+    <p>從傳統 Coding 到 Spec-Driven Agentic Coding｜企業 AI 部門技術轉型展示</p>
+    <p>搭配簡報：spec_driven_agentic_coding_enterprise_report_final.pptx</p>
+    <p style="margin-top:.75rem">
+      <a href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank">Claude Code Docs</a> ·
+      <a href="https://www.thoughtworks.com/radar/techniques/spec-driven-development" target="_blank">Thoughtworks SDD</a> ·
+      <a href="https://github.com/github/spec-kit" target="_blank">GitHub Spec Kit</a> ·
+      <a href="https://dora.dev" target="_blank">DORA Research</a>
+    </p>
+  </div>
+</footer>
+
+<div id="toast">已複製到剪貼簿 ✓</div>
+
+<script>
+// ══ SCROLL REVEAL ══════════════════════════════════
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('vis'); revObs.unobserve(e.target); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.rv').forEach(el => revObs.observe(el));
+
+// ══ PIPELINE CHART ANIMATION ═══════════════════════
+const pcObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.querySelectorAll('.pc-bar').forEach(b => b.classList.add('anim'));
+      pcObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.pc-wrap').forEach(el => pcObs.observe(el));
+
+// ══ DEMO A ═════════════════════════════════════════
+const DA = {
+  report: {
+    vague: '「我們每週要手動做報表，很麻煩，能不能做一個自動的？」',
+    problem: '業務人員每週需手動從 3 個系統複製數據、製作 Excel，平均耗費 2-3 小時，延誤週一早會所需報表，錯誤率 ~5%',
+    goal: '建立可自動整合多來源數據的報表頁面，支援 CSV 匯出，每週一 8:00 前自動產出',
+    ng: ['即時儀表板（第二版）','權限管理','圖表視覺化'],
+    inp: '銷售系統 API（JSON）、庫存資料庫（PostgreSQL）、費用試算表（Google Sheets API）',
+    out: '整合報表頁面、自動週期排程、CSV 匯出功能',
+    ac: ['可顯示過去 30 天銷售摘要','可按部門篩選','可匯出 CSV 檔','查詢時間 < 3 秒','週一 8:00 前自動發送 Email 通知'],
+    vfy: 'npm test && npx playwright test reports/'
+  },
+  pdf: {
+    vague: '「整理這些 PDF 很麻煩，每天都要手工輸入」',
+    problem: '客服每日收到 50+ 份 PDF 申請表，手動讀取並輸入 CRM，每份約 8 分鐘，月均錯誤率 ~3%，影響後續流程',
+    goal: '自動解析 PDF 申請表，欄位準確率 ≥ 95%，縮短人工作業時間 80%',
+    ng: ['掃描圖片 PDF（手寫辨識）','非申請表格式的 PDF','UI 重設計'],
+    inp: 'A 格式 / B 格式 PDF（數位原生）',
+    out: '結構化 JSON 資料、寫入 CRM 系統、異常標記佇列',
+    ac: ['支援 A/B 兩種表格格式','欄位準確率 ≥ 95%（100 份測試集）','異常欄位自動標記，遺漏率 < 5%','每份 PDF 處理時間 < 30 秒'],
+    vfy: 'npm run test:pdf-accuracy -- --threshold=0.95'
+  },
+  api: {
+    vague: '「我們要串接物流 API，現在都是人工查詢訂單狀態」',
+    problem: '客服每天花 2 小時人工查詢物流狀態更新訂單，延遲通知導致客戶申訴率每月約 15 件',
+    goal: '建立物流 API 串接服務，定時同步訂單狀態，異常訂單觸發 Slack 通知',
+    ng: ['UI 開發','多物流商支援（第一版只做 A 物流）','歷史數據回填'],
+    inp: '物流商 REST API（需 API key）、訂單資料庫（PostgreSQL）',
+    out: '訂單狀態自動更新、異常訂單 Slack 通知',
+    ac: ['每 15 分鐘同步一次','同步失敗自動重試 3 次並記錄','Slack 通知在 1 分鐘內送達','支援手動觸發同步'],
+    vfy: 'npm test -- --grep "logistics" && npm run test:integration'
+  }
+};
+
+function renderSpec(d) {
+  const ngHtml = d.ng.map(n => `<span class="tag">✗ ${n}</span>`).join('');
+  const acHtml = d.ac.map(a => `<div class="ac-i">${a}</div>`).join('');
+  return `
+    <div class="sf"><div class="sfl">Problem</div><div class="sfv">${d.problem}</div></div>
+    <div class="sf"><div class="sfl">Goal</div><div class="sfv ac">${d.goal}</div></div>
+    <div class="sf"><div class="sfl">Non-goals（排除）</div><div class="tags">${ngHtml}</div></div>
+    <div class="sf"><div class="sfl">Input</div><div class="sfv">${d.inp}</div></div>
+    <div class="sf"><div class="sfl">Output</div><div class="sfv">${d.out}</div></div>
+    <div class="sf"><div class="sfl">Acceptance Criteria</div>${acHtml}</div>
+    <div class="sf"><div class="sfl">Verify by</div><div class="sfv mono" style="font-size:.78rem;background:var(--code);padding:.35rem .6rem;border-radius:5px;border:1px solid var(--bd)">${d.vfy}</div></div>
+  `;
+}
+
+function selA(key, btn) {
+  document.querySelectorAll('.vb').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  const d = DA[key];
+  document.getElementById('da-vague').textContent = d.vague;
+  document.getElementById('da-spec').innerHTML = renderSpec(d);
+}
+
+// ══ DEMO B ═════════════════════════════════════════
+const MODES = [
+  { id:'trad', name:'傳統 Coding', color:'#94a3b8', bg:'rgba(100,116,139,.18)',
+    scope:'function / module / commit', start:'程式碼實作',
+    human:'設計、撰寫、測試、除錯，全部由人主導',
+    ai:'無（或基本語法補全）',
+    delivery:'function / commit / module',
+    best:['核心架構設計','安全關鍵程式碼','高複雜度算法','需要細粒度控制'],
+    fail:'速度瓶頸、人力不足時進度停滯，交付週期長，回修迴圈耗時',
+    verify:'code review + unit test' },
+  { id:'aias', name:'AI 輔助 Coding', color:'#38bdf8', bg:'rgba(14,165,233,.15)',
+    scope:'snippet / function / local diff', start:'程式碼實作',
+    human:'引導方向、確認 AI 補全結果',
+    ai:'程式碼補全、解釋錯誤訊息、產生 snippet',
+    delivery:'snippet / function / local diff',
+    best:['個人效率提升','快速查詢語法','熟悉語言的日常加速'],
+    fail:'局部正確但整體架構不一致，容易產生不符合專案慣例的 code',
+    verify:'人工確認每個 snippet 的正確性' },
+  { id:'vibe', name:'Vibe Coding', color:'#c084fc', bg:'rgba(168,85,247,.15)',
+    scope:'prototype / demo', start:'計畫拆解（快速）',
+    human:'下 prompt、微調結果、決定方向',
+    ai:'快速生成與修改 prototype，快速迭代',
+    delivery:'prototype / demo / 概念驗證',
+    best:['快速驗概念','Hackathon','探索性實作','MVP 雛形展示'],
+    fail:'規格不足、難以維護、難以驗收、缺乏資料契約與 production 邊界，不適合進入企業既有系統',
+    verify:'能跑、外觀看起來正確就算過' },
+  { id:'agnt', name:'Agentic Coding', color:'#fbbf24', bg:'rgba(245,158,11,.15)',
+    scope:'task / PR / feature slice', start:'規格定義',
+    human:'定義任務、設定驗收條件、審查結果、取捨判斷',
+    ai:'讀取 repo、規劃實作、跨檔案修改、執行測試、反覆修正',
+    delivery:'task / PR / feature slice',
+    best:['明確任務的自動化','測試補強','Legacy 局部改造','API 串接'],
+    fail:'目標不清楚時，錯誤會被快速放大，難以定位原因，缺乏驗收標準時無法收斂',
+    verify:'automated test + CI pipeline + 人工審查 PR' },
+  { id:'sdd', name:'Spec-Driven Agentic', color:'#4ade80', bg:'rgba(74,222,128,.12)',
+    scope:'verified feature / workflow', start:'問題識別（最早）',
+    human:'問題定義、spec 撰寫、驗收設計、架構取捨判斷',
+    ai:'接手 repo-level 工程任務、反覆修正、提交可審查的候選結果',
+    delivery:'verified feature / workflow',
+    best:['企業既有系統整合','可維護的功能交付','多人協作','高驗收要求'],
+    fail:'規格品質決定交付品質：spec 寫不好，output 也不會好',
+    verify:'spec 定義的 AC + automated tests + 六大企業驗收 + Handoff Checklist' }
+];
+
+function initModeB() {
+  document.getElementById('mode-tabs').innerHTML = MODES.map((m,i) =>
+    `<button class="mtb ${i===0?'active':''}" style="${i===0?`background:${m.bg};color:${m.color};`:''}" onclick="switchMode(${i},this)">${m.name}</button>`
+  ).join('');
+  renderMode(0);
+}
+
+function switchMode(idx, btn) {
+  document.querySelectorAll('.mtb').forEach(b => { b.classList.remove('active'); b.style.background=''; b.style.color=''; });
+  btn.classList.add('active'); btn.style.background = MODES[idx].bg; btn.style.color = MODES[idx].color;
+  renderMode(idx);
+}
+
+function renderMode(idx) {
+  const m = MODES[idx];
+  document.getElementById('mode-det').innerHTML = `
+    <div class="mdh" style="border-left:3px solid ${m.color}">
+      <div class="mdt" style="color:${m.color}">${m.name}</div>
+      <div class="mds">介入起點：<strong>${m.start}</strong>　｜　交付範疇：<strong>${m.scope}</strong></div>
+    </div>
+    <div class="mdg">
+      <div class="mdc"><div class="mdcl">人的主要工作</div><div class="mdcv">${m.human}</div></div>
+      <div class="mdc"><div class="mdcl">AI 的主要工作</div><div class="mdcv">${m.ai}</div></div>
+      <div class="mdc"><div class="mdcl">適合時機</div><div class="mdcv"><ul>${m.best.map(b=>`<li>${b}</li>`).join('')}</ul></div></div>
+      <div class="mdc"><div class="mdcl">主要交付物</div><div class="mdcv" style="margin-bottom:.75rem;font-family:'JetBrains Mono',monospace;font-size:.82rem">${m.delivery}</div><div class="mdcl">驗收方式</div><div class="mdcv">${m.verify}</div></div>
+      <div class="mdc" style="grid-column:1/-1;border-right:none;border-bottom:none"><div class="mdcl">失敗模式 ⚠</div><div class="mdcv fail-txt">${m.fail}</div></div>
+    </div>`;
+}
+
+// ══ DEMO E ═════════════════════════════════════════
+const ACE_SC = {
+  fn: { g:'使用者上傳一份 A 格式 PDF 申請表（數位原生，共 12 個欄位）', w:'系統解析完成', t:'欄位準確率 ≥ 95%，並產生結構化 JSON 輸出，無欄位遺失', v:'npm run test:pdf-accuracy -- --threshold=0.95' },
+  ed: { g:'使用者上傳一份欄位部分留空的 B 格式 PDF', w:'系統解析完成', t:'空欄位以 null 填入，其餘欄位正確解析，並標記異常欄位清單於輸出 JSON 的 "flags" 欄', v:'npm test -- --grep "edge: empty fields"' },
+  er: { g:'系統嘗試寫入 CRM 但連線逾時', w:'第一次寫入失敗', t:'系統自動重試 3 次；若仍失敗則記錄 error log（含 timestamp、錯誤碼、原始 payload），送出告警並不丟失原始資料', v:'npm test -- --grep "CRM retry" && 手動確認 error log 格式符合規範' },
+  pf: { g:'系統同時收到 10 份 PDF 處理請求', w:'並發處理完成', t:'每份 PDF 處理時間 ≤ 30 秒，無請求逾時，無資料遺失，CPU 使用率 < 80%', v:'npm run test:perf -- --concurrency=10 --timeout=30000' }
+};
+
+function fillSc() {
+  const v = document.getElementById('ace-sc').value; if(!v) return;
+  const s = ACE_SC[v];
+  document.getElementById('ace-g').value = s.g;
+  document.getElementById('ace-w').value = s.w;
+  document.getElementById('ace-t').value = s.t;
+  document.getElementById('ace-v').value = s.v;
+  upACE();
+}
+
+function upACE() {
+  const g = document.getElementById('ace-g').value.trim();
+  const w = document.getElementById('ace-w').value.trim();
+  const t = document.getElementById('ace-t').value.trim();
+  const v = document.getElementById('ace-v').value.trim();
+  if(!g && !w && !t){ document.getElementById('ace-out').textContent = '在左側填寫條件，這裡會即時顯示格式化結果...'; return; }
+  let out = '';
+  if(g) out += `Given ${g}\n`;
+  if(w) out += `When  ${w}\n`;
+  if(t) out += `Then  ${t}`;
+  if(v) out += `\n\nVerify by:\n  ${v}`;
+  document.getElementById('ace-out').textContent = out;
+}
+
+function copyACE() {
+  const txt = document.getElementById('ace-out').textContent;
+  if(!txt || txt.startsWith('在左側')) return;
+  cpText(txt, document.querySelector('#dp-e .cpb'));
+}
+
+// ══ DEMO PANEL SWITCH ══════════════════════════════
+function sd(id, btn) {
+  document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('dp-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══ TEMPLATES ══════════════════════════════════════
+function cpT(id) {
+  cpText(document.getElementById(id).innerText || document.getElementById(id).textContent,
+         document.querySelector(`[onclick="cpT('${id}')"]`));
+}
+
+// ══ CLIPBOARD ══════════════════════════════════════
+function cpText(text, btn) {
+  const done = () => {
+    showToast();
+    if(btn){ const o=btn.textContent; btn.textContent='已複製 ✓'; btn.classList.add('ok'); setTimeout(()=>{ btn.textContent=o; btn.classList.remove('ok'); },2000); }
+  };
+  if(navigator.clipboard){ navigator.clipboard.writeText(text).then(done).catch(fb); } else { fb(); }
+  function fb() {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); done();
+  }
+}
+
+function showToast() {
+  const t = document.getElementById('toast'); t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+// ══ NAV ACTIVE STATE ═══════════════════════════════
+function initNav() {
+  const secs = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.nav-links a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting) links.forEach(l => l.classList.toggle('active', l.getAttribute('href')==='#'+e.target.id));
+    });
+  }, { rootMargin: '-35% 0px -55% 0px' });
+  secs.forEach(s => obs.observe(s));
+}
+
+// ══ INIT ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  selA('report', document.querySelector('.vb.sel'));
+  initModeB();
+  initNav();
+});
+</script>
+</body>
+</html>
