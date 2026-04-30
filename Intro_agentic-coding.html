@@ -646,7 +646,7 @@
       <li><a href="#demo">互動 Demo</a></li>
       <li><a href="#apply">企業應用</a></li>
       <li><a href="#pb">導入路線</a></li>
-      <li><a href="#resource">模板資源</a></li>
+      <li><a href="#resource">來源</a></li>
     </ul>
   </div>
 </nav>
@@ -1361,201 +1361,89 @@
 <!-- ══ RESOURCE ════════════════════════════════════ -->
 <section id="resource">
   <div class="ct">
-    <div class="sec-lbl">模板與資源</div>
-    <h2 class="sec-h rv">可直接使用的模板與延伸閱讀</h2>
-    <p class="sec-d rv rv-d1">以下模板可直接複製後修改，適用於 CLAUDE.md、Spec 文件、Task 說明或 Agent Prompt。</p>
-    <div class="tpl-g rv rv-d2">
+    <div class="sec-lbl">參考來源</div>
+    <h2 class="sec-h rv">References</h2>
+    <p class="sec-d rv rv-d1">本展示內容的主要依據來源。所有概念定義、方法論主張與案例均以下列官方文件與研究報告為基礎。</p>
+    <!-- References grid -->
+    <div class="ref-g rv rv-d2">
 
-      <div class="tpl">
-        <div class="tplh"><span class="tplt">📋 SDD Feature Spec 模板</span><button class="cpb" onclick="cpT('t1')">複製</button></div>
-        <pre class="tplb" id="t1">## SDD Feature Spec
-
-Feature: [功能名稱]
-Date:    [YYYY-MM-DD]
-Author:  [撰寫者]
-
-### Problem
-[描述業務問題，說明影響誰、影響多大、業務損失如何量化]
-
-### Goal
-[本功能要解決什麼，可量化的成功標準]
-
-### Non-goals（明確排除在本次範圍外）
-- [排除項目 1]
-- [排除項目 2]
-
-### Users &amp; Workflow
-使用者：[角色]
-主要流程：
-  1. [步驟 1]
-  2. [步驟 2]
-
-### Interfaces
-Input:  [輸入格式、來源、schema]
-Output: [輸出格式、目標系統、schema]
-
-### Rules &amp; Constraints
-- [業務規則或技術限制]
-
-### Acceptance Criteria
-- Given [前置條件], When [操作], Then [可量化結果]
-- Given [前置條件], When [操作], Then [可量化結果]
-
-### Verification
-Automated: npm test / npx playwright test
-Manual:    [人工驗收步驟]</pre>
+      <!-- Anthropic / Claude Code -->
+      <div class="ref-cat">
+        <div class="ref-cat-lbl">Anthropic · Claude Code</div>
+        <div class="ref-list">
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">Claude Code — Overview &amp; Core Concepts</div>
+              <div class="ref-desc">Agentic coding environment 的官方定義、Plan Mode、CLAUDE.md、hooks 與 subagents 架構說明。本展示的 Agentic Coding 定義以此為準。</div>
+            </div>
+            <a class="ref-link" href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">Claude Code — Best Practices</div>
+              <div class="ref-desc">三段式 Prompt（Discovery / Planning / Execution）、禁區設定、驗收優先設計等操作技巧的官方最佳實踐文件。</div>
+            </div>
+            <a class="ref-link" href="https://docs.anthropic.com/en/docs/claude-code/best-practices" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">Claude Code — Memory &amp; CLAUDE.md</div>
+              <div class="ref-desc">CLAUDE.md 的結構、全域規則寫法、Scope Rules 與 repo-level 記憶機制。SDD 中 repo context 設定的依據。</div>
+            </div>
+            <a class="ref-link" href="https://docs.anthropic.com/en/docs/claude-code/memory" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+        </div>
       </div>
 
-      <div class="tpl">
-        <div class="tplh"><span class="tplt">🗂️ Task Breakdown 模板</span><button class="cpb" onclick="cpT('t2')">複製</button></div>
-        <pre class="tplb" id="t2">## Task Breakdown
-
-Spec:         [對應 spec 名稱]
-Total Tasks:  [n 個]
-
----
-
-### Task T1: [任務名稱]
-Goal:         [這個任務要達成什麼]
-Files:        [會修改或新增的檔案]
-Dependencies: [前置 task 或「無」]
-Estimated:    [預計工時，如 0.5d / 1d / 2d]
-
-Steps:
-  1. [實作步驟 1]
-  2. [實作步驟 2]
-
-Acceptance:
-  - [驗收條件 1]
-  - [驗收條件 2]
-
-Verification: npm test [測試路徑]
-Risks:        [潛在風險]
-
----
-
-### Task T2: [任務名稱]
-（重複以上格式）</pre>
+      <!-- GitHub -->
+      <div class="ref-cat">
+        <div class="ref-cat-lbl">GitHub · Microsoft</div>
+        <div class="ref-list">
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">GitHub Spec Kit</div>
+              <div class="ref-desc">GitHub 官方 Spec-driven workflow 文件，包含 feature spec 格式、task breakdown 結構、PR spec 思維。本展示模板設計的主要參考之一。</div>
+            </div>
+            <a class="ref-link" href="https://github.com/github/spec-kit" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">GitHub Copilot — Coding Agent</div>
+              <div class="ref-desc">GitHub Copilot Agent mode 的官方說明，涵蓋 cloud agent 執行模型、PR metrics 與 agent-first 工作流程，AI-Assisted vs Agentic 區別的重要來源。</div>
+            </div>
+            <a class="ref-link" href="https://docs.github.com/copilot/concepts/agents/coding-agent/about-coding-agent" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+        </div>
       </div>
 
-      <div class="tpl">
-        <div class="tplh"><span class="tplt">✅ Verification Checklist 模板</span><button class="cpb" onclick="cpT('t3')">複製</button></div>
-        <pre class="tplb" id="t3">## Verification Checklist
-
-Feature: [功能名稱]
-Date:    [YYYY-MM-DD]
-
-### 自動化驗收
-- [ ] npm test               — 全部通過
-- [ ] npm run lint           — 無錯誤
-- [ ] npx tsc --noEmit      — 無型別錯誤
-- [ ] npm run build          — 建置成功
-- [ ] CI pipeline            — 通過（如有）
-
-### 六大企業驗收面向
-- [ ] 功能正確：主要流程 + 邊界條件 + 錯誤路徑
-- [ ] 資料可信：準確率 ≥ 閾值，異常率 &lt; 上限
-- [ ] AI 評估：evaluation harness 通過，結果可重現
-- [ ] 系統品質：效能、穩定性、錯誤重試、監控
-- [ ] 安全制度：資安掃描、法遵確認、存取控制
-- [ ] 交接可運作：文件、監控告警、維運 SOP
-
-### Spec AC 確認
-- [ ] [來自 spec 的 AC 1]
-- [ ] [來自 spec 的 AC 2]
-
-### 交付確認
-- [ ] Code review 完成
-- [ ] 文件更新（CHANGELOG / API doc）
-- [ ] CLAUDE.md 更新（如有新規則）
-- [ ] 相關人員已通知</pre>
+      <!-- Research & Industry -->
+      <div class="ref-cat">
+        <div class="ref-cat-lbl">研究與產業報告</div>
+        <div class="ref-list">
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">DORA — State of DevOps Report</div>
+              <div class="ref-desc">Google Cloud 主導的年度軟體交付研究，提供 AI 作為 amplifier、交付頻率與穩定性量測框架。本展示「AI 加速器，不是替代者」論點的實證基礎。</div>
+            </div>
+            <a class="ref-link" href="https://dora.dev" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">Thoughtworks Technology Radar — Spec-Driven Development</div>
+              <div class="ref-desc">Thoughtworks 對 SDD 作為企業工程方法的正式技術推薦評估。本展示將 SDD 定位為產業已驗證方法的依據。</div>
+            </div>
+            <a class="ref-link" href="https://www.thoughtworks.com/radar/techniques/spec-driven-development" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">McKinsey — AI and the Future of Software Engineering</div>
+              <div class="ref-desc">2025–2026 研究涵蓋 AI 開發工具的 Levels 1–4 演進模型、角色上移趨勢與企業落地效益範圍。AI 部門角色轉型矩陣的主要引用來源。</div>
+            </div>
+            <a class="ref-link" href="https://www.mckinsey.com/capabilities/mckinsey-digital/our-insights/ai-and-the-future-of-software-engineering" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+        </div>
       </div>
 
-      <div class="tpl">
-        <div class="tplh"><span class="tplt">🤖 Agent-ready Prompt 模板</span><button class="cpb" onclick="cpT('t4')">複製</button></div>
-        <pre class="tplb" id="t4">## Discovery Prompt（探索，不修改任何檔案）
-
-請探索這個 repo 並回答以下問題，不要修改任何檔案：
-1. 相關功能目前在哪些檔案中實作？
-2. 使用的測試框架和執行指令是什麼？
-3. 有哪些現有的資料模型或 schema 與此任務相關？
-
-請先讀取 CLAUDE.md 了解系統架構，再回答上述問題。
-
----
-
-## Planning Prompt（制定計畫，不實作）
-
-根據以下 spec，為我制定實作計畫：
-
-[貼上 SDD Feature Spec]
-
-請列出：
-1. 需要修改或新增的檔案清單
-2. 建議的實作順序與理由
-3. 需要注意的風險點
-
-不要開始實作，只需提供計畫供我確認。
-
----
-
-## Task Execution Prompt（執行任務）
-
-請執行以下任務：
-Task:  [任務名稱]
-Goal:  [任務目標]
-Files: [相關檔案]
-
-Steps:
-  1. [步驟 1]
-  2. [步驟 2]
-
-Verification: npm test [測試路徑]
-
-完成後請跑 Verification 指令並回報結果。
-測試失敗請分析原因並修正後重跑，不要放棄驗收。</pre>
-      </div>
-
-      <div class="tpl">
-        <div class="tplh"><span class="tplt">🚀 Handoff Checklist 模板</span><button class="cpb" onclick="cpT('t5')">複製</button></div>
-        <pre class="tplb" id="t5">## Handoff Checklist
-
-Feature: [功能名稱]
-Spec:    [對應 spec 文件位置]
-Date:    [YYYY-MM-DD]
-
-### 交付品質確認
-- [ ] 所有 Acceptance Criteria 通過
-- [ ] 六大企業驗收面向全部通過
-- [ ] 無已知 bug（或已記錄為 known issues）
-- [ ] 效能符合 spec 要求
-
-### 文件確認
-- [ ] CHANGELOG 已更新
-- [ ] API 文件已更新（如有 API 變動）
-- [ ] CLAUDE.md / AGENTS.md 已更新（如有新規則）
-- [ ] SDD spec 已歸檔至 docs/specs/
-
-### 移交確認
-- [ ] 相關人員已知曉（列出：_________）
-- [ ] 監控 / 告警已設置
-- [ ] 後續維護負責人確認（_________）
-- [ ] rollback 方式已確認
-- [ ] 維運 SOP 文件已交付
-
-### 備註
-[任何需要後續追蹤的事項]</pre>
-      </div>
-
-
-    <!-- Compact refs -->
-    <h3 class="rv rv-d3" style="margin:3rem 0 .8rem;color:var(--tx2);font-size:.85rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">延伸閱讀</h3>
-    <div class="ref-compact rv rv-d3">
-      <span class="ref-tag">必讀</span> Claude Code Best Practices（Anthropic）·
-      <span class="ref-tag">必讀</span> DORA 2025 State of DevOps Report ·
-      GitHub Spec Kit · Thoughtworks Technology Radar（SDD 技術推薦）·
-      OpenAI Codex Best Practices · GitHub Copilot Coding Agent Docs ·
-      McKinsey：AI and the Future of Software Development
     </div>
   </div>
 </section>
@@ -1853,7 +1741,7 @@ const MODES = [
     verify:'automated test + CI pipeline + 人工審查 PR' },
   { id:'sdd', name:'Spec-Driven Agentic', color:'#4ade80', bg:'rgba(74,222,128,.12)',
     scope:'verified feature / workflow', start:'問題識別（最早）',
-    human:'問題定義、spec 撰寫、驗收設計、架構取捨判斷',
+    human:'問題定義、spec 審核與拍板（AI 可協助起草）、驗收設計、架構取捨判斷',
     ai:'接手 repo-level 工程任務、反覆修正、提交可審查的候選結果',
     delivery:'verified feature / workflow',
     best:['企業既有系統整合','可維護的功能交付','多人協作','高驗收要求'],
