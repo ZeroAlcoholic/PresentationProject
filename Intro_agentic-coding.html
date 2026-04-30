@@ -576,6 +576,61 @@
       .prod-gap-5 { grid-template-columns: 1fr; gap: .5rem; }
     }
     @media(max-width:480px){ section { padding: 4rem 0; } }
+
+    /* ── AGENT DEMO TERMINAL ──────────────────────── */
+    .ag-stages { display:flex; align-items:center; margin-bottom:.85rem; gap:0; }
+    .ag-stage  { display:flex; align-items:center; gap:.32rem; flex-shrink:0; }
+    .ag-snum   { width:22px; height:22px; border-radius:50%; background:var(--s3); border:2px solid var(--bd2); display:flex; align-items:center; justify-content:center; font-size:.65rem; font-weight:700; color:var(--tx3); transition:all .4s; flex-shrink:0; }
+    .ag-slbl   { font-size:.68rem; font-weight:700; color:var(--tx3); transition:color .4s; white-space:nowrap; }
+    .ag-stage.act .ag-snum { background:var(--acm); border-color:var(--ac2); color:var(--ac); box-shadow:0 0 10px rgba(34,197,94,.45); }
+    .ag-stage.act .ag-slbl { color:var(--ac2); }
+    .ag-stage.don .ag-snum { background:var(--ac); border-color:var(--ac); color:#050d06; }
+    .ag-stage.don .ag-slbl { color:var(--ac); }
+    .ag-sline  { flex:1; height:2px; background:var(--bd); position:relative; overflow:hidden; margin:0 .3rem; min-width:20px; }
+    .ag-sline::after { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,var(--ac2),var(--ac)); transition:left .55s ease; }
+    .ag-sline.lit::after { left:0; }
+    .ag-pb  { display:flex; align-items:center; gap:.55rem; background:var(--s3); border:1px solid var(--bd2); border-radius:var(--r); padding:.48rem .85rem; margin-bottom:.55rem; min-height:38px; }
+    .ag-pl  { font-family:"JetBrains Mono",monospace; font-size:.72rem; color:var(--ac2); flex-shrink:0; font-weight:700; }
+    .ag-pt  { font-family:"JetBrains Mono",monospace; font-size:.78rem; color:var(--tx); flex:1; white-space:pre-wrap; min-width:0; }
+    .ag-cur { font-family:"JetBrains Mono",monospace; color:var(--ac2); animation:blink .7s step-end infinite; }
+    .ag-term{ background:#030b04; border:1px solid var(--bd); border-radius:var(--rl); overflow:hidden; margin-bottom:.65rem; }
+    .ag-thdr{ display:flex; align-items:center; gap:.32rem; padding:.42rem .8rem; background:var(--s2); border-bottom:1px solid var(--bd); }
+    .ag-td  { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .ag-td.r{ background:#ff5f57; } .ag-td.y{ background:#ffbd2e; } .ag-td.g{ background:#28c840; }
+    .ag-ttl { font-size:.68rem; color:var(--tx3); margin-left:.3rem; font-family:"JetBrains Mono",monospace; }
+    .ag-tb  { padding:.75rem .95rem; font-family:"JetBrains Mono",monospace; font-size:.76rem; line-height:1.78; min-height:185px; max-height:230px; overflow-y:auto; color:var(--tx); }
+    .ag-tb::-webkit-scrollbar { width:3px; }
+    .ag-tb::-webkit-scrollbar-thumb { background:var(--bd2); border-radius:2px; }
+    .t-dim  { color:var(--tx3); display:block; }
+    .t-hi   { color:var(--ac); display:block; }
+    .t-ok   { color:#4ade80; display:block; }
+    .t-warn { color:var(--warn); display:block; }
+    .t-err  { color:var(--err); display:block; }
+    .t-head { color:var(--blue); font-weight:700; display:block; }
+    .ag-trow{ display:flex; align-items:center; gap:.5rem; margin:.15rem 0; }
+    .ag-tbw { flex:1; background:var(--s3); border-radius:2px; height:5px; overflow:hidden; }
+    .ag-tbar{ height:100%; width:0; border-radius:2px; background:linear-gradient(90deg,var(--ac2),var(--ac)); transition:width .9s cubic-bezier(.25,.46,.45,.94); }
+    .ag-tck { color:var(--ac); font-size:.7rem; width:12px; opacity:0; transition:opacity .25s; flex-shrink:0; }
+    .ag-ctrl{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-top:.5rem; }
+    .ag-run { background:var(--ac2); color:#030b04; border:none; border-radius:var(--r); padding:.48rem 1.1rem; font-family:inherit; font-size:.88rem; font-weight:700; cursor:pointer; transition:all .18s; letter-spacing:.02em; }
+    .ag-run:hover { background:var(--ac); transform:translateY(-1px); box-shadow:0 4px 18px rgba(74,222,128,.28); }
+    .ag-run:disabled { opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+    .ag-rst { background:transparent; color:var(--tx2); border:1px solid var(--bd2); border-radius:var(--r); padding:.43rem .85rem; font-family:inherit; font-size:.82rem; cursor:pointer; transition:all .18s; }
+    .ag-rst:hover { border-color:var(--tx2); color:var(--tx); }
+    .ag-sts { font-size:.75rem; color:var(--tx3); font-family:"JetBrains Mono",monospace; }
+    /* ── TECHNIQUE CARDS ──────────────────────────── */
+    .tech-g    { display:grid; grid-template-columns:repeat(auto-fit,minmax(235px,1fr)); gap:.85rem; margin:1.75rem 0 2.25rem; }
+    .tech-card { background:var(--s2); border:1px solid var(--bd); border-radius:var(--rl); padding:1.2rem 1.3rem; transition:border-color .2s, box-shadow .2s; }
+    .tech-card:hover { border-color:var(--bd2); box-shadow:0 0 20px rgba(74,222,128,.06); }
+    .tech-num  { font-family:"JetBrains Mono",monospace; font-size:.66rem; font-weight:700; color:var(--ac2); margin-bottom:.3rem; letter-spacing:.12em; }
+    .tech-title{ font-size:1.02rem; font-weight:700; color:var(--tx); margin-bottom:.65rem; }
+    .tech-step { display:flex; gap:.4rem; font-size:.83rem; color:var(--tx2); margin-bottom:.32rem; line-height:1.6; }
+    .tech-step::before { content:"->"; color:var(--ac2); flex-shrink:0; font-family:"JetBrains Mono",monospace; }
+    .tech-ex   { background:var(--s3); border-left:2px solid var(--bd2); border-radius:0 4px 4px 0; padding:.38rem .6rem; margin:.4rem 0; font-family:"JetBrains Mono",monospace; font-size:.7rem; color:var(--tx3); line-height:1.6; }
+    .tech-why  { margin-top:.6rem; padding-top:.5rem; border-top:1px solid var(--bd); font-size:.78rem; color:var(--tx3); font-style:italic; line-height:1.6; }
+    /* ── SPEC FIELD ANIMATION ─────────────────────── */
+    .sf { opacity:0; transform:translateY(6px); transition:opacity .32s, transform .32s; }
+    .sf.vis { opacity:1; transform:translateY(0); }
   </style>
 </head>
 <body>
@@ -867,6 +922,38 @@
     </div>
     <p class="sm mu rv rv-d3" style="text-align:center;margin-top:.5rem">良好的 Agentic Flow 不怕多次迭代——它怕的是「沒有規格、沒有任務邊界、沒有驗收證據」的反覆試錯</p>
 
+    <!-- 3 Core Techniques -->
+    <h3 class="rv rv-d4" style="margin:2.5rem 0 .4rem;color:var(--tx2);font-size:.85rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">三個核心操作技巧（實際怎麼做）</h3>
+    <div class="tech-g rv rv-d4">
+      <div class="tech-card">
+        <div class="tech-num">TECHNIQUE 01</div>
+        <div class="tech-title">三段式 Prompt 結構</div>
+        <div class="tech-step">不要一次給一個大 Prompt——分 Discovery / Planning / Execution 三段確認，每段完成後才繼續</div>
+        <div class="tech-ex">Stage 1：「請探索 repo，了解架構與測試框架，不修改任何檔案。完成後列出 3 個疑問再等確認。」</div>
+        <div class="tech-ex">Stage 2：「根據以下 Spec 列出實作計畫。只列計畫，不實作，等我確認後再開始。」</div>
+        <div class="tech-ex">Stage 3：「執行 T1。完成後自行跑驗收，測試不過請修正後重跑，直到通過。」</div>
+        <div class="tech-why">一次一個段落確認，避免 AI 在未理解完整情境前越界操作，也讓人有機會在每個節點調整方向</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-num">TECHNIQUE 02</div>
+        <div class="tech-title">禁區設定（比目標更重要）</div>
+        <div class="tech-step">在 Spec 的 Non-goals 明確列出：「不包含 X、不修改 Y、不碰 Z」</div>
+        <div class="tech-step">在 CLAUDE.md 寫入全域禁止規則，讓 agent 在整個 repo 都知道不能碰什麼</div>
+        <div class="tech-step">在每個 Prompt 重申當前邊界：「只做 T1，不要主動修改其他模組」</div>
+        <div class="tech-ex">Non-goals 範例：「不處理掃描圖片 PDF（手寫辨識排第二版）、不做 UI 重設計、不支援多物流商」</div>
+        <div class="tech-why">AI 預設行為是「幫你多做一點」。沒有明確禁區，它會越界越改越多——而且你通常不會馬上發現</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-num">TECHNIQUE 03</div>
+        <div class="tech-title">驗收優先設計</div>
+        <div class="tech-step">在開始前就寫好 Acceptance Criteria 與 Verify 指令，不等 AI 完成再想「要怎麼驗」</div>
+        <div class="tech-step">準備好測試資料（測試集、邊界條件樣本），讓驗收可以自動執行不依賴人眼</div>
+        <div class="tech-step">在 Prompt 明確要求：「完成後自己跑驗收指令，測試不過請分析原因並修正後重跑」</div>
+        <div class="tech-ex">Verify by：npm run test:pdf-accuracy -- --threshold=0.95 &amp;&amp; npx playwright test pdf-flow/</div>
+        <div class="tech-why">驗收標準是 AI 判斷「完成」的唯一依據。不事先定義，AI 會自我判斷「差不多了」——人也沒有客觀標準可以拒絕</div>
+      </div>
+    </div>
+
     <!-- Responsibility Split -->
     <div class="resp rv rv-d4">
       <div class="resp-col">
@@ -920,7 +1007,7 @@
     <div class="demo-tabs rv rv-d2">
       <button class="demo-tab active" onclick="sd('a',this)">A · 模糊需求 → SDD Spec</button>
       <button class="demo-tab" onclick="sd('b',this)">B · 模式切換器</button>
-      <button class="demo-tab" onclick="sd('c',this)">C · 痛點 → 工作包</button>
+      <button class="demo-tab" onclick="sd('c',this)">C · Agent 執行模擬</button>
       <button class="demo-tab" onclick="sd('d',this)">D · Prompt vs SDD</button>
       <button class="demo-tab" onclick="sd('e',this)">E · 驗收條件產生器</button>
     </div>
@@ -961,51 +1048,35 @@
       <div class="mode-det" id="mode-det"></div>
     </div>
 
-    <!-- Demo C -->
+    <!-- Demo C: Agent 執行模擬 -->
     <div class="demo-panel" id="dp-c">
-      <p class="sm mu" style="margin-bottom:1.25rem">看看一個企業痛點如何被轉化成 Agent-ready 工作包：</p>
-      <div class="pain">
-        <strong>業務痛點：</strong>「我們客服每天收到大量 PDF 申請表，要手動讀取並輸入系統，每份大約 8 分鐘，一天 50 份，不只浪費時間，錯誤率還很高，常常影響後面的流程。」
+      <p class="sm mu" style="margin-bottom:.8rem">以「客服 PDF 自動化」為例——看 Agent 如何從情境理解推進到可驗收的完整交付：</p>
+      <div class="ag-stages">
+        <div class="ag-stage act" id="ags-0"><span class="ag-snum">1</span><span class="ag-slbl">Discovery</span></div>
+        <div class="ag-sline" id="agl-0"></div>
+        <div class="ag-stage" id="ags-1"><span class="ag-snum">2</span><span class="ag-slbl">Planning</span></div>
+        <div class="ag-sline" id="agl-1"></div>
+        <div class="ag-stage" id="ags-2"><span class="ag-snum">3</span><span class="ag-slbl">Execution</span></div>
+        <div class="ag-sline" id="agl-2"></div>
+        <div class="ag-stage" id="ags-3"><span class="ag-snum">4</span><span class="ag-slbl">Verification</span></div>
       </div>
-      <div class="convert-arrow">↓ SDD 轉化</div>
-      <div class="wp">
-        <div class="wph"><h4>Agent-ready 工作包</h4><span class="xs mu">PDF 申請表自動化處理系統</span></div>
-        <div class="wpb">
-          <div class="wps">
-            <div class="wpsl">問題陳述</div>
-            <p class="sm mu">客服每日手動處理 50+ 份 PDF 申請表，每份約需 8 分鐘，月均錯誤率 ~3%，影響後續 CRM 資料品質，造成下游流程頻繁人工修正。</p>
-          </div>
-          <div class="wps">
-            <div class="wpsl">目標 &amp; Non-Goals</div>
-            <div class="sm ac" style="margin-bottom:.4rem">✓ Goal：自動解析 PDF，欄位準確率 ≥ 95%，縮短人工作業 80%</div>
-            <div class="sm" style="color:var(--tx3);margin-bottom:.2rem">✗ Non-goal：不處理掃描圖片 PDF（手寫辨識排第二版）</div>
-            <div class="sm" style="color:var(--tx3)">✗ Non-goal：不包含 UI 重設計（現有 CRM 介面維持）</div>
-          </div>
-          <div class="wps">
-            <div class="wpsl">資料合約（Data Contract）</div>
-            <div class="sm mu">Input：A 格式 / B 格式 PDF（數位原生）｜Output：結構化 JSON → CRM 寫入 + 異常標記佇列</div>
-          </div>
-          <div class="wps">
-            <div class="wpsl">Task Breakdown</div>
-            <ul class="tl">
-              <li class="ti"><span class="tid">T1</span><span class="tn">PDF 欄位解析器（A/B 格式）</span><span class="te">3d</span></li>
-              <li class="ti"><span class="tid">T2</span><span class="tn">欄位驗證與異常標記邏輯</span><span class="te">1d</span></li>
-              <li class="ti"><span class="tid">T3</span><span class="tn">CRM 寫入整合（含錯誤重試）</span><span class="te">2d</span></li>
-              <li class="ti"><span class="tid">T4</span><span class="tn">人工複核佇列介面</span><span class="te">2d</span></li>
-              <li class="ti"><span class="tid">T5</span><span class="tn">E2E 測試與驗收（100 份測試集）</span><span class="te">1d</span></li>
-            </ul>
-          </div>
-          <div class="wps">
-            <div class="wpsl">驗收條件</div>
-            <div class="ac-i">欄位準確率 ≥ 95%（100 份歷史 PDF 測試集）</div>
-            <div class="ac-i">異常欄位自動標記，遺漏率 &lt; 5%</div>
-            <div class="ac-i">CRM 寫入失敗自動重試 3 次並記錄 error log</div>
-            <div class="ac-i">每份 PDF 處理時間 &lt; 30 秒</div>
-          </div>
+      <div class="ag-pb">
+        <span class="ag-pl">Prompt&nbsp;&#8594;</span>
+        <span class="ag-pt" id="ag-pt"></span><span class="ag-cur" id="ag-cur">&#9608;</span>
+      </div>
+      <div class="ag-term">
+        <div class="ag-thdr">
+          <span class="ag-td r"></span><span class="ag-td y"></span><span class="ag-td g"></span>
+          <span class="ag-ttl">claude-code &mdash; PDF 申請表自動化任務</span>
         </div>
+        <div class="ag-tb" id="ag-tb"><span style="color:var(--tx3);font-style:italic">點擊「開始模擬」查看 Agent 完整執行流程 &#8594;</span></div>
+      </div>
+      <div class="ag-ctrl">
+        <button class="ag-run" id="ag-run" onclick="startAgentDemo()">&#9654; 開始模擬</button>
+        <button class="ag-rst" onclick="resetAgent()">&#8635; 重置</button>
+        <span class="ag-sts" id="ag-sts"></span>
       </div>
     </div>
-
     <!-- Demo D -->
     <div class="demo-panel" id="dp-d">
       <p class="sm mu" style="margin-bottom:1.25rem">同一個需求，Prompt-only vs SDD + Agent，差距有多大：</p>
@@ -1576,7 +1647,174 @@ function selA(key, btn) {
   btn.classList.add('sel');
   const d = DA[key];
   document.getElementById('da-vague').textContent = d.vague;
-  document.getElementById('da-spec').innerHTML = renderSpec(d);
+  const spec = document.getElementById('da-spec');
+  spec.innerHTML = renderSpec(d);
+  spec.querySelectorAll('.sf').forEach((el, i) => {
+    el.style.transitionDelay = (i * 0.08) + 's';
+    setTimeout(() => el.classList.add('vis'), 25 + i * 75);
+  });
+}
+
+// ══ AGENT DEMO ════════════════════════════════════
+let agRunning = false, agTimers = [];
+function agSleep(ms){ return new Promise(r => { agTimers.push(setTimeout(r, ms)); }); }
+
+function setAgStage(n){
+  document.querySelectorAll('.ag-stage').forEach((s,i)=>{
+    s.classList.remove('act','don');
+    if(i<n) s.classList.add('don'); else if(i===n) s.classList.add('act');
+  });
+  document.querySelectorAll('.ag-sline').forEach((l,i)=> l.classList.toggle('lit', i<n));
+}
+
+function agType(text, cb){
+  const el=document.getElementById('ag-pt'), cur=document.getElementById('ag-cur');
+  el.textContent=''; cur.style.opacity='1';
+  let i=0;
+  function step(){ if(i<text.length){ el.textContent+=text[i++]; agTimers.push(setTimeout(step, 18+Math.random()*12)); } else { setTimeout(()=>{ cur.style.opacity='0'; cb&&cb(); },240); } }
+  step();
+}
+
+function agAppend(cls, txt){
+  const tb=document.getElementById('ag-tb');
+  const d=document.createElement('div'); d.innerHTML='<span class="'+cls+'">'+txt+'</span>';
+  tb.appendChild(d); tb.scrollTop=tb.scrollHeight;
+}
+
+async function startAgentDemo(){
+  if(agRunning) return; agRunning=true;
+  document.getElementById('ag-run').disabled=true;
+  document.getElementById('ag-tb').innerHTML='';
+  document.getElementById('ag-sts').textContent='';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+
+  setAgStage(0);
+  document.getElementById('ag-sts').textContent='1/4 · Discovery...';
+  await new Promise(res=> agType('請探索 repo，了解現有架構與測試框架，不要修改任何檔案。完成後列出疑問再等待確認。', res));
+  await agSleep(160);
+  const disc=[
+    ['t-head','── Discovery ─────────────────────────────────────'],
+    ['t-dim', '> Reading CLAUDE.md ...'],
+    ['t-dim', '  ok  架構：Node.js + PostgreSQL + pdf-parse'],
+    ['t-dim', '  ok  測試：Jest + Playwright   CI：GitHub Actions'],
+    ['t-dim', '  no  禁止：不得直接修改 CRM schema（須走 migration）'],
+    ['t-dim', ''],
+    ['t-dim', '> Scanning src/ tests/ ...'],
+    ['t-dim', '  src/parsers/pdf-a.ts   -- A 格式解析（已完成）'],
+    ['t-dim', '  src/parsers/pdf-b.ts   -- 不存在（需新建）'],
+    ['t-dim', '  src/crm/writer.ts      -- CRM 寫入介面（有測試）'],
+    ['t-dim', '  tests/                 -- 覆蓋率 42%'],
+    ['t-hi',  ''],
+    ['t-hi',  '  Discovery 完成，確認 3 個問題後再開始規劃：'],
+    ['t-warn','  Q1  B 格式欄位對應表放在哪裡？'],
+    ['t-warn','  Q2  CRM 寫入 timeout 上限是多少秒？'],
+    ['t-warn','  Q3  100 份測試 PDF 已備妥確認？'],
+  ];
+  for(let i=0;i<disc.length;i++){ await agSleep(i*72); agAppend(disc[i][0],disc[i][1]); }
+  await agSleep(disc.length*72+320);
+
+  setAgStage(1);
+  document.getElementById('ag-sts').textContent='2/4 · Planning...';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+  await new Promise(res=> agType('確認：B格式表在 docs/，timeout=10s，測試PDF已備妥。請列出計畫，不實作，等確認。', res));
+  await agSleep(160);
+  const plan=[
+    ['t-head','── Planning ──────────────────────────────────────'],
+    ['t-dim', '> 分析 Spec Non-goals ...'],
+    ['t-dim', '  no  掃描圖片PDF  no  UI重設計  no  多物流商'],
+    ['t-hi',  ''],
+    ['t-hi',  '  建議計畫（5 Tasks · 預計 9 工作天）：'],
+    ['t-ok',  '  T1  B 格式 PDF 解析器（含欄位映射）  [3d] high-risk'],
+    ['t-ok',  '  T2  欄位驗證 + 異常標記邏輯           [1d]'],
+    ['t-ok',  '  T3  CRM 寫入整合（含重試 x3 機制）    [2d]'],
+    ['t-ok',  '  T4  人工複核佇列介面                  [2d]'],
+    ['t-ok',  '  T5  E2E 測試（100 份測試集）           [1d]'],
+    ['t-warn',''],
+    ['t-warn','  ⚠  T1 完成後建議先做局部驗收'],
+    ['t-warn','     B 格式解析若失敗會影響後續所有 task'],
+    ['t-dim', ''],
+    ['t-dim', '  確認計畫後請說「開始執行 T1」'],
+  ];
+  for(let i=0;i<plan.length;i++){ await agSleep(i*65); agAppend(plan[i][0],plan[i][1]); }
+  await agSleep(plan.length*65+320);
+
+  setAgStage(2);
+  document.getElementById('ag-sts').textContent='3/4 · Execution...';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+  await new Promise(res=> agType('計畫確認，開始執行 T1。完成後自行跑驗收，失敗請修正後重跑，直到通過。', res));
+  await agSleep(160);
+  agAppend('t-head','── Execution ────────────────────────────────────');
+  const tasks=[
+    {id:'T1',lbl:'B 格式解析器',file:'src/parsers/pdf-b.ts',dur:1100},
+    {id:'T2',lbl:'欄位驗證+異常標記',file:'src/validators/fields.ts',dur:760},
+    {id:'T3',lbl:'CRM 寫入整合',file:'src/crm/writer.ts, retry.ts',dur:920},
+    {id:'T4',lbl:'人工複核佇列',file:'src/queue/review-queue.ts',dur:700},
+    {id:'T5',lbl:'E2E 測試',file:'tests/e2e/pdf-flow.spec.ts',dur:600},
+  ];
+  const tb=document.getElementById('ag-tb');
+  for(let i=0;i<tasks.length;i++){
+    const t=tasks[i];
+    await agSleep(i===0?0:170);
+    const sd=document.createElement('div');
+    sd.innerHTML='<span class="t-dim">&gt; Executing '+t.id+' · '+t.lbl+' ...</span>';
+    tb.appendChild(sd); tb.scrollTop=tb.scrollHeight;
+    await agSleep(65);
+    const row=document.createElement('div'); row.className='ag-trow';
+    row.innerHTML='<span style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;color:var(--tx3);width:9rem;flex-shrink:0">&nbsp;&nbsp;'+t.id+'</span><div class="ag-tbw"><div class="ag-tbar" id="atb-'+i+'"></div></div><span class="ag-tck" id="atck-'+i+'">ok</span>';
+    tb.appendChild(row); tb.scrollTop=tb.scrollHeight;
+    await agSleep(55);
+    document.getElementById('atb-'+i).style.width='100%';
+    await agSleep(t.dur);
+    document.getElementById('atck-'+i).style.opacity='1';
+    const fd=document.createElement('div');
+    fd.innerHTML='<span class="t-dim" style="padding-left:.75rem;font-size:.7rem">  -> '+t.file+'</span>';
+    tb.appendChild(fd); tb.scrollTop=tb.scrollHeight;
+  }
+  await agSleep(300);
+
+  setAgStage(3);
+  document.getElementById('ag-sts').textContent='4/4 · Verification...';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+  await new Promise(res=> agType('npm run test:pdf-accuracy -- --threshold=0.95 && npx playwright test', res));
+  await agSleep(160);
+  const vfy=[
+    ['t-head','── Verification ──────────────────────────────────'],
+    ['t-dim', '> npm run test:pdf-accuracy ...'],
+    ['t-dim', '  Testing 100 PDF samples（A:60  B:40）'],
+    ['t-ok',  '  A format accuracy: 98.2%  ok'],
+    ['t-ok',  '  B format accuracy: 96.8%  ok'],
+    ['t-ok',  '  Overall: 97.3% >= 95% threshold  PASS'],
+    ['t-dim', ''],
+    ['t-dim', '> npx playwright test ...'],
+    ['t-ok',  '  ok  PDF upload flow   (12/12)'],
+    ['t-ok',  '  ok  CRM write+retry   (8/8)'],
+    ['t-ok',  '  ok  Review queue UI   (6/6)'],
+    ['t-dim', ''],
+    ['t-ok',  '  All acceptance criteria passed'],
+    ['t-hi',  '  Accuracy 97.3%  Avg 18s/pdf  Coverage 89%'],
+    ['t-hi',  ''],
+    ['t-hi',  '  Next: PR review -> Handoff Checklist -> deploy'],
+  ];
+  for(let i=0;i<vfy.length;i++){ await agSleep(i*80); agAppend(vfy[i][0],vfy[i][1]); }
+  await agSleep(vfy.length*80+200);
+  document.getElementById('ag-sts').textContent='ok  完整流程模擬完成';
+  document.getElementById('ag-run').disabled=false;
+  agRunning=false;
+}
+
+function resetAgent(){
+  agTimers.forEach(t=>clearTimeout(t)); agTimers=[];
+  agRunning=false;
+  document.getElementById('ag-tb').innerHTML='<span style="color:var(--tx3);font-style:italic">點擊「開始模擬」查看 Agent 完整執行流程</span>';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+  document.getElementById('ag-run').disabled=false;
+  document.getElementById('ag-sts').textContent='';
+  setAgStage(0);
 }
 
 // ══ DEMO B ═════════════════════════════════════════
