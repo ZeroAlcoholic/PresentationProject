@@ -1,0 +1,35 @@
+# 附件與資源（不上傳）
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+*.pptx
+*.ppt
+*.docx
+*.doc
+
+# 根目錄 HTML（工作草稿，正式版用腳本複製到子資料夾）
+/*.html
+*草稿*
+*draft*
+
+# 保留子資料夾的正式報告
+!tech/*.html
+!all-member/*.html
+!index.html
+
+# 工具資料夾
+.claude/
+.playwright-mcp/
+docs/
+
+# 本機開發
+CLAUDE.md
+claude.md
+*.md
+node_modules/
+.env
+
+# 保留空資料夾標記
+!.gitkeep
