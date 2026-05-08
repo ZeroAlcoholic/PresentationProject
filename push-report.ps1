@@ -60,7 +60,7 @@ Write-Host "複製：$SlugName → $Audience/$SlugName" -ForegroundColor Green
 
 # --- 重建 index.html ---
 Write-Host "更新 index.html..." -ForegroundColor Cyan
-& "$RepoRoot\build-index.ps1"
+pwsh -File "$RepoRoot\build-index.ps1"
 
 # --- Git 操作 ---
 Push-Location $RepoRoot

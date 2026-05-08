@@ -1,0 +1,2453 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spec-Driven Work｜企業 AI 工作轉型方法論</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:    #080f09;
+      --surf:  #0e1a10;
+      --s2:    #141f16;
+      --s3:    #1a2b1d;
+      --s4:    #213325;
+      --bd:    #1e3323;
+      --bd2:   #2d4d33;
+      --ac:    #4ade80;
+      --ac2:   #22c55e;
+      --acm:   #14532d;
+      --tx:    #f3f9f4;
+      --tx2:   #b3d4bb;
+      --tx3:   #5e8a6a;
+      --code:  #060e07;
+      --hl:    #bbf7d0;
+      --warn:  #fcd34d;
+      --err:   #fb7185;
+      --blue:  #67e8f9;
+      --purp:  #c084fc;
+      --org:   #fb923c;
+      --nav-h: 60px;
+      --mw:    1100px;
+      --r:     8px;
+      --rl:    14px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: var(--bg);
+      color: var(--tx);
+      line-height: 1.88;
+      font-size: 19px;
+    }
+
+    /* ── TYPOGRAPHY ───────────────────────────── */
+    h1 { font-size: clamp(2.2rem, 4.8vw, 3.3rem); font-weight: 700; line-height: 1.15; }
+    h2 { font-size: clamp(1.75rem, 3.2vw, 2.35rem); font-weight: 700; line-height: 1.25; }
+    h3 { font-size: 1.25rem; font-weight: 600; }
+    h4 { font-size: 1rem; font-weight: 600; }
+    p  { margin-bottom: .8rem; }
+    strong { font-weight: 700; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── LAYOUT ──────────────────────────────── */
+    .ct { max-width: var(--mw); margin: 0 auto; padding: 0 1.75rem; }
+    section { padding: 5.5rem 0; }
+    section:nth-child(even) { background: var(--surf); }
+
+    .sec-lbl {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .72rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      color: var(--ac); margin-bottom: .9rem;
+    }
+    .sec-lbl::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--ac); border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .sec-h  { margin-bottom: .85rem; }
+    .sec-d  { color: var(--tx2); font-size: 1.1rem; max-width: 660px; margin-bottom: 2.75rem; line-height: 1.9; }
+    .div    { height: 1px; background: var(--bd); margin: 1.1rem 0; }
+
+    /* ── SCROLL REVEAL ───────────────────────── */
+    .rv {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity .65s ease, transform .65s ease;
+    }
+    .rv.vis { opacity: 1; transform: translateY(0); }
+    .rv-d1 { transition-delay: .1s; }
+    .rv-d2 { transition-delay: .2s; }
+    .rv-d3 { transition-delay: .3s; }
+    .rv-d4 { transition-delay: .4s; }
+    .rv-d5 { transition-delay: .5s; }
+
+    /* ── NAV ─────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      background: rgba(8,15,9,.94);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--bd);
+      display: flex; align-items: center;
+    }
+    .nav-in { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; }
+    .nav-brand { font-size: .85rem; font-weight: 700; color: var(--ac); text-decoration: none; white-space: nowrap; letter-spacing: .02em; }
+    .nav-links { display: flex; align-items: center; gap: .1rem; list-style: none; overflow-x: auto; scrollbar-width: none; }
+    .nav-links::-webkit-scrollbar { display: none; }
+    .nav-links a {
+      color: var(--tx3); text-decoration: none;
+      font-size: .78rem; padding: .32rem .6rem;
+      border-radius: 5px; white-space: nowrap;
+      transition: color .18s, background .18s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--ac); background: var(--acm); }
+
+    /* ── HERO ─────────────────────────────────── */
+    #hero {
+      padding-top: calc(var(--nav-h) + 5rem);
+      padding-bottom: 6rem;
+      position: relative; overflow: hidden;
+    }
+    #hero::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 90% 70% at 50% -5%, rgba(74,222,128,.11) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 85% 40%, rgba(74,222,128,.05) 0%, transparent 55%),
+        radial-gradient(ellipse 30% 25% at 10% 80%, rgba(34,197,94,.04) 0%, transparent 60%);
+    }
+    #hero::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(rgba(74,222,128,.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 70%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: .55rem;
+      background: var(--acm); border: 1px solid var(--ac2);
+      color: var(--ac); font-size: .76rem; font-weight: 700;
+      padding: .32rem .85rem; border-radius: 100px; margin-bottom: 1.75rem;
+      letter-spacing: .04em;
+    }
+    .hero-badge::before { content:''; width:7px; height:7px; background:var(--ac); border-radius:50%; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
+
+    .hero-title {
+      margin-bottom: 1.4rem;
+      background: linear-gradient(130deg, var(--tx) 30%, var(--ac) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub { font-size: 1.12rem; color: var(--tx2); max-width: 660px; margin-bottom: 2.25rem; line-height: 1.8; }
+    .hero-thesis {
+      background: linear-gradient(135deg, rgba(74,222,128,.06), rgba(74,222,128,.02));
+      border-left: 3px solid var(--ac); border-radius: 0 var(--r) var(--r) 0;
+      padding: 1.25rem 1.6rem; max-width: 720px; font-size: 1rem;
+      margin-bottom: 3rem; color: var(--tx); line-height: 1.85;
+    }
+    .hero-thesis strong { color: var(--ac); }
+
+    /* flow diagram */
+    .flow-group { margin-bottom: 1rem; }
+    .flow-lbl { font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin-bottom: .6rem; }
+    .flow-row  { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .fb {
+      background: var(--s3); border: 1px solid var(--bd);
+      border-radius: var(--r); padding: .44rem .88rem;
+      font-size: .84rem; color: var(--tx2);
+      transition: transform .18s, border-color .18s;
+    }
+    .fb:hover { transform: translateY(-2px); border-color: var(--bd2); }
+    .fb.hi { border-color: var(--ac); color: var(--ac); background: rgba(74,222,128,.06); }
+    .fa { color: var(--bd2); font-size: 1.05rem; }
+
+    /* agentic flow animation */
+    .flow-row .fb { opacity: 0; animation: fadeSlideIn .4s ease forwards; }
+    .flow-row .fb:nth-child(1)  { animation-delay: .05s; }
+    .flow-row .fb:nth-child(2)  { animation-delay: .10s; }
+    .flow-row .fb:nth-child(3)  { animation-delay: .15s; }
+    .flow-row .fb:nth-child(4)  { animation-delay: .20s; }
+    .flow-row .fb:nth-child(5)  { animation-delay: .25s; }
+    .flow-row .fb:nth-child(6)  { animation-delay: .30s; }
+    .flow-row .fa { opacity: 0; animation: fadeIn .3s ease forwards; }
+    .flow-row .fa:nth-child(2)  { animation-delay: .08s; }
+    .flow-row .fa:nth-child(4)  { animation-delay: .13s; }
+    .flow-row .fa:nth-child(6)  { animation-delay: .18s; }
+    .flow-row .fa:nth-child(8)  { animation-delay: .23s; }
+    .flow-row .fa:nth-child(10) { animation-delay: .28s; }
+    @keyframes fadeSlideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    /* ── CARDS ───────────────────────────────── */
+    .card-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1.25rem; }
+    .card {
+      background: var(--s2); border: 1px solid var(--bd);
+      border-radius: var(--rl); padding: 1.6rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .card:hover { border-color: var(--bd2); transform: translateY(-2px); }
+    .card h3 { margin-bottom: .5rem; }
+    .card p  { color: var(--tx2); font-size: .93rem; margin-bottom: 0; }
+
+    /* ── TAKEAWAY ─────────────────────────────── */
+    .takeaway {
+      display: flex; align-items: flex-start; gap: 1.2rem;
+      background: linear-gradient(135deg, rgba(74,222,128,.08), rgba(74,222,128,.015));
+      border: 1px solid var(--bd2); border-left: 4px solid var(--ac);
+      border-radius: 0 var(--rl) var(--rl) 0;
+      padding: 1.4rem 1.8rem; margin-top: 3.25rem;
+      position: relative;
+    }
+    .tw-icon { font-size: 1.55rem; flex-shrink: 0; margin-top: .1rem; line-height: 1; }
+    .tw-lbl { font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ac); margin-bottom: .35rem; }
+    .tw-txt { font-size: 1.03rem; color: var(--tx); line-height: 1.85; margin: 0; }
+    .tw-txt strong { color: var(--ac); }
+
+    /* ── PIPELINE COVERAGE CHART ──────────────── */
+    .pc-wrap { margin: 2rem 0 1rem; }
+    .pc-head {
+      display: grid; grid-template-columns: 160px 1fr 110px;
+      gap: .75rem; margin-bottom: .4rem; align-items: center;
+    }
+    .pc-stages { display: flex; border: 1px solid var(--bd); border-radius: 4px; overflow: hidden; }
+    .pc-stage {
+      flex: 1; text-align: center; font-size: .68rem; font-weight: 600;
+      color: var(--tx3); padding: .4rem .2rem; letter-spacing: .03em;
+      border-right: 1px solid var(--bd);
+    }
+    .pc-stage:last-child { border-right: none; }
+    .pc-row {
+      display: grid; grid-template-columns: 160px 1fr 110px;
+      gap: .75rem; align-items: center; margin-bottom: .65rem;
+    }
+    .pc-lbl { font-size: .86rem; font-weight: 600; text-align: right; line-height: 1.3; }
+    .pc-track {
+      position: relative; height: 40px;
+      background: var(--s3); border-radius: 6px; overflow: hidden;
+    }
+    .pc-bar {
+      position: absolute; top: 6px; bottom: 6px;
+      left: var(--s); width: 0; border-radius: 4px;
+      transition: width 1.1s cubic-bezier(.25,.46,.45,.94);
+      display: flex; align-items: center; padding: 0 .6rem;
+      overflow: hidden;
+    }
+    .pc-bar.anim { width: var(--w); }
+    .pc-bar-txt { font-size: .67rem; font-weight: 700; color: rgba(0,0,0,.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pc-scope { font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: var(--tx3); line-height: 1.4; }
+    .pc-note { font-size: .78rem; color: var(--tx3); margin-top: .75rem; display: flex; align-items: flex-start; gap: .5rem; }
+    .pc-note::before { content: '↑'; color: var(--tx3); flex-shrink: 0; }
+
+    /* ── COMPARISON TABLE ─────────────────────── */
+    .tbl-wrap { overflow-x: auto; margin-top: 2rem; border: 1px solid var(--bd); border-radius: var(--rl); }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th {
+      text-align: left; padding: .75rem 1rem;
+      background: var(--s3); border-bottom: 2px solid var(--bd2);
+      font-weight: 600; font-size: .76rem; color: var(--tx2);
+      letter-spacing: .05em; white-space: nowrap;
+    }
+    td { padding: .72rem 1rem; border-bottom: 1px solid var(--bd); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--s3); }
+    .mbadge { display: inline-block; padding: .14rem .55rem; border-radius: 5px; font-size: .73rem; font-weight: 700; white-space: nowrap; }
+
+    /* ── SDD FLOW ─────────────────────────────── */
+    .sdd-flow { display: flex; flex-wrap: wrap; margin: 2rem 0; position: relative; }
+    .sf-step {
+      background: var(--s2); border: 1px solid var(--bd);
+      padding: 1rem 1.1rem; text-align: center; min-width: 108px;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .sf-step:hover { border-color: var(--bd2); background: var(--s3); }
+    .sf-step:first-child { border-radius: var(--r) 0 0 var(--r); }
+    .sf-step:last-child  { border-radius: 0 var(--r) var(--r) 0; }
+    .sf-icon { font-size: 1.3rem; margin-bottom: .25rem; }
+    .sf-name { font-size: .8rem; font-weight: 700; color: var(--ac); }
+    .sf-desc { font-size: .67rem; color: var(--tx3); margin-top: .12rem; line-height: 1.5; }
+    .sf-arr {
+      display: flex; align-items: center; padding: 0 .25rem;
+      color: var(--bd2); font-size: 1.15rem;
+      background: var(--s2); border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd);
+      animation: arrowPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes arrowPulse { 0%,100%{color:var(--bd2)} 50%{color:var(--ac2)} }
+
+    /* ── ITERATION LAYERS ─────────────────────── */
+    .iter-wrap {
+      display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+      background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl);
+      padding: 1.6rem; margin: 2rem 0;
+    }
+    .iter-layer {
+      flex: 1; min-width: 160px; background: var(--s3); border: 1px solid var(--bd);
+      border-radius: var(--r); padding: 1.1rem;
+    }
+    .il-num {
+      width: 30px; height: 30px; background: var(--acm); border: 1px solid var(--ac);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: .82rem; font-weight: 700; color: var(--ac); margin-bottom: .6rem;
+    }
+    .il-name { font-weight: 700; font-size: .95rem; margin-bottom: .3rem; }
+    .il-desc { font-size: .82rem; color: var(--tx2); line-height: 1.7; }
+    .iter-cyc { font-size: 1.75rem; color: var(--ac2); flex-shrink: 0; animation: spin 3s linear infinite; opacity: .6; }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    /* ── RESPONSIBILITY ───────────────────────── */
+    .resp { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; background: var(--s2); margin: 2rem 0; }
+    .resp-col { padding: 1.6rem; }
+    .resp-col + .resp-col { border-left: 1px solid var(--bd); }
+    .resp-h { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: .9rem; padding-bottom: .5rem; border-bottom: 1px solid var(--bd); }
+    .ri { display: flex; align-items: flex-start; gap: .5rem; font-size: .88rem; color: var(--tx2); margin-bottom: .5rem; }
+    .ri::before { content:'●'; font-size:.45rem; margin-top:.6rem; flex-shrink:0; }
+    .ri.ac  { color: var(--ac); }
+    .ri.err { color: var(--err); }
+
+    /* ── DEMO LAB ─────────────────────────────── */
+    #demo { background: var(--bg); }
+    .demo-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .demo-tab {
+      padding: .5rem 1.1rem; border: 1px solid var(--bd);
+      background: var(--s2); color: var(--tx2);
+      border-radius: var(--r); cursor: pointer; font-size: .86rem;
+      font-family: inherit; transition: all .18s;
+    }
+    .demo-tab:hover { border-color: var(--ac); color: var(--tx); }
+    .demo-tab.active { background: var(--acm); border-color: var(--ac); color: var(--ac); font-weight: 700; }
+    .demo-panel { display: none; animation: fadeIn .3s ease; }
+    .demo-panel.active { display: block; }
+
+    /* Demo A */
+    .va-btns { display: flex; gap: .7rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .vb {
+      background: var(--s3); border: 2px solid var(--bd);
+      color: var(--tx); padding: .6rem 1.1rem; border-radius: var(--r);
+      cursor: pointer; font-family: inherit; font-size: .9rem;
+      transition: all .2s; font-weight: 500;
+    }
+    .vb:hover { border-color: var(--ac2); transform: translateY(-2px); }
+    .vb.sel { background: var(--acm); border-color: var(--ac); color: var(--ac); }
+
+    .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+    @media(max-width:640px){ .ba { grid-template-columns: 1fr; } }
+    .bef, .aft { border-radius: var(--rl); overflow: hidden; }
+    .bef { border: 1px solid rgba(251,113,133,.4); }
+    .aft { border: 1px solid rgba(74,222,128,.4); }
+    .bh { padding: .6rem 1rem; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .bef .bh { background: rgba(251,113,133,.1); color: var(--err); }
+    .aft .bh { background: rgba(74,222,128,.07); color: var(--ac); }
+    .bb { padding: 1.1rem 1.25rem; background: var(--s2); font-size: .88rem; }
+    .sf  { margin-bottom: .8rem; }
+    .sfl { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ac); margin-bottom: .22rem; }
+    .sfv { color: var(--tx2); line-height: 1.7; }
+    .tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .25rem; }
+    .tag  { background: var(--s3); border: 1px solid var(--bd); color: var(--tx2); font-size: .72rem; padding: .12rem .48rem; border-radius: 4px; }
+    .ac-i { display: flex; align-items: flex-start; gap: .45rem; font-size: .85rem; color: var(--tx2); margin-bottom: .35rem; }
+    .ac-i::before { content:'✓'; color: var(--ac); flex-shrink: 0; font-weight: 700; }
+
+    /* Demo B - Mode Switcher */
+    .mode-tabs { display: flex; overflow-x: auto; scrollbar-width: none; border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; margin-bottom: 1.25rem; }
+    .mode-tabs::-webkit-scrollbar { display: none; }
+    .mtb {
+      flex: 1; min-width: 90px; padding: .7rem .5rem;
+      background: var(--s2); border: none; border-right: 1px solid var(--bd);
+      color: var(--tx2); cursor: pointer; font-family: inherit;
+      font-size: .8rem; font-weight: 500; transition: all .18s; text-align: center;
+    }
+    .mtb:last-child { border-right: none; }
+    .mtb:hover { background: var(--s3); color: var(--tx); }
+    .mtb.active { font-weight: 700; }
+    .mode-det { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; }
+    .mdh { padding: 1.3rem 1.6rem; border-bottom: 1px solid var(--bd); }
+    .mdt { font-size: 1.3rem; font-weight: 700; margin-bottom: .25rem; }
+    .mds { font-size: .85rem; color: var(--tx2); }
+    .mds strong { color: var(--tx); }
+    .mdg { display: grid; grid-template-columns: 1fr 1fr; }
+    @media(max-width:600px){ .mdg { grid-template-columns: 1fr; } }
+    .mdc { padding: 1.1rem 1.3rem; border-right: 1px solid var(--bd); border-bottom: 1px solid var(--bd); }
+    .mdc:nth-child(even) { border-right: none; }
+    .mdcl { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--tx3); margin-bottom: .45rem; }
+    .mdcv { font-size: .9rem; color: var(--tx2); }
+    .mdcv ul { list-style: none; }
+    .mdcv ul li { font-size: .87rem; color: var(--tx2); padding: .15rem 0; }
+    .mdcv ul li::before { content: '→ '; color: var(--ac2); }
+    .fail-txt { color: var(--err) !important; }
+
+    /* Demo C */
+    .pain { background: var(--s3); border-left: 3px solid var(--warn); border-radius: 0 var(--r) var(--r) 0; padding: 1rem 1.25rem; margin-bottom: 1.4rem; font-style: italic; color: var(--tx2); font-size: .95rem; }
+    .pain strong { color: var(--warn); font-style: normal; }
+    .convert-arrow { text-align: center; font-size: 2rem; color: var(--ac2); margin: 1rem 0; animation: arrowPulse 2s ease-in-out infinite; }
+    .wp { background: var(--s2); border: 1px solid rgba(74,222,128,.35); border-radius: var(--rl); overflow: hidden; }
+    .wph { background: rgba(74,222,128,.07); padding: .9rem 1.3rem; border-bottom: 1px solid var(--bd); display: flex; align-items: center; gap: .75rem; }
+    .wph h4 { color: var(--ac); font-size: 1rem; }
+    .wpb { padding: 1.3rem; }
+    .wps { margin-bottom: 1.2rem; }
+    .wps:last-child { margin-bottom: 0; }
+    .wpsl { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ac); margin-bottom: .5rem; padding-bottom: .35rem; border-bottom: 1px solid var(--bd); }
+    .tl { list-style: none; }
+    .ti { display: flex; align-items: center; gap: .75rem; padding: .5rem 0; border-bottom: 1px solid var(--bd); font-size: .88rem; }
+    .ti:last-child { border-bottom: none; }
+    .tid { background: var(--s3); border: 1px solid var(--bd); color: var(--tx2); font-size: .7rem; font-weight: 700; padding: .1rem .42rem; border-radius: 4px; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+    .tn { color: var(--tx); flex: 1; }
+    .te { color: var(--tx3); font-size: .78rem; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
+
+    /* Demo D */
+    .cg { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media(max-width:640px){ .cg { grid-template-columns: 1fr; } }
+    .cc { border-radius: var(--rl); overflow: hidden; }
+    .cc.bad  { border: 1px solid rgba(251,113,133,.4); }
+    .cc.good { border: 1px solid rgba(74,222,128,.4); }
+    .cch { padding: .7rem 1.1rem; font-size: .82rem; font-weight: 700; }
+    .bad .cch  { background: rgba(251,113,133,.1); color: var(--err); }
+    .good .cch { background: rgba(74,222,128,.07); color: var(--ac); }
+    .ccb { background: var(--s2); padding: 1.1rem; }
+    .ci  { margin-bottom: .85rem; font-size: .88rem; }
+    .cil { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: .28rem; }
+    .bad .cil  { color: var(--err); }
+    .good .cil { color: var(--ac); }
+    .civ { color: var(--tx2); line-height: 1.75; }
+    .ptag { display: inline-block; background: rgba(74,222,128,.1); border: 1px solid var(--ac2); color: var(--ac); font-size: .72rem; padding: .1rem .45rem; border-radius: 4px; margin: .1rem .2rem .1rem 0; }
+    .ctag { display: inline-block; background: rgba(251,113,133,.1); border: 1px solid var(--err); color: var(--err); font-size: .72rem; padding: .1rem .45rem; border-radius: 4px; margin: .1rem .2rem .1rem 0; }
+
+    /* Demo E */
+    .ace { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; align-items: start; }
+    @media(max-width:640px){ .ace { grid-template-columns: 1fr; } }
+    .fg { margin-bottom: 1rem; }
+    .fl { display: block; font-size: .82rem; font-weight: 600; color: var(--tx2); margin-bottom: .38rem; }
+    select, textarea {
+      width: 100%; background: var(--s3); border: 1px solid var(--bd);
+      border-radius: var(--r); color: var(--tx); font-family: inherit;
+      font-size: .9rem; padding: .6rem .9rem; outline: none; resize: vertical;
+      transition: border-color .18s;
+    }
+    select:focus, textarea:focus { border-color: var(--ac2); }
+    select option { background: var(--s3); }
+    .ace-prev { background: var(--code); border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; }
+    .ace-ph { display: flex; align-items: center; justify-content: space-between; padding: .65rem 1.1rem; background: var(--s2); border-bottom: 1px solid var(--bd); font-size: .76rem; font-weight: 600; color: var(--tx2); }
+    .ace-pc { padding: 1.1rem; font-family: 'JetBrains Mono', monospace; font-size: .84rem; line-height: 1.85; white-space: pre-wrap; color: var(--tx); min-height: 150px; }
+
+    /* ── ENTERPRISE ACCEPTANCE ────────────────── */
+    .ea-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1.25rem; }
+    .ea-card {
+      background: var(--s2); border: 1px solid var(--bd);
+      border-radius: var(--rl); padding: 1.5rem;
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+      position: relative;
+    }
+    .ea-card:hover { border-color: var(--ac2); transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+    .ea-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--acm); border: 1px solid var(--ac);
+      color: var(--ac); font-size: .82rem; font-weight: 700;
+      margin-bottom: .75rem;
+    }
+    .ea-title { font-weight: 700; font-size: 1.02rem; margin-bottom: .4rem; }
+    .ea-desc { font-size: .88rem; color: var(--tx2); line-height: 1.75; margin-bottom: 0; }
+    .ea-check { font-size: .78rem; color: var(--tx3); margin-top: .6rem; font-family: 'JetBrains Mono', monospace; }
+    .ea-check span { color: var(--ac); }
+
+    /* production gap */
+    .prod-gap { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin: 2rem 0; }
+    @media(max-width:640px){ .prod-gap { grid-template-columns: 1fr; } }
+    .pg-stage { border-radius: var(--rl); overflow: hidden; border: 1px solid var(--bd); }
+    .pg-head { padding: .75rem 1.1rem; font-size: .78rem; font-weight: 700; }
+    .pg-body { background: var(--s2); padding: 1.1rem; font-size: .84rem; color: var(--tx2); line-height: 1.75; }
+    .pg-arrow { display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: var(--bd2); }
+    @media(max-width:640px){ .pg-arrow { transform: rotate(90deg); } }
+    /* replaced 3-col grid with 5-col for arrows */
+    .prod-gap-5 { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: .75rem; align-items: center; margin: 2rem 0; }
+    @media(max-width:640px){ .prod-gap-5 { grid-template-columns: 1fr; } }
+
+    /* ── USE CASES ────────────────────────────── */
+    .uc-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(295px,1fr)); gap: 1.25rem; }
+    .uc { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); padding: 1.5rem; transition: border-color .2s, transform .2s; }
+    .uc:hover { border-color: var(--bd2); transform: translateY(-2px); }
+    .uc-icon { font-size: 2rem; margin-bottom: .7rem; }
+    .uc h3 { font-size: 1rem; margin-bottom: .35rem; }
+    .uc .sc { font-size: .88rem; color: var(--tx2); margin-bottom: .8rem; line-height: 1.75; }
+    .metas { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .mt { background: var(--s3); border: 1px solid var(--bd); color: var(--tx2); font-size: .7rem; padding: .12rem .48rem; border-radius: 4px; }
+
+    /* ── ROLES ────────────────────────────────── */
+    .role-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(295px,1fr)); gap: 1.25rem; }
+    .role { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; transition: border-color .2s, transform .2s; }
+    .role:hover { border-color: var(--ac2); transform: translateY(-2px); }
+    .role-h { padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--bd); background: linear-gradient(135deg, var(--s3), var(--s2)); }
+    .role-t { font-size: 1.08rem; font-weight: 700; margin-bottom: .15rem; color: var(--tx); }
+    .role-s { font-size: .78rem; color: var(--tx3); font-family: 'JetBrains Mono', monospace; }
+    .role-b { padding: 1.3rem 1.4rem; }
+    .rs { margin-bottom: 1rem; }
+    .rs:last-child { margin-bottom: 0; }
+    .rsl { font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: .45rem; display: flex; align-items: center; gap: .4rem; }
+    .rsl.from { color: var(--tx3); }
+    .rsl.from::before { content:''; width: 4px; height: 4px; background: var(--tx3); border-radius: 50%; }
+    .rsl.to   { color: var(--ac); }
+    .rsl.to::before { content:''; width: 4px; height: 4px; background: var(--ac); border-radius: 50%; }
+    .rit { list-style: none; }
+    .rit li { font-size: .87rem; color: var(--tx2); padding: .22rem 0; display: flex; align-items: flex-start; gap: .45rem; line-height: 1.55; }
+    .rit li.from::before { content:'—'; color: var(--tx3); flex-shrink:0; }
+    .rit li.to::before   { content:'→'; color: var(--ac);  flex-shrink:0; }
+    .rshift { background: var(--acm); border: 1px solid var(--bd2); border-radius: var(--r); padding: .65rem .95rem; font-size: .83rem; color: var(--tx2); margin-top: .75rem; line-height: 1.6; }
+    .rshift strong { color: var(--ac); }
+
+    /* ── PLAYBOOK ─────────────────────────────── */
+    .pb { display: flex; flex-direction: column; }
+    .pb-step {
+      display: flex; align-items: flex-start; gap: 1.4rem;
+      padding: 1.5rem 1.6rem; border: 1px solid var(--bd); border-bottom: none;
+      transition: background .2s, border-color .2s; position: relative;
+    }
+    .pb-step:first-child { border-radius: var(--rl) var(--rl) 0 0; }
+    .pb-step:last-child  { border-bottom: 1px solid var(--bd); border-radius: 0 0 var(--rl) var(--rl); }
+    .pb-step:hover { background: var(--s3); border-color: var(--bd2); }
+    .pb-step:hover .snum { background: var(--ac); border-color: var(--ac2); color: #050d06; }
+    .snum {
+      width: 38px; height: 38px; background: var(--acm); border: 1px solid var(--ac);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: .88rem; font-weight: 700; color: var(--ac); flex-shrink: 0;
+      transition: background .2s, color .2s;
+    }
+    .sc2 { flex: 1; }
+    .st  { font-weight: 700; font-size: 1.08rem; margin-bottom: .35rem; color: var(--tx); }
+    .sd  { font-size: .95rem; color: var(--tx2); line-height: 1.85; margin-bottom: 0; }
+    .stips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .65rem; }
+    .stip { background: var(--s3); border: 1px solid var(--bd2); color: var(--ac2); font-size: .7rem; padding: .12rem .5rem; border-radius: 4px; font-family: 'JetBrains Mono', monospace; }
+    /* Compact refs */
+    .ref-compact { color: var(--tx3); font-size: .9rem; line-height: 2.2; }
+    .ref-compact .ref-tag { margin-right: .2rem; }
+    /* Role start callout */
+    .role-start-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 2.8rem; }
+    .rs-box { background: var(--s2); border: 1px solid var(--bd2); border-radius: var(--rl); padding: 1.2rem 1.4rem; transition: border-color .2s; }
+    .rs-box:hover { border-color: var(--ac); }
+    .rs-ico { font-size: 1.5rem; margin-bottom: .45rem; }
+    .rs-role { font-size: .88rem; font-weight: 700; color: var(--ac); margin-bottom: .5rem; letter-spacing: .02em; }
+    .rs-desc { font-size: .9rem; color: var(--tx2); line-height: 1.72; }
+
+    /* ── TEMPLATES ────────────────────────────── */
+    .tpl-g { display: flex; flex-direction: column; gap: 1.5rem; }
+    .tpl { background: var(--code); border: 1px solid var(--bd); border-radius: var(--rl); overflow: hidden; }
+    .tplh { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1.25rem; background: var(--s2); border-bottom: 1px solid var(--bd); }
+    .tplt { font-weight: 700; font-size: .95rem; }
+    .tplb { padding: 1.2rem 1.4rem; font-family: 'JetBrains Mono', monospace; font-size: .8rem; line-height: 1.85; color: var(--tx2); white-space: pre-wrap; overflow-x: auto; }
+
+    /* ── REFERENCES ───────────────────────────── */
+    #refs { background: var(--surf); }
+    .ref-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 1.25rem; }
+    .ref-cat { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); padding: 1.4rem; transition: border-color .2s; }
+    .ref-cat:hover { border-color: var(--bd2); }
+    .ref-cat-lbl, .ref-cat-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--ac); margin-bottom: 1rem; padding-bottom: .55rem; border-bottom: 1px solid var(--bd);
+      display: flex; align-items: center; gap: .45rem;
+    }
+    .ref-cat-lbl::before, .ref-cat-title::before { content:''; width:5px;height:5px;background:var(--ac);border-radius:50%;flex-shrink:0; }
+    .ref-list { display: flex; flex-direction: column; gap: .85rem; }
+    .ref-item { display: flex; align-items: flex-start; gap: .75rem; }
+    .ref-info { flex: 1; }
+    .ref-item:not(:last-child) { padding-bottom: .85rem; border-bottom: 1px solid var(--bd); }
+    .ref-title, .ref-name { font-weight: 600; font-size: .88rem; margin-bottom: .2rem; color: var(--tx); }
+    .ref-desc { font-size: .8rem; color: var(--tx2); line-height: 1.65; margin: 0; }
+    .ref-link {
+      flex-shrink: 0; background: var(--s3); border: 1px solid var(--bd); border-radius: var(--r);
+      color: var(--ac2); font-size: .72rem; font-weight: 700; padding: .28rem .6rem;
+      text-decoration: none; white-space: nowrap; font-family: 'JetBrains Mono', monospace;
+      transition: background .15s, border-color .15s;
+    }
+    .ref-link:hover { background: var(--acm); border-color: var(--ac); color: var(--ac); }
+    .ref-tag { display: inline-block; background: var(--acm); color: var(--ac); font-size: .66rem; font-weight: 700; padding: .08rem .4rem; border-radius: 3px; margin-right: .35rem; vertical-align: middle; }
+
+    /* ── COPY BUTTON ──────────────────────────── */
+    .cpb {
+      background: var(--s3); border: 1px solid var(--bd); color: var(--tx2);
+      padding: .3rem .72rem; border-radius: 5px; cursor: pointer;
+      font-family: inherit; font-size: .73rem; font-weight: 600;
+      transition: all .18s; display: inline-flex; align-items: center; gap: .32rem;
+    }
+    .cpb:hover { border-color: var(--ac2); color: var(--ac); }
+    .cpb.ok { border-color: var(--ac); color: var(--ac); background: var(--acm); }
+
+    /* ── TOAST ────────────────────────────────── */
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--acm); border: 1px solid var(--ac); color: var(--ac); padding: .6rem 1.1rem; border-radius: var(--r); font-size: .86rem; font-weight: 600; z-index: 999; opacity: 0; transform: translateY(.5rem); transition: opacity .2s, transform .2s; pointer-events: none; }
+    #toast.on { opacity: 1; transform: translateY(0); }
+
+    /* ── DORA QUOTE ───────────────────────────── */
+    .dora-quote {
+      position: relative;
+      background: linear-gradient(135deg, rgba(103,232,249,.07), rgba(103,232,249,.015));
+      border: 1px solid rgba(103,232,249,.22); border-left: 4px solid var(--blue);
+      border-radius: 0 var(--rl) var(--rl) 0;
+      padding: 1.6rem 1.8rem 1.4rem; margin: 2.25rem 0;
+    }
+    .dora-quote::before {
+      content: '"'; position: absolute; top: .5rem; left: 1.4rem;
+      font-size: 4rem; line-height: 1; color: rgba(103,232,249,.15);
+      font-family: Georgia, serif; pointer-events: none;
+    }
+    .dq-text { font-size: 1.1rem; color: var(--tx); line-height: 1.9; margin-bottom: .75rem; font-style: italic; padding-left: .5rem; }
+    .dq-text strong { color: var(--blue); font-style: normal; }
+    .dq-src { font-size: .74rem; color: var(--tx3); font-family: 'JetBrains Mono', monospace; letter-spacing: .03em; }
+
+    /* ── FOOTER ───────────────────────────────── */
+    footer { background: var(--surf); border-top: 1px solid var(--bd); padding: 2rem 0; text-align: center; color: var(--tx3); font-size: .82rem; }
+    footer a { color: var(--tx2); text-decoration: none; }
+    footer a:hover { color: var(--ac); }
+    footer p + p { margin-top: .4rem; }
+
+    /* ── UTILS ────────────────────────────────── */
+    .ac   { color: var(--ac); }
+    .mu   { color: var(--tx2); }
+    .err  { color: var(--err); }
+    .warn { color: var(--warn); }
+    .xs   { font-size: .78rem; }
+    .sm   { font-size: .9rem; }
+    .code-il { background: var(--code); border: 1px solid var(--bd); border-radius: 3px; padding: .04em .34em; font-family: 'JetBrains Mono', monospace; font-size: .88em; color: var(--ac); }
+
+    /* ── RESPONSIVE ───────────────────────────── */
+    @media(max-width:768px){
+      .resp { grid-template-columns: 1fr; }
+      .resp-col + .resp-col { border-left: none; border-top: 1px solid var(--bd); }
+      .sdd-flow { flex-direction: column; }
+      .sf-step:first-child { border-radius: var(--r) var(--r) 0 0; }
+      .sf-step:last-child  { border-radius: 0 0 var(--r) var(--r); }
+      .sf-step { text-align: left; display: flex; align-items: center; gap: .75rem; }
+      .sf-icon { margin-bottom: 0; font-size: 1.1rem; }
+      .sf-arr { border-left: 1px solid var(--bd); border-right: 1px solid var(--bd); border-top: none; border-bottom: none; justify-content: center; padding: .15rem 1rem; }
+      .pc-head, .pc-row { grid-template-columns: 100px 1fr 80px; }
+      .iter-wrap { flex-direction: column; }
+      .iter-cyc { transform: rotate(90deg); }
+      .prod-gap-5 { grid-template-columns: 1fr; gap: .5rem; }
+    }
+    @media(max-width:480px){ section { padding: 4rem 0; } }
+
+    /* ── AGENT DEMO TERMINAL ──────────────────────── */
+    .ag-stages { display:flex; align-items:center; margin-bottom:.85rem; gap:0; }
+    .ag-stage  { display:flex; align-items:center; gap:.32rem; flex-shrink:0; }
+    .ag-snum   { width:22px; height:22px; border-radius:50%; background:var(--s3); border:2px solid var(--bd2); display:flex; align-items:center; justify-content:center; font-size:.65rem; font-weight:700; color:var(--tx3); transition:all .4s; flex-shrink:0; }
+    .ag-slbl   { font-size:.68rem; font-weight:700; color:var(--tx3); transition:color .4s; white-space:nowrap; }
+    .ag-stage.act .ag-snum { background:var(--acm); border-color:var(--ac2); color:var(--ac); box-shadow:0 0 10px rgba(34,197,94,.45); }
+    .ag-stage.act .ag-slbl { color:var(--ac2); }
+    .ag-stage.don .ag-snum { background:var(--ac); border-color:var(--ac); color:#050d06; }
+    .ag-stage.don .ag-slbl { color:var(--ac); }
+    .ag-sline  { flex:1; height:2px; background:var(--bd); position:relative; overflow:hidden; margin:0 .3rem; min-width:20px; }
+    .ag-sline::after { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,var(--ac2),var(--ac)); transition:left .55s ease; }
+    .ag-sline.lit::after { left:0; }
+    .ag-pb  { display:flex; align-items:center; gap:.55rem; background:var(--s3); border:1px solid var(--bd2); border-radius:var(--r); padding:.48rem .85rem; margin-bottom:.55rem; min-height:38px; }
+    .ag-pl  { font-family:"JetBrains Mono",monospace; font-size:.72rem; color:var(--ac2); flex-shrink:0; font-weight:700; }
+    .ag-pt  { font-family:"JetBrains Mono",monospace; font-size:.78rem; color:var(--tx); flex:1; white-space:pre-wrap; min-width:0; }
+    .ag-cur { font-family:"JetBrains Mono",monospace; color:var(--ac2); animation:blink .7s step-end infinite; }
+    .ag-term{ background:#030b04; border:1px solid var(--bd); border-radius:var(--rl); overflow:hidden; margin-bottom:.65rem; }
+    .ag-thdr{ display:flex; align-items:center; gap:.32rem; padding:.42rem .8rem; background:var(--s2); border-bottom:1px solid var(--bd); }
+    .ag-td  { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .ag-td.r{ background:#ff5f57; } .ag-td.y{ background:#ffbd2e; } .ag-td.g{ background:#28c840; }
+    .ag-ttl { font-size:.68rem; color:var(--tx3); margin-left:.3rem; font-family:"JetBrains Mono",monospace; }
+    .ag-tb  { padding:.75rem .95rem; font-family:"JetBrains Mono",monospace; font-size:.76rem; line-height:1.78; min-height:185px; max-height:230px; overflow-y:auto; color:var(--tx); }
+    .ag-tb::-webkit-scrollbar { width:3px; }
+    .ag-tb::-webkit-scrollbar-thumb { background:var(--bd2); border-radius:2px; }
+    .t-dim  { color:var(--tx3); display:block; }
+    .t-hi   { color:var(--ac); display:block; }
+    .t-ok   { color:#4ade80; display:block; }
+    .t-warn { color:var(--warn); display:block; }
+    .t-err  { color:var(--err); display:block; }
+    .t-head { color:var(--blue); font-weight:700; display:block; }
+    .ag-trow{ display:flex; align-items:center; gap:.5rem; margin:.15rem 0; }
+    .ag-tbw { flex:1; background:var(--s3); border-radius:2px; height:5px; overflow:hidden; }
+    .ag-tbar{ height:100%; width:0; border-radius:2px; background:linear-gradient(90deg,var(--ac2),var(--ac)); transition:width .9s cubic-bezier(.25,.46,.45,.94); }
+    .ag-tck { color:var(--ac); font-size:.7rem; width:12px; opacity:0; transition:opacity .25s; flex-shrink:0; }
+    .ag-ctrl{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-top:.5rem; }
+    .ag-run { background:var(--ac2); color:#030b04; border:none; border-radius:var(--r); padding:.48rem 1.1rem; font-family:inherit; font-size:.88rem; font-weight:700; cursor:pointer; transition:all .18s; letter-spacing:.02em; }
+    .ag-run:hover { background:var(--ac); transform:translateY(-1px); box-shadow:0 4px 18px rgba(74,222,128,.28); }
+    .ag-run:disabled { opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+    .ag-rst { background:transparent; color:var(--tx2); border:1px solid var(--bd2); border-radius:var(--r); padding:.43rem .85rem; font-family:inherit; font-size:.82rem; cursor:pointer; transition:all .18s; }
+    .ag-rst:hover { border-color:var(--tx2); color:var(--tx); }
+    .ag-sts { font-size:.75rem; color:var(--tx3); font-family:"JetBrains Mono",monospace; }
+    /* ── TECHNIQUE CARDS ──────────────────────────── */
+    .tech-g    { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1rem; margin:1.75rem 0 2.25rem; }
+    .tech-card { background:var(--s2); border:1px solid var(--bd); border-radius:var(--rl); padding:1.35rem 1.4rem; transition:border-color .2s, transform .2s, box-shadow .2s; position:relative; overflow:hidden; }
+    .tech-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--ac2),var(--blue)); opacity:0; transition:opacity .2s; }
+    .tech-card:hover { border-color:var(--bd2); transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,.3); }
+    .tech-card:hover::before { opacity:.8; }
+    .tech-num  { font-family:"JetBrains Mono",monospace; font-size:.64rem; font-weight:700; color:var(--ac2); margin-bottom:.4rem; letter-spacing:.14em; }
+    .tech-title{ font-size:1.02rem; font-weight:700; color:var(--ac); margin-bottom:.7rem; }
+    .tech-step { display:flex; gap:.45rem; font-size:.83rem; color:var(--tx2); margin-bottom:.35rem; line-height:1.65; }
+    .tech-step::before { content:"→"; color:var(--ac2); flex-shrink:0; font-family:"JetBrains Mono",monospace; }
+    .tech-ex   { background:var(--s3); border-left:2px solid var(--ac2); border-radius:0 4px 4px 0; padding:.4rem .65rem; margin:.45rem 0; font-family:"JetBrains Mono",monospace; font-size:.7rem; color:var(--tx2); line-height:1.65; }
+    .tech-why  { margin-top:.65rem; padding-top:.55rem; border-top:1px solid var(--bd); font-size:.79rem; color:var(--tx3); font-style:italic; line-height:1.65; }
+    /* ── SPEC FIELD ANIMATION ─────────────────────── */
+    .sf { opacity:0; transform:translateY(6px); transition:opacity .32s, transform .32s; }
+    .sf.vis { opacity:1; transform:translateY(0); }
+
+  /* signal grid */
+  .signal-g { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 2.25rem 0; }
+  .signal-item {
+    background: var(--s2); border: 1px solid var(--bd2); border-radius: var(--rl);
+    padding: 1.5rem 1rem 1.2rem; text-align: center;
+    transition: border-color .2s, transform .2s;
+    position: relative; overflow: hidden;
+  }
+  .signal-item::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--ac2), var(--blue));
+    opacity: .5;
+  }
+  .signal-item:hover { border-color: var(--ac); transform: translateY(-3px); }
+  .signal-num { font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 800; color: var(--ac); line-height: 1; margin-bottom: .55rem; font-family: 'JetBrains Mono', monospace; }
+  .signal-desc { font-size: .78rem; color: var(--tx2); line-height: 1.6; }
+  @media (max-width: 680px) { .signal-g { grid-template-columns: repeat(2, 1fr); } }
+
+  /* SDW pipeline + grid */
+  .sdw-pipeline {
+    display: flex; align-items: flex-start; margin: 2rem 0 1.75rem;
+    overflow-x: auto; padding-bottom: .75rem;
+    background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl);
+    padding: 1.5rem 2rem;
+  }
+  .sdw-ps { display: flex; flex-direction: column; align-items: center; min-width: 5rem; }
+  .sdw-ps-dot {
+    width: 3rem; height: 3rem; border-radius: 50%; background: var(--lc);
+    color: #050d06; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: .72rem; font-family: 'JetBrains Mono', monospace;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--lc) 40%, transparent),
+                0 0 40px color-mix(in srgb, var(--lc) 15%, transparent);
+    transition: transform .2s;
+  }
+  .sdw-ps:hover .sdw-ps-dot { transform: scale(1.12); }
+  .sdw-ps-name { font-size: .67rem; font-weight: 700; color: var(--tx2); margin-top: .55rem; font-family: 'JetBrains Mono', monospace; text-align: center; white-space: nowrap; }
+  .sdw-conn { flex: 1; height: 2px; background: linear-gradient(90deg, var(--ca), var(--cb)); margin-top: 1.5rem; min-width: 1.5rem; opacity: .6; }
+  .sdw-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+  @media (max-width: 680px) { .sdw-grid { grid-template-columns: repeat(2, 1fr); } }
+  .sdw-card {
+    background: var(--s2); border: 1px solid var(--bd); border-top: 3px solid var(--lc);
+    border-radius: var(--rl); padding: 1.1rem 1.2rem;
+    transition: border-color .2s, transform .2s;
+  }
+  .sdw-card:hover { border-color: var(--lc); transform: translateY(-2px); }
+  .sdw-card-num { font-size: .65rem; font-weight: 700; color: var(--lc); font-family: 'JetBrains Mono', monospace; margin-bottom: .4rem; letter-spacing: .04em; }
+  .sdw-card-q { font-size: .82rem; color: var(--tx); line-height: 1.55; margin-bottom: .7rem; padding-bottom: .7rem; border-bottom: 1px solid var(--bd); font-weight: 500; }
+  .sdw-ex { font-size: .74rem; color: var(--tx3); margin-bottom: .38rem; line-height: 1.5; display: flex; gap: .4rem; align-items: flex-start; }
+  .sdw-tag { display: inline-block; font-size: .6rem; font-weight: 700; letter-spacing: .04em; border-radius: 3px; padding: .06rem .3rem; flex-shrink: 0; margin-top: .15rem; }
+  .sdw-tag.eng { background: rgba(74,222,128,.15); color: #4ade80; }
+  .sdw-tag.non { background: rgba(56,189,248,.15); color: #38bdf8; }
+  .sdw-note { background: var(--s3); border: 1px solid var(--bd2); border-left: 3px solid var(--ac2); border-radius: 0 var(--rl) var(--rl) 0; padding: 1rem 1.25rem; font-size: .85rem; color: var(--tx2); line-height: 1.7; margin-bottom: 1rem; }
+
+  /* bridge box */
+  .bridge-box {
+    display: flex; gap: 1.25rem; align-items: flex-start;
+    background: linear-gradient(135deg,rgba(74,222,128,.09),rgba(56,189,248,.06));
+    border: 1px solid var(--ac2); border-radius: var(--rl);
+    padding: 1.4rem 1.6rem; margin-top: 2.5rem;
+    position: relative; overflow: hidden;
+  }
+  .bridge-box::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(90deg, rgba(74,222,128,.04) 0%, transparent 60%);
+  }
+  .bridge-icon { font-size: 1.3rem; color: var(--ac); flex-shrink: 0; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-top: .15rem; }
+  .bridge-lbl { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ac); margin-bottom: .4rem; }
+  .bridge-txt { font-size: .9rem; color: var(--tx); line-height: 1.75; margin: 0; }
+
+  /* Case study section */
+  .cs-filter { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: 2rem; }
+  .csf { background: transparent; border: 1px solid var(--bd); border-radius: 999px; color: var(--tx3); font-size: .75rem; font-weight: 600; padding: .38rem .85rem; cursor: pointer; transition: all .18s; font-family: inherit; }
+  .csf:hover { border-color: var(--ac); color: var(--tx); }
+  .csf.active { background: var(--acm); border-color: var(--ac); color: var(--ac); }
+  .csf-n { font-size: .68rem; opacity: .7; margin-left: .2rem; }
+  .cs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 900px) { .cs-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .cs-grid { grid-template-columns: 1fr; } }
+  .cs-card { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: .6rem; transition: border-color .18s, opacity .2s; }
+  .cs-card:hover { border-color: var(--bd2); }
+  .cs-card.hidden { display: none; }
+  .cs-head { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
+  .cs-co { font-weight: 800; font-size: .95rem; color: var(--tx); font-family: 'JetBrains Mono', monospace; }
+  .cs-badge { font-size: .6rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border-radius: 3px; padding: .12rem .4rem; flex-shrink: 0; }
+  .cat-fullco { background: rgba(74,222,128,.15); color: #4ade80; }
+  .cat-cs     { background: rgba(56,189,248,.15); color: #38bdf8; }
+  .cat-legal  { background: rgba(129,140,248,.15); color: #818cf8; }
+  .cat-med    { background: rgba(251,146,60,.15);  color: #fb923c; }
+  .cat-hr     { background: rgba(244,114,182,.15); color: #f472b6; }
+  .cat-ops    { background: rgba(250,204,21,.15);  color: #facc15; }
+  .cs-desc { font-size: .82rem; color: var(--tx2); line-height: 1.6; margin: 0; flex: 1; }
+  .cs-kpi { font-size: .78rem; font-weight: 700; color: var(--ac2); background: rgba(74,222,128,.07); border-left: 3px solid var(--ac2); border-radius: 0 4px 4px 0; padding: .35rem .6rem; line-height: 1.45; }
+  .cs-src { font-size: .72rem; color: var(--tx3); text-decoration: none; margin-top: auto; transition: color .15s; }
+  .cs-src:hover { color: var(--ac2); }
+
+  /* Interactive Demo */
+  .fn-grid { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .fn-btn { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--r); color: var(--tx2); font-size: .82rem; font-weight: 600; padding: .42rem .95rem; cursor: pointer; transition: all .18s; font-family: inherit; }
+  .fn-btn:hover { border-color: var(--ac); color: var(--tx); }
+  .fn-btn.active { background: var(--acm); border-color: var(--ac); color: var(--ac); font-weight: 700; }
+  .da-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1rem; align-items: flex-start; }
+  @media (max-width: 720px) { .da-layout { grid-template-columns: 1fr; } }
+  .da-col { display: flex; flex-direction: column; gap: .75rem; }
+  .da-box { background: var(--s2); border: 1px solid var(--bd); border-radius: var(--rl); padding: 1.1rem 1.25rem; }
+  .da-bh { font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--tx3); margin-bottom: .7rem; }
+  .da-bh.ac { color: var(--ac); }
+  .da-vague { font-style: italic; font-size: 1rem; color: var(--tx); margin-bottom: .8rem; padding-bottom: .8rem; border-bottom: 1px solid var(--bd); line-height: 1.6; }
+  .da-prob-hdr { font-size: .7rem; font-weight: 700; color: var(--err); margin-bottom: .35rem; }
+  .da-prob { font-size: .82rem; color: var(--tx2); padding: .18rem 0; display: flex; gap: .4rem; line-height: 1.5; }
+  .da-prob::before { content: '✗'; color: var(--err); flex-shrink: 0; margin-top: .05rem; }
+  .da-btn { background: var(--ac); color: #050d06; border: none; border-radius: var(--r); padding: .6rem 1.3rem; font-weight: 700; cursor: pointer; font-family: inherit; font-size: .9rem; transition: all .18s; width: 100%; }
+  .da-btn:hover:not(:disabled) { opacity: .85; }
+  .da-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .da-rst { background: transparent; border: 1px solid var(--bd2); border-radius: var(--r); padding: .5rem 1rem; color: var(--tx2); cursor: pointer; font-family: inherit; font-size: .82rem; width: 100%; transition: all .18s; }
+  .da-rst:hover { border-color: var(--tx2); }
+  .da-placeholder { background: var(--s2); border: 1px dashed var(--bd); border-radius: var(--rl); min-height: 220px; display: flex; align-items: center; justify-content: center; }
+  .spc-card { background: var(--s2); border: 1px solid var(--bd); border-left: 3px solid var(--lc); border-radius: var(--rl); padding: .8rem 1rem; margin-bottom: .55rem; opacity: 0; transform: translateY(8px); transition: opacity .3s ease, transform .3s ease; }
+  .spc-card.vis { opacity: 1; transform: none; }
+  .spc-label { font-size: .62rem; font-weight: 800; color: var(--lc); font-family: 'JetBrains Mono', monospace; margin-bottom: .3rem; letter-spacing: .06em; }
+  .spc-content { font-size: .8rem; color: var(--tx2); line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<!-- ══ NAV ══════════════════════════════════════ -->
+<nav>
+  <div class="ct nav-in">
+    <a class="nav-brand" href="#hero">Spec-Driven Work</a>
+    <ul class="nav-links">
+      <li><a href="#why">為何現在</a></li>
+      <li><a href="#scope">工程引子</a></li>
+      <li><a href="#sdd">方法框架</a></li>
+      <li><a href="#demo">互動 Demo</a></li>
+      <li><a href="#cases">企業案例</a></li>
+      <li><a href="#apply">落地指南</a></li>
+      <li><a href="#pb">導入路線</a></li>
+      <li><a href="#resource">來源</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ══ HERO ═════════════════════════════════════ -->
+<section id="hero">
+  <div class="ct">
+    <div class="hero-badge">企業 AI 工作轉型方法論</div>
+    <h1 class="hero-title rv">任何可以被規格化的工作<br>AI 就能可靠地協助執行</h1>
+    <p class="hero-sub rv rv-d1">
+      不只是工程師的程式碼——研究分析、法務文件、客服流程、行銷素材、HR 教材、主管決策——<br>
+      只要把工作寫成 <strong>可執行的規格</strong>，AI 就能接手執行，人類保留判斷與驗收。
+    </p>
+    <div class="hero-thesis rv rv-d2">
+      <strong>核心論點：</strong>工程師最先發現這件事：當你給 AI 清楚的 spec，它能接手整個
+      repo-level 的工程任務。但這個邏輯不屬於工程師——它屬於所有人。
+      Spec-Driven Work 是把這套方法延伸到企業每個職能的方法論。
+    </div>
+
+    <div class="rv rv-d3">
+      <div class="flow-group">
+        <div class="flow-lbl" style="color:var(--tx3)">舊做法：模糊需求 → AI 猜測 → 結果不穩</div>
+        <div class="flow-row">
+          <span class="fb">「幫我做一個報表功能」</span><span class="fa">→</span>
+          <span class="fb">AI 自由發揮</span><span class="fa">→</span>
+          <span class="fb">範疇不明</span><span class="fa">→</span>
+          <span class="fb">無驗收標準</span><span class="fa">→</span>
+          <span class="fb" style="color:var(--err)">反覆修改</span>
+        </div>
+      </div>
+      <div class="flow-group" style="margin-top:1.1rem">
+        <div class="flow-lbl ac">Spec-Driven：規格化 → AI 可靠執行 → 人工審核 → 可複用</div>
+        <div class="flow-row">
+          <span class="fb hi">Problem Spec</span><span class="fa">→</span>
+          <span class="fb hi">Context + Output</span><span class="fa">→</span>
+          <span class="fb hi">AI 執行</span><span class="fa">→</span>
+          <span class="fb hi">Validation</span><span class="fa">→</span>
+          <span class="fb hi">人審核 → 複用 ✓</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ WHY NOW ══════════════════════════════════ -->
+<section id="why">
+  <div class="ct">
+    <div class="sec-lbl">為何現在</div>
+    <h2 class="sec-h rv">瓶頸從「誰來寫」變成「誰能把問題拆清楚」</h2>
+    <p class="sec-d rv rv-d1">AI 工具普及之後，大多數團隊的提效仍停在個人層次——更快打字、更快搜尋。真正的轉型在於：把「把工作交代清楚」這件事，從隱性技能變成可複製的組織流程。</p>
+
+    <div class="dora-quote rv rv-d1">
+      <p class="dq-text">「AI 是 <strong>放大器（amplifier）</strong>——它放大強流程，也放大弱流程。越早練會問題拆解、規格撰寫與驗收設計，越早把 AI 從個人工具升級成組織交付能力。」</p>
+      <div class="dq-src">— DORA 2025 State of DevOps Report</div>
+    </div>
+
+    <!-- 企業採用信號 -->
+    <div class="signal-g rv rv-d2">
+      <div class="signal-item">
+        <div class="signal-num">10,000+</div>
+        <div class="signal-desc">NVIDIA 員工跨 engineering / legal / HR / marketing 使用 AI agent，不只是工程師在用</div>
+      </div>
+      <div class="signal-item">
+        <div class="signal-num">750</div>
+        <div class="signal-desc">Moderna 兩個月建立 GPTs，覆蓋 legal、research、commercial、manufacturing 等職能</div>
+      </div>
+      <div class="signal-item">
+        <div class="signal-num">70,000+</div>
+        <div class="signal-desc">Morgan Stanley AskResearchGPT 協助研究人員從年度報告庫中搜尋與萃取洞察</div>
+      </div>
+      <div class="signal-item">
+        <div class="signal-num">500+</div>
+        <div class="signal-desc">Deutsche Bahn 公民開發者把高頻營運工作做成 production apps，無需工程師介入</div>
+      </div>
+    </div>
+
+    <div class="card-g">
+      <div class="card rv rv-d2">
+        <h3 class="mu">舊工作方式的限制</h3>
+        <div class="div"></div>
+        <div class="ri">任務常靠口頭交辦與個人經驗，無法規模化</div>
+        <div class="ri">產出一次性，難以交接、複用或被審核</div>
+        <div class="ri">驗收不清楚，品質不穩定，修改無邊界</div>
+        <div class="ri">成果留在聊天視窗或個人腦中，組織無法沉澱</div>
+        <div class="ri">AI 只能帶來零碎提效，難以形成團隊能力</div>
+      </div>
+      <div class="card rv rv-d3" style="border-color:var(--bd2)">
+        <h3 class="ac">Spec-Driven 工作方式的可能</h3>
+        <div class="div" style="background:var(--bd2)"></div>
+        <div class="ri">工作規格化後，AI 可接手執行複雜多步驟任務</div>
+        <div class="ri">輸出格式固定，可審核、可比較、可版本化</div>
+        <div class="ri">驗收標準先定，AI 自行跑驗收，人保留判斷</div>
+        <div class="ri">流程模板化，下次可重用，成為部門能力</div>
+        <div class="ri">從工程師 coding 到所有知識工作，同一套方法</div>
+      </div>
+    </div>
+
+    <div class="takeaway rv rv-d4">
+      <div class="tw-icon">💡</div>
+      <div>
+        <div class="tw-lbl">核心洞察</div>
+        <p class="tw-txt">工程師最先用程式碼驗證了這件事：<strong>清楚的規格讓 AI 可以接手整個任務</strong>。
+        現在這個邏輯正在擴散到每個職能。問題不是你在哪個部門，而是你能不能把工作寫成 AI 可執行的規格。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SCOPE MAP ═════════════════════════════════ -->
+<section id="scope">
+  <div class="ct">
+    <div class="sec-lbl">工程引子</div>
+    <h2 class="sec-h rv">工程師最先用 Coding 驗證了這件事</h2>
+    <p class="sec-d rv rv-d1">Coding 本質上是「對機器下規格」。工程師比任何職能都早了解：<strong>當你給 AI 清楚的規格，它能接手比你預期更大範圍的任務</strong>。這個洞察正在從工程擴散到每個職能。</p>
+
+    <!-- Pipeline Coverage Chart -->
+    <div class="pc-wrap rv rv-d2">
+      <div class="pc-head">
+        <div></div>
+        <div class="pc-stages">
+          <div class="pc-stage">問題<br>識別</div>
+          <div class="pc-stage">規格<br>定義</div>
+          <div class="pc-stage">計畫<br>拆解</div>
+          <div class="pc-stage">程式碼<br>實作</div>
+          <div class="pc-stage">測試<br>驗收</div>
+          <div class="pc-stage">整合<br>交付</div>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="pc-row" style="--delay:0s">
+        <div class="pc-lbl" style="color:#94a3b8">傳統 Coding</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:52%;--w:17%;background:linear-gradient(90deg,#475569,#64748b);transition-delay:0s">
+            <span class="pc-bar-txt">coding slices</span>
+          </div>
+        </div>
+        <div class="pc-scope">function<br>module</div>
+      </div>
+
+      <div class="pc-row">
+        <div class="pc-lbl" style="color:#38bdf8">AI 輔助 Coding</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:50%;--w:31%;background:linear-gradient(90deg,#0369a1,#0ea5e9);transition-delay:.12s">
+            <span class="pc-bar-txt">snippet + assist</span>
+          </div>
+        </div>
+        <div class="pc-scope">snippet<br>local diff</div>
+      </div>
+
+      <div class="pc-row">
+        <div class="pc-lbl" style="color:#c084fc">Vibe Coding</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:34%;--w:47%;background:linear-gradient(90deg,#7e22ce,#a855f7);transition-delay:.24s">
+            <span class="pc-bar-txt">快速生成 prototype</span>
+          </div>
+        </div>
+        <div class="pc-scope">prototype<br>demo</div>
+      </div>
+
+      <div class="pc-row">
+        <div class="pc-lbl" style="color:#fbbf24">Agentic Coding</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:17%;--w:72%;background:linear-gradient(90deg,#b45309,#f59e0b);transition-delay:.36s">
+            <span class="pc-bar-txt">repo-level tasks → delivery</span>
+          </div>
+        </div>
+        <div class="pc-scope">task / PR<br>feature slice</div>
+      </div>
+
+      <div class="pc-row">
+        <div class="pc-lbl" style="color:#4ade80">Spec-Driven<br>Agentic（SDD）</div>
+        <div class="pc-track">
+          <div class="pc-bar" style="--s:0%;--w:100%;background:linear-gradient(90deg,#14532d,#15803d,#22c55e);transition-delay:.48s">
+            <span class="pc-bar-txt">問題 → 規格 → 任務 → 實作 → 驗收 → 交付</span>
+          </div>
+        </div>
+        <div class="pc-scope">verified<br>workflow</div>
+      </div>
+
+      <p class="pc-note">越往下，起始點越往左，代表該模式可以更早介入交付流程。傳統 Coding 僅接手已切好的程式碼片段；SDD 從問題識別階段就開始介入，負責完整閉環。</p>
+    </div>
+
+    <!-- Mode Comparison Table -->
+    <div class="tbl-wrap rv rv-d3">
+      <table>
+        <thead>
+          <tr>
+            <th>模式</th><th>介入起點</th><th>核心交付</th>
+            <th>人的主要工作</th><th>AI 的主要工作</th><th>失敗模式</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(100,116,139,.25);color:#94a3b8">傳統 Coding</span></td>
+            <td class="xs" style="color:var(--tx3)">程式碼實作</td>
+            <td class="mono xs">function / module</td>
+            <td class="sm">設計、撰寫、測試、除錯</td>
+            <td class="sm mu">無（或語法補全）</td>
+            <td class="sm err">速度瓶頸、人力不足</td>
+          </tr>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(14,165,233,.2);color:#38bdf8">AI 輔助 Coding</span></td>
+            <td class="xs" style="color:var(--tx3)">程式碼實作</td>
+            <td class="mono xs">snippet / diff</td>
+            <td class="sm">引導方向、確認補全</td>
+            <td class="sm">程式補全、解釋錯誤</td>
+            <td class="sm err">局部正確整體不一致</td>
+          </tr>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(168,85,247,.2);color:#c084fc">Vibe Coding</span></td>
+            <td class="xs" style="color:var(--tx3)">計畫拆解</td>
+            <td class="mono xs">prototype / demo</td>
+            <td class="sm">下 prompt、微調結果</td>
+            <td class="sm">快速生成 prototype</td>
+            <td class="sm err">難維護、難驗收</td>
+          </tr>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(245,158,11,.2);color:#fbbf24">Agentic Coding</span></td>
+            <td class="xs" style="color:var(--tx3)">規格定義</td>
+            <td class="mono xs">task / PR / slice</td>
+            <td class="sm">定義任務、設定驗收</td>
+            <td class="sm">讀 repo、規劃、實作</td>
+            <td class="sm err">目標不清錯誤放大</td>
+          </tr>
+          <tr>
+            <td><span class="mbadge" style="background:rgba(74,222,128,.15);color:#4ade80">Spec-Driven（SDD）</span></td>
+            <td class="xs" style="color:var(--ac)">問題識別</td>
+            <td class="mono xs">verified workflow</td>
+            <td class="sm">問題定義、spec、驗收設計</td>
+            <td class="sm">repo-level 任務交付</td>
+            <td class="sm warn">規格品質決定交付品質</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="takeaway rv rv-d4">
+      <div class="tw-icon">🎯</div>
+      <div>
+        <div class="tw-lbl">核心論點</div>
+        <p class="tw-txt">Vibe Coding 可以讓 prototype 快速出現，但<strong>企業需要的是能進入既有系統、通過驗收、可維護的功能與流程</strong>。可以快速看到東西 ≠ 可以放進企業流程長期運作。</p>
+      </div>
+    </div>
+
+    <!-- Bridge to SDW -->
+    <div class="bridge-box rv rv-d5">
+      <div class="bridge-icon">→</div>
+      <div>
+        <div class="bridge-lbl">工程引子告訴我們的事</div>
+        <p class="bridge-txt">「清楚的規格讓 AI 可以接手整個任務」——這個洞察不屬於工程師，它屬於所有人。
+        研究分析、法務審查、客服流程、行銷素材，任何可以被規格化的工作，都適用同一套邏輯。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SDD ═══════════════════════════════════════ -->
+<section id="sdd">
+  <div class="ct">
+    <div class="sec-lbl">方法框架</div>
+    <h2 class="sec-h rv">六層規格：把任何工作變成 AI 可執行的單元</h2>
+    <p class="sec-d rv rv-d1">工程師叫它 SDD，非工程師叫它 SDW，本質相同——六層缺一不可。<strong>Problem → Context → Output → Validation → Human Review → Reuse</strong>：每一層解決一個「AI 失控的原因」，六層合在一起，才能讓任何工作的輸出品質可預測、可審核、可複用。</p>
+
+    <!-- SDW 6-layer framework -->
+    <!-- Part 1: horizontal pipeline -->
+    <div class="sdw-pipeline rv rv-d2">
+      <div class="sdw-ps" style="--lc:#4ade80">
+        <div class="sdw-ps-dot">01</div>
+        <div class="sdw-ps-name">Problem</div>
+      </div>
+      <div class="sdw-conn" style="--ca:#4ade80;--cb:#86efac"></div>
+      <div class="sdw-ps" style="--lc:#38bdf8">
+        <div class="sdw-ps-dot">02</div>
+        <div class="sdw-ps-name">Context</div>
+      </div>
+      <div class="sdw-conn" style="--ca:#38bdf8;--cb:#818cf8"></div>
+      <div class="sdw-ps" style="--lc:#818cf8">
+        <div class="sdw-ps-dot">03</div>
+        <div class="sdw-ps-name">Output</div>
+      </div>
+      <div class="sdw-conn" style="--ca:#818cf8;--cb:#fb923c"></div>
+      <div class="sdw-ps" style="--lc:#fb923c">
+        <div class="sdw-ps-dot">04</div>
+        <div class="sdw-ps-name">Validation</div>
+      </div>
+      <div class="sdw-conn" style="--ca:#fb923c;--cb:#f472b6"></div>
+      <div class="sdw-ps" style="--lc:#f472b6">
+        <div class="sdw-ps-dot">05</div>
+        <div class="sdw-ps-name">Human Review</div>
+      </div>
+      <div class="sdw-conn" style="--ca:#f472b6;--cb:#facc15"></div>
+      <div class="sdw-ps" style="--lc:#facc15">
+        <div class="sdw-ps-dot">06</div>
+        <div class="sdw-ps-name">Reuse</div>
+      </div>
+    </div>
+
+    <!-- Part 2: 3x2 detail card grid -->
+    <div class="sdw-grid rv rv-d3">
+      <div class="sdw-card" style="--lc:#4ade80">
+        <div class="sdw-card-num">01 — Problem</div>
+        <div class="sdw-card-q">要解哪個業務問題？成功的樣子是什麼？</div>
+        <div class="sdw-ex"><span class="sdw-tag eng">工程</span><span>客服 PDF 每月人工處理 400 份，錯誤率 8%</span></div>
+        <div class="sdw-ex"><span class="sdw-tag non">非工程</span><span>法務合約審查平均 3 天，阻塞採購流程</span></div>
+      </div>
+      <div class="sdw-card" style="--lc:#38bdf8">
+        <div class="sdw-card-num">02 — Context</div>
+        <div class="sdw-card-q">輸入是什麼？有哪些限制與假設？</div>
+        <div class="sdw-ex"><span class="sdw-tag eng">工程</span><span>PDF 格式、欄位定義、現有 API 規格</span></div>
+        <div class="sdw-ex"><span class="sdw-tag non">非工程</span><span>合約類型、審查重點清單、法規版本</span></div>
+      </div>
+      <div class="sdw-card" style="--lc:#818cf8">
+        <div class="sdw-card-num">03 — Output</div>
+        <div class="sdw-card-q">交付物的格式與規格是什麼？</div>
+        <div class="sdw-ex"><span class="sdw-tag eng">工程</span><span>結構化 JSON、錯誤標記報告、API response schema</span></div>
+        <div class="sdw-ex"><span class="sdw-tag non">非工程</span><span>風險標記摘要、條款建議修改清單</span></div>
+      </div>
+      <div class="sdw-card" style="--lc:#fb923c">
+        <div class="sdw-card-num">04 — Validation</div>
+        <div class="sdw-card-q">如何驗證輸出是正確的？驗收標準是什麼？</div>
+        <div class="sdw-ex"><span class="sdw-tag eng">工程</span><span>unit test 覆蓋率 &gt;90%、edge case 清單、build CI 通過</span></div>
+        <div class="sdw-ex"><span class="sdw-tag non">非工程</span><span>法務主管抽樣複核 20 份，準確率 &gt;95%</span></div>
+      </div>
+      <div class="sdw-card" style="--lc:#f472b6">
+        <div class="sdw-card-num">05 — Human Review</div>
+        <div class="sdw-card-q">哪些決策必須人工判斷？誰負責最終確認？</div>
+        <div class="sdw-ex"><span class="sdw-tag eng">工程</span><span>架構取捨、安全影響、外部 API 合約變更</span></div>
+        <div class="sdw-ex"><span class="sdw-tag non">非工程</span><span>法律責任判斷、例外條款協商、簽核決策</span></div>
+      </div>
+      <div class="sdw-card" style="--lc:#facc15">
+        <div class="sdw-card-num">06 — Reuse</div>
+        <div class="sdw-card-q">這次產出能作為下次的起點嗎？</div>
+        <div class="sdw-ex"><span class="sdw-tag eng">工程</span><span>元件庫、spec 模板、驗收 checklist、prompt 範本</span></div>
+        <div class="sdw-ex"><span class="sdw-tag non">非工程</span><span>標準合約範本、審查 SOP、AI workflow 模組</span></div>
+      </div>
+    </div>
+
+    <div class="sdw-note rv rv-d4">
+      <strong>為什麼六層缺一不可：</strong>跳過 Problem 會讓 AI 解錯問題；跳過 Validation 無法交付；跳過 Human Review 失去判斷責任；跳過 Reuse 讓每次都從零開始。六層合在一起，才能把任何工作變成 AI 可重複執行的單元。
+    </div>
+
+    <!-- 3-Layer Iteration -->
+    <h3 style="margin-bottom:.75rem;color:var(--tx2);font-size:.95rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-size:.78rem" class="rv rv-d2">中間不是單次通關，而是三層迭代</h3>
+    <div class="iter-wrap rv rv-d3">
+      <div class="iter-layer">
+        <div class="il-num">1</div>
+        <div class="il-name">規格迭代</div>
+        <p class="il-desc">Spec 不清楚就修改 Spec，而不是重寫 code。良好的 spec 是後續所有迭代的基礎。</p>
+      </div>
+      <div class="iter-cyc">↻</div>
+      <div class="iter-layer">
+        <div class="il-num">2</div>
+        <div class="il-name">任務迭代</div>
+        <p class="il-desc">測試不過就調整任務拆解，而不是放棄驗收。每個任務都要有獨立的驗收條件。</p>
+      </div>
+      <div class="iter-cyc">↻</div>
+      <div class="iter-layer">
+        <div class="il-num">3</div>
+        <div class="il-name">驗收迭代</div>
+        <p class="il-desc">UAT 不過就回到 Spec，而不是繞過驗收。好的 Agentic Flow 不怕多次迭代。</p>
+      </div>
+    </div>
+    <p class="sm mu rv rv-d3" style="text-align:center;margin-top:.5rem">良好的 Agentic Flow 不怕多次迭代——它怕的是「沒有規格、沒有任務邊界、沒有驗收證據」的反覆試錯</p>
+
+    <!-- 3 Core Techniques -->
+    <h3 class="rv rv-d4" style="margin:2.5rem 0 .4rem;color:var(--tx2);font-size:.85rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">三個核心操作技巧</h3>
+    <p class="rv rv-d4" style="color:var(--tx3);font-size:.82rem;margin-bottom:1rem">以工程任務為主要示例；括號內為非工程職能的對應做法。</p>
+    <div class="tech-g rv rv-d4">
+      <div class="tech-card">
+        <div class="tech-num">TECHNIQUE 01</div>
+        <div class="tech-title">三段式 Prompt 結構</div>
+        <div class="tech-step">不要一次給一個大 Prompt——分 Discovery / Planning / Execution 三段確認，每段完成後才繼續</div>
+        <div class="tech-ex">Stage 1（工程）：「請探索 repo，了解架構與測試框架，不修改任何檔案。列出疑問等確認。」</div>
+        <div class="tech-ex">Stage 2（工程）：「根據以下 Spec 列出實作計畫。只列計畫，不實作，確認後再開始。」</div>
+        <div class="tech-ex">Stage 3（工程）：「執行 T1。完成後自行跑驗收，測試不過請修正後重跑，直到通過。」</div>
+        <div class="tech-ex" style="color:var(--tx3);border-top:1px solid var(--bd);padding-top:.5rem;margin-top:.35rem">非工程例：「請讀取合約清單與審查重點，了解範疇，不開始審查，列出疑問後等確認 → 提出審查計畫等確認 → 執行首份審查並附引文，等確認後繼續下一份。」</div>
+        <div class="tech-why">一次一個段落確認，避免 AI 在未理解完整情境前越界操作，也讓人有機會在每個節點調整方向</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-num">TECHNIQUE 02</div>
+        <div class="tech-title">禁區設定（比目標更重要）</div>
+        <div class="tech-step">在 Spec 的 Non-goals 明確列出：「不包含 X、不修改 Y、不碰 Z」</div>
+        <div class="tech-step">在 CLAUDE.md 寫入全域禁止規則，讓 agent 在整個 repo 都知道不能碰什麼</div>
+        <div class="tech-step">在每個 Prompt 重申當前邊界：「只做 T1，不要主動修改其他模組」</div>
+        <div class="tech-ex">Non-goals 範例：「不處理掃描圖片 PDF（手寫辨識排第二版）、不做 UI 重設計、不支援多物流商」</div>
+        <div class="tech-why">AI 預設行為是「幫你多做一點」。沒有明確禁區，它會越界越改越多——而且你通常不會馬上發現</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-num">TECHNIQUE 03</div>
+        <div class="tech-title">驗收優先設計</div>
+        <div class="tech-step">在開始前就寫好 Acceptance Criteria 與 Verify 指令，不等 AI 完成再想「要怎麼驗」</div>
+        <div class="tech-step">準備好測試資料（測試集、邊界條件樣本），讓驗收可以自動執行不依賴人眼</div>
+        <div class="tech-step">在 Prompt 明確要求：「完成後自己跑驗收指令，測試不過請分析原因並修正後重跑」</div>
+        <div class="tech-ex">Verify by（工程）：npm run test:pdf-accuracy -- --threshold=0.95 &amp;&amp; npx playwright test pdf-flow/</div>
+        <div class="tech-ex" style="color:var(--tx3)">Verify by（法務）：法務主管抽驗 20 份，準確率須 ≥95%，每個風險標記必須附引文位置。</div>
+        <div class="tech-why">驗收標準是 AI 判斷「完成」的唯一依據。不事先定義，AI 會自我判斷「差不多了」——人也沒有客觀標準可以拒絕</div>
+      </div>
+    </div>
+
+    <!-- Responsibility Split -->
+    <div class="resp rv rv-d4">
+      <div class="resp-col">
+        <div class="resp-h" style="color:var(--tx2)">人（Human）聚焦於</div>
+        <div style="font-size:.75rem;color:var(--tx3);margin-bottom:.7rem;font-weight:600">傳統 Coding 中，人負責一切：</div>
+        <div class="ri">需求理解與澄清</div>
+        <div class="ri">系統架構設計</div>
+        <div class="ri">每一行程式碼的撰寫</div>
+        <div class="ri">測試案例設計與執行</div>
+        <div class="ri">Bug 定位與修復</div>
+        <div style="margin-top:1rem;font-size:.75rem;color:var(--ac);margin-bottom:.65rem;font-weight:600">SDD Agentic 中，人上移至：</div>
+        <div class="ri ac">問題定義與範疇設定</div>
+        <div class="ri ac">Spec 撰寫（Non-goals 最難最重要）</div>
+        <div class="ri ac">驗收標準設計</div>
+        <div class="ri ac">架構判斷與取捨</div>
+        <div class="ri ac">最終審查與交付確認</div>
+      </div>
+      <div class="resp-col">
+        <div class="resp-h" style="color:var(--ac)">AI Agent 接手</div>
+        <div style="font-size:.75rem;color:var(--tx3);margin-bottom:.7rem;font-weight:600">Agentic / SDD 中，agent 執行：</div>
+        <div class="ri">讀取並理解整個 repo 結構</div>
+        <div class="ri">根據 spec 制定實作計畫</div>
+        <div class="ri">跨檔案修改與新增</div>
+        <div class="ri">執行測試並分析失敗原因</div>
+        <div class="ri">根據測試失敗反覆修正</div>
+        <div class="ri">提交可審查的候選結果</div>
+        <div style="margin-top:1rem;font-size:.75rem;color:var(--err);margin-bottom:.65rem;font-weight:600">Agent 不替代的事：</div>
+        <div class="ri err">決定問題的業務優先級</div>
+        <div class="ri err">判斷 Non-goals 的邊界</div>
+        <div class="ri err">最終交付的人工審查判斷</div>
+      </div>
+    </div>
+
+    <div class="takeaway rv rv-d5">
+      <div class="tw-icon">⚙️</div>
+      <div>
+        <div class="tw-lbl">核心論點</div>
+        <p class="tw-txt">SDD 不等於全部 Agentic Coding；<strong>SDD 是讓 Agentic Coding 變成企業可交付流程的核心方法</strong>。不是把 coding slice 丟給 AI，而是讓 AI agent 在明確規格與驗收標準下承接多步驟工程任務。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DEMO LAB ══════════════════════════════════ -->
+<section id="demo">
+  <div class="ct">
+    <div class="sec-lbl">互動 Demo</div>
+    <h2 class="sec-h rv">動手感受：你的職能如何用 SDW</h2>
+    <p class="sec-d rv rv-d1">光看框架不夠——選擇你的職能，看同一個模糊請求如何被拆成六層規格。再切換到對比模式：同一個問題，Prompt-only 與 SDW 的 AI 行為差距一目瞭然。</p>
+
+    <div class="demo-tabs rv rv-d2">
+      <button class="demo-tab active" onclick="sd('a',this)">A · 模糊需求 → SDW 規格</button>
+      <button class="demo-tab" onclick="sd('b',this)">B · Prompt-only vs SDW 對比</button>
+    </div>
+
+    <!-- Demo A: Transformer -->
+    <div class="demo-panel active" id="dp-a">
+      <p class="sm mu" style="margin-bottom:1rem">選擇職能，看同一個模糊請求如何被 SDW 轉成六層可執行規格：</p>
+      <div class="fn-grid" id="fn-grid">
+        <button class="fn-btn active" onclick="selectFn('pm',this)">PM / 產品</button>
+        <button class="fn-btn" onclick="selectFn('legal',this)">法務 / 合規</button>
+        <button class="fn-btn" onclick="selectFn('cs',this)">客服 / 銷售</button>
+        <button class="fn-btn" onclick="selectFn('research',this)">研究 / 分析</button>
+        <button class="fn-btn" onclick="selectFn('hr',this)">HR / 人才</button>
+        <button class="fn-btn" onclick="selectFn('exec',this)">主管 / 決策</button>
+      </div>
+      <div class="da-layout">
+        <div class="da-col">
+          <div class="da-box">
+            <div class="da-bh">模糊請求（Before）</div>
+            <div class="da-vague" id="da-vague"></div>
+            <div class="da-prob-hdr">AI 面臨的問題：</div>
+            <div id="da-probs"></div>
+          </div>
+          <button class="da-btn" id="da-btn" onclick="revealSpec()">→ 轉換成 SDW 六層規格</button>
+          <button class="da-rst" id="da-rst" onclick="resetSpec()" style="display:none">↺ 重置</button>
+        </div>
+        <div class="da-col" id="da-spec-col">
+          <div class="da-placeholder" id="da-placeholder">
+            <div style="color:var(--tx3);font-size:.85rem;text-align:center;padding:2rem 1.5rem;line-height:1.8">← 選擇職能後<br>點擊「轉換成 SDW 六層規格」</div>
+          </div>
+          <div id="spc-cards" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo B: Before vs After -->
+    <div class="demo-panel" id="dp-b">
+      <p class="sm mu" style="margin-bottom:1rem">選擇場景，看 Prompt-only 與 SDW 在 AI 處境和輸出品質的差異：</p>
+      <div class="va-btns" style="margin-bottom:1.5rem">
+        <button class="vb sel" onclick="selectDB('legal',this)">法務合約審查</button>
+        <button class="vb" onclick="selectDB('cs',this)">客服對話設計</button>
+        <button class="vb" onclick="selectDB('research',this)">競品研究報告</button>
+      </div>
+      <div class="cg" id="db-content"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ENTERPRISE CASES ════════════════════════════ -->
+<section id="cases">
+  <div class="ct">
+    <div class="sec-lbl">企業案例</div>
+    <h2 class="sec-h rv">15 個公開實務：各職能如何把工作規格化</h2>
+    <p class="sec-d rv rv-d1">這些案例的重點不是「他們用了哪個 AI 工具」，而是「他們在哪一層定義清楚了問題、如何設計驗收、哪些判斷保留人工」——這才是可複製的部分。來源均已標注。</p>
+
+    <div class="cs-filter rv rv-d2">
+      <button class="csf active" onclick="filterCS('all',this)">全部 <span class="csf-n">15</span></button>
+      <button class="csf" onclick="filterCS('fullco',this)">全員賦能</button>
+      <button class="csf" onclick="filterCS('cs',this)">客服 / 銷售</button>
+      <button class="csf" onclick="filterCS('legal',this)">法務 / 研究</button>
+      <button class="csf" onclick="filterCS('med',this)">醫療 / 教育</button>
+      <button class="csf" onclick="filterCS('hr',this)">HR / 知識管理</button>
+      <button class="csf" onclick="filterCS('ops',this)">營運 / PM</button>
+    </div>
+
+    <div class="cs-grid rv rv-d3" id="cs-grid">
+
+      <!-- 全員賦能 -->
+      <div class="cs-card" data-cat="fullco">
+        <div class="cs-head"><span class="cs-co">NVIDIA</span><span class="cs-badge cat-fullco">全員賦能</span></div>
+        <p class="cs-desc">工程、法務、HR、行銷等職能統一採用 AI agent 工作流，每員工配置雲端 VM 沙箱。關鍵不是「開放工具」，而是先為每個職能定義 Context 邊界（沙箱規則、資料存取範圍）與高風險動作的 Human Review 觸發條件。</p>
+        <div class="cs-kpi">SDW 切入：Context 邊界定義 → Validation（高風險稽核）→ Human Review（人工授權觸發）</div>
+        <a class="cs-src" href="https://www.techspot.com/news/112170-openai-debuts-gpt-55-nvidia-gave-early-access.html" target="_blank" rel="noopener">TechSpot 報導 →</a>
+      </div>
+
+      <!-- 客服 / 銷售 -->
+      <div class="cs-card" data-cat="cs">
+        <div class="cs-head"><span class="cs-co">Klarna</span><span class="cs-badge cat-cs">客服 / 銷售</span></div>
+        <p class="cs-desc">明定哪些客服場景可自助、哪些須升級人工，把對話邏輯規格化後交由 AI 處理。Context 限定在核准知識庫範圍，Output 格式固定（回答 + 升級標籤），並持續監測誤答率與 CSAT 作為 Validation 指標。</p>
+        <div class="cs-kpi">SDW 切入：Problem（高頻自助場景）→ Context（知識庫邊界）→ Output（回答＋升級標籤）→ Validation（誤答率門檻）</div>
+        <a class="cs-src" href="https://openai.com/index/klarna/" target="_blank" rel="noopener">OpenAI 案例 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="cs">
+        <div class="cs-head"><span class="cs-co">Rabobank</span><span class="cs-badge cat-cs">客服 / 銷售</span></div>
+        <p class="cs-desc">文字 + 語音客服一體化，每日 2 萬通電話、7,000 則聊天。信心值門檻與自動升級路徑是核心設計，以匿名真實查詢做持續回歸測試，聊天自助率達 62%。</p>
+        <div class="cs-kpi">SDW 切入：Output（回答＋摘要＋升級標籤格式）→ Validation（信心值門檻，自助率 62%）→ Human Review（超出政策自動轉人工）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="cs">
+        <div class="cs-head"><span class="cs-co">Holland America Line</span><span class="cs-badge cat-cs">客服 / 銷售</span></div>
+        <p class="cs-desc">3 個月上線虛擬 concierge，聚焦航程查詢、加購服務、一般問答三個場景。先定義每個場景的 Output 格式與 escalation 條件，再串接搜尋 / API / CRM，Reuse 設計讓場景可複製到其他市場。</p>
+        <div class="cs-kpi">SDW 切入：Problem（三高頻場景 scope）→ Output（固定格式＋轉人工條件）→ Reuse（場景模板可複製）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <!-- 法務 / 研究 -->
+      <div class="cs-card" data-cat="legal">
+        <div class="cs-head"><span class="cs-co">Morgan Stanley</span><span class="cs-badge cat-legal">法務 / 研究</span></div>
+        <p class="cs-desc">AskResearchGPT 每年從 70,000 份報告萃取洞察，Context 明定研究庫範圍與時效限制，Output 格式要求引文 + 摘要分開，每個輸出需附引用段落。人工確認是對外發布的必要關卡（Human Review）。</p>
+        <div class="cs-kpi">SDW 切入：Context（研究庫邊界）→ Output（引文＋摘要格式）→ Validation（引用完整率）→ Human Review（對外前人工確認）</div>
+        <a class="cs-src" href="https://www.morganstanley.com/press-releases/morgan-stanley-research-announces-askresearchgpt" target="_blank" rel="noopener">Morgan Stanley 公告 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="legal">
+        <div class="cs-head"><span class="cs-co">Banesco USA</span><span class="cs-badge cat-legal">法務 / 研究</span></div>
+        <p class="cs-desc">授信信用備忘錄從一週壓縮到數分鐘，報告準確率提升 89%。每個環節輸出格式均已事先定義：文件上傳 → 結構化萃取 → draft memo → 承作人員覆核。承作人員的 Human Review 是流程中不可省略的環節。</p>
+        <div class="cs-kpi">SDW 切入：Output（備忘錄格式＋欄位規格）→ Validation（準確率 +89%）→ Human Review（承作人員覆核必要）→ Reuse（模板重用）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="legal">
+        <div class="cs-head"><span class="cs-co">Altumatim</span><span class="cs-badge cat-legal">法務 / 研究</span></div>
+        <p class="cs-desc">法律 eDiscovery 從週 / 月縮到時 / 日，文件分類正確率從 67% 提升到 90%+。設計原則：機密保護優先，所有分類結果均可解釋——AI 輸出的每個分類都必須有可追溯的理由，法律論述由律師撰寫。</p>
+        <div class="cs-kpi">SDW 切入：Output（分類＋相關性標記）→ Validation（正確率門檻 90%+，每項可解釋）→ Human Review（法律論述必須人工撰寫）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="legal">
+        <div class="cs-head"><span class="cs-co">Dunaway</span><span class="cs-badge cat-legal">法務 / 研究</span></div>
+        <p class="cs-desc">Atlas 系統集中索引城市法規，Teams 中自然語言問答。Context Spec 明定只允許查詢已核准的法規資料庫；Output 規格要求每個回答必須附引文段落；Reuse 設計自動同步法規更新，確保知識庫不過時。法規研究時間降低 90%，年省約 1 萬小時。</p>
+        <div class="cs-kpi">SDW 切入：Context（核准資料庫邊界）→ Output（答案＋原文引用）→ Validation（引文完整）→ Reuse（自動同步法規更新）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="legal">
+        <div class="cs-head"><span class="cs-co">Premji Invest</span><span class="cs-badge cat-legal">法務 / 研究</span></div>
+        <p class="cs-desc">投資分析生產力提升 30%，潛在標的分析延伸 5 倍。流程：多源資料整合 → 研究摘要 → memo + 風險旗標 → 人工投資決策。Output Spec 要求「事實、推論、反證、結論」四欄分開，推論不可偽裝成事實。</p>
+        <div class="cs-kpi">SDW 切入：Context（多源資料＋時效）→ Output（事實／推論分開格式）→ Validation（引用完整）→ Human Review（投資決策由人判斷）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <!-- 醫療 / 教育 -->
+      <div class="cs-card" data-cat="med">
+        <div class="cs-head"><span class="cs-co">Sami Saúde</span><span class="cs-badge cat-med">醫療 / 教育</span></div>
+        <p class="cs-desc">整合文本、影像、語音，生成護理摘要並標準化輸出格式。Output Spec 明定摘要結構與標籤規格；Validation 指標：每月省 900 小時、81% 摘要無需修改。醫師簽核（Human Review）是流程中不可省略的環節。</p>
+        <div class="cs-kpi">SDW 切入：Output（摘要格式＋標籤規格）→ Validation（81% 無需修改，月省 900h）→ Human Review（醫師簽核，不可省）→ Reuse（摘要模板複用）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="med">
+        <div class="cs-head"><span class="cs-co">Oscar Health</span><span class="cs-badge cat-med">醫療 / 教育</span></div>
+        <p class="cs-desc">臨床對話紀錄與檢驗結果審閱時間減少 40%；claim assistant 以結構化 Output 說明申請追蹤邏輯，每個輸出格式固定且可追溯。醫療專業人員的最終審核（Human Review）是系統設計的核心假設，不是例外處理。</p>
+        <div class="cs-kpi">SDW 切入：Output（摘要＋claim 追蹤格式）→ Validation（審閱時間 −40%）→ Human Review（醫療專業人員審核，不可省）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <!-- HR / 知識管理 -->
+      <div class="cs-card" data-cat="hr">
+        <div class="cs-head"><span class="cs-co">Shonan Beauty Clinic</span><span class="cs-badge cat-hr">HR / 知識管理</span></div>
+        <p class="cs-desc">日本美容診所，把資深員工的隱性知識轉為結構化知識庫，作為 AI 問答與新人培訓的 Context 來源。Problem Spec：縮短新人到產能時間、解決文件版本衝突。知識庫的版本管理與 Owner 指定是維持 Reuse 品質的關鍵設計。</p>
+        <div class="cs-kpi">SDW 切入：Problem（隱性知識結構化）→ Context（知識庫範圍＋版本）→ Output（問答＋訓練材料）→ Reuse（新人培訓模板）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <!-- 營運 / PM -->
+      <div class="cs-card" data-cat="ops">
+        <div class="cs-head"><span class="cs-co">Deutsche Bahn</span><span class="cs-badge cat-ops">營運 / PM</span></div>
+        <p class="cs-desc">透過 CoE 建立受管環境與治理機制，4,000 名 citizen developers 上線 500+ 生產 apps。關鍵不是工具，而是先建 Context（平台規則、受管環境），再定義 Validation（上線條件審核）與各子公司的 Human Review 層次。</p>
+        <div class="cs-kpi">SDW 切入：Context（受管環境＋平台規則）→ Validation（上線審核）→ Human Review（各子公司治理）→ Reuse（CoE 模板庫）</div>
+        <a class="cs-src" href="https://learn.microsoft.com/en-us/power-platform/guidance/case-studies/db-empowers-citizen-devs" target="_blank" rel="noopener">Microsoft 案例 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="ops">
+        <div class="cs-head"><span class="cs-co">Kao Corporation</span><span class="cs-badge cat-ops">營運 / PM</span></div>
+        <p class="cs-desc">工廠前線由紙本轉數位，每個場景先定義資料格式（Output Spec）與監控指標（Validation），單一案例每月提升 480 小時效率。Reuse 設計：相同 Spec 模板複製到多個前線場景，不從零開始。</p>
+        <div class="cs-kpi">SDW 切入：Output（數位格式規格）→ Validation（BI 監控指標，月省 480h）→ Reuse（Spec 模板複製至其他場景）</div>
+        <a class="cs-src" href="https://openai.com/business/guides-and-resources/identifying-and-scaling-ai-use-cases/" target="_blank" rel="noopener">OpenAI 企業資源 →</a>
+      </div>
+
+      <div class="cs-card" data-cat="ops">
+        <div class="cs-head"><span class="cs-co">ServiceNow / Figma Make</span><span class="cs-badge cat-ops">營運 / PM</span></div>
+        <p class="cs-desc">PM 以高擬真原型取代靜態 PRD，先定義 Problem（可驗證假設）與 Non-goals，用原型取得利害關係人早期對齊。Output Spec：原型 + 測試假設 + 成功門檻。Human Review：PM 保留最終取捨決策，設計與工程在範疇確認後再介入。</p>
+        <div class="cs-kpi">SDW 切入：Problem（可驗證假設）→ Output（原型＋假設＋成功門檻）→ Validation（利害關係人對齊）→ Human Review（PM 取捨決策）</div>
+        <a class="cs-src" href="https://www.figma.com/blog/prototypes-are-the-new-prds/" target="_blank" rel="noopener">Figma Blog →</a>
+      </div>
+
+    </div><!-- /cs-grid -->
+  </div>
+</section>
+
+<!-- ══ APPLY ══════════════════════════════════════ -->
+<section id="apply">
+  <div class="ct">
+    <div class="sec-lbl">落地指南</div>
+    <h2 class="sec-h rv">從規格到交付：試點選擇、驗收設計、角色分工</h2>
+    <p class="sec-d rv rv-d1">SDW 的方法寫在框架裡，但真正落地需要三件事：選對第一個試點、建立可量化的驗收標準、讓每個角色找到新定位。以下是三套實戰指南。</p>
+
+
+    <h3 class="rv" style="margin:0 0 .6rem;color:var(--tx2);font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">01 · 六大驗收面向</h3>
+    <p class="rv" style="color:var(--tx3);font-size:.88rem;margin-bottom:1.2rem">任何 SDW 輸出，無論哪個職能，都要通過這六道驗收。這是從「能用」到「可靠交付」的差距。</p>
+    <div class="ea-g rv rv-d1">
+      <div class="ea-card">
+        <div class="ea-num">1</div>
+        <div class="ea-title">輸出符合規格</div>
+        <p class="ea-desc">符合 spec 中的 Output 定義，邊界條件正確處理，主要流程與異常路徑都有覆蓋。</p>
+        <div class="ea-check"><span>✓</span> AC 驗收條件 100% 通過</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">2</div>
+        <div class="ea-title">資料與引用可信</div>
+        <p class="ea-desc">輸入 / 輸出有量化指標，資料來源可追溯，引用完整，推論與事實分開標示。</p>
+        <div class="ea-check"><span>✓</span> 準確率 / 引文完整率 ≥ 閾值</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">3</div>
+        <div class="ea-title">方法論可驗</div>
+        <p class="ea-desc">AI 輸出的判斷方式透明，結果可重現，有 baseline 比較，能力邊界已知且已告知。</p>
+        <div class="ea-check"><span>✓</span> 評估框架通過，邊界已明定</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">4</div>
+        <div class="ea-title">流程穩定可重跑</div>
+        <p class="ea-desc">失敗有明確處理機制，不靜默失敗，重跑後輸出一致，可監控異常與延遲。</p>
+        <div class="ea-check"><span>✓</span> 穩定性測試 / 監控到位</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">5</div>
+        <div class="ea-title">合規與治理</div>
+        <p class="ea-desc">符合資安政策與法遵要求，敏感資料處理合規，存取控制正確，稽核軌跡完整。</p>
+        <div class="ea-check"><span>✓</span> 資安 / 法遵 / 稽核確認</div>
+      </div>
+      <div class="ea-card">
+        <div class="ea-num">6</div>
+        <div class="ea-title">流程可移交</div>
+        <p class="ea-desc">有文件、SOP、監控告警，後續人員可接手，不依賴特定個人，知識沉澱在流程中。</p>
+        <div class="ea-check"><span>✓</span> Handoff Checklist 通過</div>
+      </div>
+    </div>
+
+    <!-- Use Cases -->
+    <h3 class="rv rv-d2" style="margin:2.5rem 0 .5rem;color:var(--tx2);font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">02 · 六種適合起步的試點類型</h3>
+    <p class="rv rv-d2" style="color:var(--tx3);font-size:.95rem;margin-bottom:1.4rem">選擇首個試點的關鍵：輸入 / 輸出清楚、有樣本可驗收、非高風險決策、做壞了容易更正。</p>
+    <div class="uc-g rv rv-d2">
+      <div class="uc"><div class="uc-icon">📄</div><h3>高頻文件 / 合約處理</h3><p class="sc">合約審查、PDF 欄位萃取、申請書分類。I/O 最清楚、準確率最容易量化，任何職能都適合起步。</p><div class="metas"><span class="mt">法務 / 客服 / 行政</span><span class="mt">準確率驗收</span></div></div>
+      <div class="uc"><div class="uc-icon">🔍</div><h3>知識檢索與研究摘要</h3><p class="sc">從大量文件、報告、法規中找答案並結構化輸出。引用來源可驗，推論與事實分開。</p><div class="metas"><span class="mt">研究 / 法務 / HR</span><span class="mt">引文完整率</span></div></div>
+      <div class="uc"><div class="uc-icon">💬</div><h3>客服知識流設計</h3><p class="sc">把高頻問答轉為知識庫，設信心門檻與升級路徑。自助率、誤答率是明確的 Validation 指標。</p><div class="metas"><span class="mt">客服 / 銷售</span><span class="mt">自助率量化</span></div></div>
+      <div class="uc"><div class="uc-icon">📋</div><h3>決策文件與週報生成</h3><p class="sc">把分散資訊壓成一頁 memo 或週報，格式固定、數字可交叉核對，人工審最終版本。</p><div class="metas"><span class="mt">主管 / PM / 財務</span><span class="mt">格式固定驗收</span></div></div>
+      <div class="uc"><div class="uc-icon">🧪</div><h3>結構化原型與假設測試</h3><p class="sc">先寫 Problem Spec + Non-goals，用原型或多版本素材驗證假設，早期對齊後再投入開發。</p><div class="metas"><span class="mt">PM / 行銷 / 產品</span><span class="mt">假設驗證驅動</span></div></div>
+      <div class="uc"><div class="uc-icon">🔄</div><h3>高頻行政流程自動化</h3><p class="sc">資料格式轉換、報表整合、作業標準化。重複性高、輸出格式固定，最適合建立可重跑 workflow。</p><div class="metas"><span class="mt">營運 / 行政 / 財務</span><span class="mt">可重跑驗收</span></div></div>
+    </div>
+
+    <!-- Roles -->
+    <h3 class="rv rv-d3" style="margin:3rem 0 .5rem;color:var(--tx2);font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase">03 · 各職能的能力重心上移</h3>
+    <p class="rv rv-d3" style="color:var(--tx3);font-size:.95rem;margin-bottom:1.4rem">這不是「AI 取代員工」——而是工作重心從「執行層」上移到「定義層」。無論什麼職能，真正的能力升級是把工作拆得夠清楚，讓 AI 可以穩定接手執行的部分。</p>
+    <div class="role-g rv rv-d3">
+
+      <div class="role">
+        <div class="role-h"><div class="role-t">PM / 產品</div><div class="role-s">Product Manager / Project Manager</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">把模糊業務問題轉成可驗證的假設與清楚問題陳述</li>
+            <li class="to">用高擬真原型取代靜態 PRD，更早對齊利害關係人</li>
+            <li class="to">定義可量化的驗收標準與 Non-goals</li>
+          </ul></div>
+          <div class="rshift">從<strong>「管人」</strong>到<strong>「管規格與驗收」</strong></div>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-h"><div class="role-t">研究 / 分析師</div><div class="role-s">Research Analyst / Strategy / Investment</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">先寫 Problem Spec：本次要支援什麼決策、允許哪些資料來源</li>
+            <li class="to">明定推論與事實的分離方式，每個主張要附引用來源</li>
+            <li class="to">保留「改寫、刪除、簽字」的最終判斷責任</li>
+          </ul></div>
+          <div class="rshift">從<strong>「找資料寫報告」</strong>到<strong>「設計分析框架與驗收」</strong></div>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-h"><div class="role-t">法務 / 合規</div><div class="role-s">Legal / Compliance / Risk</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">把高頻合約審查類型轉為可重複執行的審查規格</li>
+            <li class="to">明定哪些條款必須人工判斷，哪些可自動標記風險</li>
+            <li class="to">建立條款對照庫，讓每次輸出成為下次的起點</li>
+          </ul></div>
+          <div class="rshift">從<strong>「審文件」</strong>到<strong>「定義風險邊界與審查規格」</strong></div>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-h"><div class="role-t">客服 / 銷售</div><div class="role-s">Customer Service / Sales Support</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">定義哪些場景可自助解決、哪些必須轉人工（含轉接條件）</li>
+            <li class="to">把高頻問答結構化為可索引的知識庫，並設信心值門檻</li>
+            <li class="to">用自助率、誤答率、CSAT、升級率追蹤效益</li>
+          </ul></div>
+          <div class="rshift">從<strong>「回答問題」</strong>到<strong>「設計知識流與升級路徑」</strong></div>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-h"><div class="role-t">行銷 / 內容</div><div class="role-s">Marketing / Content / Brand</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">先寫受眾 Spec 與訴求限制，再讓 AI 生成多版本素材</li>
+            <li class="to">用 A/B 測試驗證訊息假設，而不是靠主觀感覺決定</li>
+            <li class="to">把品牌語氣、禁語與法規紅線定義成可審核規則</li>
+          </ul></div>
+          <div class="rshift">從<strong>「創作輸出」</strong>到<strong>「設計測試假設與驗收規則」</strong></div>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-h"><div class="role-t">HR / 人才發展</div><div class="role-s">HR / L&amp;D / People Operations</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">把 JD、訓練計畫、評量 rubric 標準化為可重用模板</li>
+            <li class="to">明定哪些決定必須 HRBP / 法務簽核（就業法、歧視風險）</li>
+            <li class="to">用新人到產能天數、教材重用率、招募週期追蹤效益</li>
+          </ul></div>
+          <div class="rshift">從<strong>「管行政」</strong>到<strong>「管一致性與人才流程規格」</strong></div>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-h"><div class="role-t">主管 / 決策者</div><div class="role-s">Manager / Executive / Director</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">把分散資訊壓成一頁決策 memo：發生什麼、為何重要、三個選項</li>
+            <li class="to">明定哪些判斷必須自己拍板、哪些可以授權或自動處理</li>
+            <li class="to">用決策速度、會後返工率、跨部門等待時間評估效益</li>
+          </ul></div>
+          <div class="rshift">從<strong>「看 dashboard」</strong>到<strong>「設計決策節點與授權邊界」</strong></div>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-h"><div class="role-t">工程師 / 技術</div><div class="role-s">Software / ML / Platform Engineer</div></div>
+        <div class="role-b">
+          <div class="rs"><div class="rsl to">能力重心移向</div><ul class="rit">
+            <li class="to">設計 Agent 可執行的系統與 Repo Context（CLAUDE.md / AGENTS.md）</li>
+            <li class="to">建立自動化驗收迴圈與 CI pipeline，讓輸出可量化</li>
+            <li class="to">架構取捨、安全邊界、外部 API 合約仍是人工判斷核心</li>
+          </ul></div>
+          <div class="rshift">從<strong>「親自實作」</strong>到<strong>「設計 agent 可執行的系統」</strong></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="takeaway rv rv-d4">
+      <div class="tw-icon">↑</div>
+      <div>
+        <div class="tw-lbl">跨職能共同結論</div>
+        <p class="tw-txt">無論哪個職能，<strong>能把問題定清楚、驗收設好的人，是 AI 時代最有槓桿的角色</strong>。執行本身越來越便宜，定義與驗收的能力越來越值錢。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PLAYBOOK ═══════════════════════════════════ -->
+<section id="pb">
+  <div class="ct">
+    <div class="sec-lbl">導入路線</div>
+    <h2 class="sec-h rv">五步建立新型態工作模式</h2>
+    <p class="sec-d rv rv-d1">轉型不是一次性的工具學習，而是逐步建立的工作習慣。從第一個試點開始，讓每個步驟都有可驗收的成果。</p>
+    <div class="pb rv rv-d2">
+      <div class="pb-step">
+        <div class="snum">1</div>
+        <div class="sc2">
+          <div class="st">校準認知，對齊團隊</div>
+          <p class="sd">這不是「讓 AI 幫你寫更多 code」，而是「讓部門能接住更大範圍的業務問題」。在開始前，讓所有相關人員對新工作方式有共識：誰負責定義問題、誰設計驗收標準、AI 在哪個環節介入、人在哪個環節把關。對齊步驟跳過，是導入失敗最常見的原因。</p>
+          <div class="stips"><span class="stip">工作方式對齊先行</span><span class="stip">角色分工說清楚</span><span class="stip">人定義，AI 執行</span></div>
+        </div>
+      </div>
+      <div class="pb-step">
+        <div class="snum">2</div>
+        <div class="sc2">
+          <div class="st">選擇試點任務：從容易量化的開始</div>
+          <p class="sd">第一個試點最重要的任務是「讓流程跑通一次」，而不是選最複雜的問題。選符合條件的工作：輸入 / 輸出清楚、有測試資料、非安全關鍵、改壞了容易回滾。報表、文件處理、資料清洗是最適合的起點。</p>
+          <div class="stips"><span class="stip">清楚 I/O</span><span class="stip">有測試資料</span><span class="stip">低風險可回滾</span></div>
+        </div>
+      </div>
+      <div class="pb-step">
+        <div class="snum">3</div>
+        <div class="sc2">
+          <div class="st">先規劃，先定義驗收</div>
+          <p class="sd">動手之前，先把問題寫清楚（SDD Spec），再定義「什麼算完成」（Acceptance Criteria）。Non-goals 比 Goals 更難寫，也更重要——它決定了範疇邊界，讓 AI 不會越界。Verification 指令要在動手前就設計好，測試資料也要事先準備。沒有 Spec、沒有 AC 就開始，是 AI 輸出偏離、大量重做的根本原因。</p>
+          <div class="stips"><span class="stip">Non-goals 是護欄</span><span class="stip">AC 要可量化</span><span class="stip">先準備測試資料</span></div>
+        </div>
+      </div>
+      <div class="pb-step">
+        <div class="snum">4</div>
+        <div class="sc2">
+          <div class="st">執行 + 把關風險</div>
+          <p class="sd">先建立 Workflow Context 文件——工程任務稱 CLAUDE.md / AGENTS.md，其他職能是工作邊界 SOP 或 spec 說明（架構、慣例、禁止事項）——再把 spec 拆成 3–7 個可獨立驗收的任務。執行時，告訴 AI「不能做什麼」比告訴它「要做什麼」更重要——禁區設定是最容易被跳過的步驟。AI 輸出要當作草稿：關鍵數據人工抽驗、關鍵業務邏輯第二人確認、灰色判斷保留人工把關。</p>
+          <div class="stips"><span class="stip">工作邊界文件先寫</span><span class="stip">明確禁止事項</span><span class="stip">交叉驗證關鍵輸出</span></div>
+        </div>
+      </div>
+      <div class="pb-step">
+        <div class="snum">5</div>
+        <div class="sc2">
+          <div class="st">驗收交付 → 複製流程 → 部門服務化</div>
+          <p class="sd">通過六大企業驗收面向後，試點完成。接下來不是馬上擴大規模，而是把這次的 spec 格式、task 拆解、驗收清單整理成可複製的模板。讓第二個問題的導入成本大幅降低。當三到五個問題跑過這個流程，團隊就建立了真正的 Agentic 交付能力——不只是個別工具使用者，而是具備整合能力的 AI 工程部門。</p>
+          <div class="stips"><span class="stip">流程模板化</span><span class="stip">第二個問題更快</span><span class="stip">部門能力而非個人技能</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="takeaway rv rv-d3">
+      <div class="tw-icon">🗺️</div>
+      <div>
+        <div class="tw-lbl">導入結論</div>
+        <p class="tw-txt">新型態工作模式的核心習慣只有四個：<strong>先對齊、先規劃、訂立驗收、把關風險</strong>。這四個習慣決定了 AI 最終能幫到你多少。前三個月先求一個試點跑通，建立信心與可複製的流程，再逐步擴大。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ RESOURCE ════════════════════════════════════ -->
+<section id="resource">
+  <div class="ct">
+    <div class="sec-lbl">參考來源</div>
+    <h2 class="sec-h rv">References</h2>
+    <p class="sec-d rv rv-d1">本展示內容的主要依據來源。所有概念定義、方法論主張與案例均以下列官方文件與研究報告為基礎。</p>
+    <!-- References grid -->
+    <div class="ref-g rv rv-d2">
+
+      <!-- Anthropic / Claude Code -->
+      <div class="ref-cat">
+        <div class="ref-cat-lbl">Anthropic · Claude Code</div>
+        <div class="ref-list">
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">Claude Code — Overview &amp; Core Concepts</div>
+              <div class="ref-desc">Agentic coding environment 的官方定義、Plan Mode、CLAUDE.md、hooks 與 subagents 架構說明。本展示的 Agentic Coding 定義以此為準。</div>
+            </div>
+            <a class="ref-link" href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">Claude Code — Best Practices</div>
+              <div class="ref-desc">三段式 Prompt（Discovery / Planning / Execution）、禁區設定、驗收優先設計等操作技巧的官方最佳實踐文件。</div>
+            </div>
+            <a class="ref-link" href="https://docs.anthropic.com/en/docs/claude-code/best-practices" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">Claude Code — Memory &amp; CLAUDE.md</div>
+              <div class="ref-desc">CLAUDE.md 的結構、全域規則寫法、Scope Rules 與 repo-level 記憶機制。SDD 中 repo context 設定的依據。</div>
+            </div>
+            <a class="ref-link" href="https://docs.anthropic.com/en/docs/claude-code/memory" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- GitHub -->
+      <div class="ref-cat">
+        <div class="ref-cat-lbl">GitHub · Microsoft</div>
+        <div class="ref-list">
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">GitHub Spec Kit</div>
+              <div class="ref-desc">GitHub 官方 Spec-driven workflow 文件，包含 feature spec 格式、task breakdown 結構、PR spec 思維。本展示模板設計的主要參考之一。</div>
+            </div>
+            <a class="ref-link" href="https://github.com/github/spec-kit" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">GitHub Copilot — Coding Agent</div>
+              <div class="ref-desc">GitHub Copilot Agent mode 的官方說明，涵蓋 cloud agent 執行模型、PR metrics 與 agent-first 工作流程，AI-Assisted vs Agentic 區別的重要來源。</div>
+            </div>
+            <a class="ref-link" href="https://docs.github.com/copilot/concepts/agents/coding-agent/about-coding-agent" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Research & Industry -->
+      <div class="ref-cat">
+        <div class="ref-cat-lbl">研究與產業報告</div>
+        <div class="ref-list">
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">DORA — State of DevOps Report</div>
+              <div class="ref-desc">Google Cloud 主導的年度軟體交付研究，提供 AI 作為 amplifier、交付頻率與穩定性量測框架。本展示「AI 加速器，不是替代者」論點的實證基礎。</div>
+            </div>
+            <a class="ref-link" href="https://dora.dev" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">Thoughtworks Technology Radar — Spec-Driven Development</div>
+              <div class="ref-desc">Thoughtworks 對 SDD 作為企業工程方法的正式技術推薦評估。本展示將 SDD 定位為產業已驗證方法的依據。</div>
+            </div>
+            <a class="ref-link" href="https://www.thoughtworks.com/radar/techniques/spec-driven-development" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+          <div class="ref-item">
+            <div class="ref-info">
+              <div class="ref-title">McKinsey — AI and the Future of Software Engineering</div>
+              <div class="ref-desc">2025–2026 研究涵蓋 AI 開發工具的 Levels 1–4 演進模型、角色上移趨勢與企業落地效益範圍。AI 部門角色轉型矩陣的主要引用來源。</div>
+            </div>
+            <a class="ref-link" href="https://www.mckinsey.com/capabilities/mckinsey-digital/our-insights/ai-and-the-future-of-software-engineering" target="_blank" rel="noopener">前往 ↗</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══════════════════════════════════════ -->
+<footer>
+  <div class="ct">
+    <p>Spec-Driven Work｜企業 AI 工作轉型方法論</p>
+    <p>搭配簡報：spec_driven_agentic_coding_enterprise_report_final.pptx</p>
+    <p style="margin-top:.75rem">
+      <a href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank">Claude Code Docs</a> ·
+      <a href="https://www.thoughtworks.com/radar/techniques/spec-driven-development" target="_blank">Thoughtworks SDD</a> ·
+      <a href="https://github.com/github/spec-kit" target="_blank">GitHub Spec Kit</a> ·
+      <a href="https://dora.dev" target="_blank">DORA Research</a>
+    </p>
+  </div>
+</footer>
+
+<div id="toast">已複製到剪貼簿 ✓</div>
+
+<script>
+// ══ SCROLL REVEAL ══════════════════════════════════
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('vis'); revObs.unobserve(e.target); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.rv').forEach(el => revObs.observe(el));
+
+// ══ PIPELINE CHART ANIMATION ═══════════════════════
+const pcObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.querySelectorAll('.pc-bar').forEach(b => b.classList.add('anim'));
+      pcObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.pc-wrap').forEach(el => pcObs.observe(el));
+
+// ══ DEMO A ═════════════════════════════════════════
+const DA = {
+  report: {
+    vague: '「我們每週要手動做報表，很麻煩，能不能做一個自動的？」',
+    problem: '業務人員每週需手動從 3 個系統複製數據、製作 Excel，平均耗費 2-3 小時，延誤週一早會所需報表，錯誤率 ~5%',
+    goal: '建立可自動整合多來源數據的報表頁面，支援 CSV 匯出，每週一 8:00 前自動產出',
+    ng: ['即時儀表板（第二版）','權限管理','圖表視覺化'],
+    inp: '銷售系統 API（JSON）、庫存資料庫（PostgreSQL）、費用試算表（Google Sheets API）',
+    out: '整合報表頁面、自動週期排程、CSV 匯出功能',
+    ac: ['可顯示過去 30 天銷售摘要','可按部門篩選','可匯出 CSV 檔','查詢時間 < 3 秒','週一 8:00 前自動發送 Email 通知'],
+    vfy: 'npm test && npx playwright test reports/'
+  },
+  pdf: {
+    vague: '「整理這些 PDF 很麻煩，每天都要手工輸入」',
+    problem: '客服每日收到 50+ 份 PDF 申請表，手動讀取並輸入 CRM，每份約 8 分鐘，月均錯誤率 ~3%，影響後續流程',
+    goal: '自動解析 PDF 申請表，欄位準確率 ≥ 95%，縮短人工作業時間 80%',
+    ng: ['掃描圖片 PDF（手寫辨識）','非申請表格式的 PDF','UI 重設計'],
+    inp: 'A 格式 / B 格式 PDF（數位原生）',
+    out: '結構化 JSON 資料、寫入 CRM 系統、異常標記佇列',
+    ac: ['支援 A/B 兩種表格格式','欄位準確率 ≥ 95%（100 份測試集）','異常欄位自動標記，遺漏率 < 5%','每份 PDF 處理時間 < 30 秒'],
+    vfy: 'npm run test:pdf-accuracy -- --threshold=0.95'
+  },
+  api: {
+    vague: '「我們要串接物流 API，現在都是人工查詢訂單狀態」',
+    problem: '客服每天花 2 小時人工查詢物流狀態更新訂單，延遲通知導致客戶申訴率每月約 15 件',
+    goal: '建立物流 API 串接服務，定時同步訂單狀態，異常訂單觸發 Slack 通知',
+    ng: ['UI 開發','多物流商支援（第一版只做 A 物流）','歷史數據回填'],
+    inp: '物流商 REST API（需 API key）、訂單資料庫（PostgreSQL）',
+    out: '訂單狀態自動更新、異常訂單 Slack 通知',
+    ac: ['每 15 分鐘同步一次','同步失敗自動重試 3 次並記錄','Slack 通知在 1 分鐘內送達','支援手動觸發同步'],
+    vfy: 'npm test -- --grep "logistics" && npm run test:integration'
+  }
+};
+
+function renderSpec(d) {
+  const ngHtml = d.ng.map(n => `<span class="tag">✗ ${n}</span>`).join('');
+  const acHtml = d.ac.map(a => `<div class="ac-i">${a}</div>`).join('');
+  return `
+    <div class="sf"><div class="sfl">Problem</div><div class="sfv">${d.problem}</div></div>
+    <div class="sf"><div class="sfl">Goal</div><div class="sfv ac">${d.goal}</div></div>
+    <div class="sf"><div class="sfl">Non-goals（排除）</div><div class="tags">${ngHtml}</div></div>
+    <div class="sf"><div class="sfl">Input</div><div class="sfv">${d.inp}</div></div>
+    <div class="sf"><div class="sfl">Output</div><div class="sfv">${d.out}</div></div>
+    <div class="sf"><div class="sfl">Acceptance Criteria</div>${acHtml}</div>
+    <div class="sf"><div class="sfl">Verify by</div><div class="sfv mono" style="font-size:.78rem;background:var(--code);padding:.35rem .6rem;border-radius:5px;border:1px solid var(--bd)">${d.vfy}</div></div>
+  `;
+}
+
+
+// ── Interactive Demo Data ──────────────────────────────────────────
+const SPEC_DATA = {
+  pm: {
+    vague: '「幫我們做一個用戶需求分析」',
+    problems: ['沒有資料範圍與來源定義','沒有輸出格式與使用者規格','無法驗收：誰說「完成」算完成？'],
+    layers: [
+      { c:'#4ade80', l:'01 · Problem', t:'產品決策無依據：PM 靠直覺判斷用戶需求，缺乏系統性輸入' },
+      { c:'#60a5fa', l:'02 · Context', t:'資料來源：CRM 記錄、客服工單(3個月)、NPS 問卷，目標用戶：B2B 中型企業 PM' },
+      { c:'#a78bfa', l:'03 · Output', t:'交付物：用戶需求優先級矩陣 + 5 份代表性用戶旅程圖，格式：Notion 頁面 + CSV' },
+      { c:'#f59e0b', l:'04 · Validation', t:'驗收：覆蓋 ≥90% 工單主題；PM Lead 認可前三名優先需求；可在下次產品週期使用' },
+      { c:'#fb7185', l:'05 · Human Review', t:'PM Lead 審核最終矩陣；法務確認是否涉及個資處理合規' },
+      { c:'#34d399', l:'06 · Reuse', t:'模板存入 Notion 模板庫；下季更新只需替換資料來源，流程可重複執行' }
+    ]
+  },
+  legal: {
+    vague: '「幫我審一下這份合約」',
+    problems: ['沒有審查標準與關注點','沒有輸出格式（口頭？書面？）','「審完」的定義完全不清楚'],
+    layers: [
+      { c:'#4ade80', l:'01 · Problem', t:'合約審查耗時且依賴個人經驗，遺漏條款風險高，難以規模化' },
+      { c:'#60a5fa', l:'02 · Context', t:'合約類型：SaaS 服務協議；關注點：責任限制、IP 歸屬、自動續約條款；準據法：台灣法' },
+      { c:'#a78bfa', l:'03 · Output', t:'交付物：條款風險摘要表（高/中/低三級）+ 建議修改條文草稿，格式：Word 備忘錄' },
+      { c:'#f59e0b', l:'04 · Validation', t:'驗收：標記所有責任限制條款；自動續約條款加警示；建議修改具體可操作' },
+      { c:'#fb7185', l:'05 · Human Review', t:'資深法務確認風險評級；若有高風險條款，升級合夥人審核' },
+      { c:'#34d399', l:'06 · Reuse', t:'風險條款 Pattern 存入合約知識庫；下次同類合約可直接比對，審查時間縮短 60%' }
+    ]
+  },
+  cs: {
+    vague: '「幫我們做一個客服機器人」',
+    problems: ['沒有定義哪些問題要自動化','沒有人工接手的觸發條件','沒有成效驗收標準'],
+    layers: [
+      { c:'#4ade80', l:'01 · Problem', t:'客服工單 70% 是重複性問題，但現有流程全靠人工處理，高峰期回應延遲超過 4 小時' },
+      { c:'#60a5fa', l:'02 · Context', t:'範圍：退換貨、訂單查詢、帳號問題三類；資料：3 個月工單歷史 12,000 筆；排除：投訴與法律爭議' },
+      { c:'#a78bfa', l:'03 · Output', t:'交付物：可部署的對話流程設計文件 + Prompt 模板集 + 人工接手規則；格式：Zendesk 可匯入格式' },
+      { c:'#f59e0b', l:'04 · Validation', t:'驗收：目標問題類型自動回覆率 ≥80%；CSAT 不低於人工處理基準；誤判率 <5%' },
+      { c:'#fb7185', l:'05 · Human Review', t:'客服主管審核人工接手規則；法務確認退換貨政策描述準確性' },
+      { c:'#34d399', l:'06 · Reuse', t:'流程設計文件版本化；新產品線客服只需更新 FAQ 資料集，框架可直接複用' }
+    ]
+  },
+  research: {
+    vague: '「幫我研究一下競品」',
+    problems: ['競品範圍無界定','分析維度不明確','無法判斷「研究完了」'],
+    layers: [
+      { c:'#4ade80', l:'01 · Problem', t:'業務拓展決策缺乏競品情報，現有做法依賴人工瀏覽，耗時且無法持續更新' },
+      { c:'#60a5fa', l:'02 · Context', t:'競品範圍：台灣市場前五大 SaaS 競品；分析維度：定價/功能/目標客群/近期動態；時間範圍：近 6 個月' },
+      { c:'#a78bfa', l:'03 · Output', t:'交付物：競品比較矩陣 + 各競品單頁摘要 + 機會缺口分析；格式：簡報 + Notion 資料庫' },
+      { c:'#f59e0b', l:'04 · Validation', t:'驗收：覆蓋全部五家競品；每家包含定價方案；機會缺口有具體建議可操作' },
+      { c:'#fb7185', l:'05 · Human Review', t:'業務主管確認競品清單完整；產品 Lead 審核機會缺口的可行性判斷' },
+      { c:'#34d399', l:'06 · Reuse', t:'Notion 競品資料庫持續維護；後續更新只需補充新資訊，季度複查可自動化生成摘要' }
+    ]
+  },
+  hr: {
+    vague: '「幫我寫幾個 JD」',
+    problems: ['職缺數量與職位不明','各 JD 差異化需求未定義','無法評估 JD 品質好壞'],
+    layers: [
+      { c:'#4ade80', l:'01 · Problem', t:'人才招募 JD 品質不一，導致應徵者錨定錯誤、篩選成本高、到職後期望落差大' },
+      { c:'#60a5fa', l:'02 · Context', t:'職缺：3 個（資深工程師 × 2、AI PM × 1）；差異點：工程師側重技術棧、PM 側重跨職能協作；語言：繁中為主含英文版' },
+      { c:'#a78bfa', l:'03 · Output', t:'交付物：6 份 JD 草稿（中英各一套）；格式：職責/要求/加分項/公司介紹四段式；Notion 頁面可直接複製' },
+      { c:'#f59e0b', l:'04 · Validation', t:'驗收：覆蓋所有指定職缺；中英版內容一致；招募主管確認職責描述符合實際工作' },
+      { c:'#fb7185', l:'05 · Human Review', t:'部門主管確認技術要求細節；HR 確認薪酬級距描述符合公司政策' },
+      { c:'#34d399', l:'06 · Reuse', t:'JD 模板庫建立；新職缺只需填入差異欄位，可在 30 分鐘內產出標準化草稿' }
+    ]
+  },
+  exec: {
+    vague: '「把這週的狀態整理一下」',
+    problems: ['資料來源不明（哪些系統？）','受眾不清（給誰看的？）','「整理好」的格式與深度未定義'],
+    layers: [
+      { c:'#4ade80', l:'01 · Problem', t:'管理層每週花 3-4 小時手動彙整各部門狀態，資訊格式不一致，決策所需資訊分散各處' },
+      { c:'#60a5fa', l:'02 · Context', t:'資料來源：Jira（工程）/ Notion（產品）/ Salesforce（業務）；受眾：CXO + 投資人月報；週期：每週五下午' },
+      { c:'#a78bfa', l:'03 · Output', t:'交付物：執行摘要（500字）+ 三部門進度表 + 風險清單；格式：Notion 頁面 + PDF 匯出；包含 week-over-week 對比' },
+      { c:'#f59e0b', l:'04 · Validation', t:'驗收：覆蓋三個資料來源；風險項目有負責人與時間線；CXO 可在 10 分鐘內閱讀完畢' },
+      { c:'#fb7185', l:'05 · Human Review', t:'CXO 確認風險清單優先順序；法務確認對外版本（投資人）無敏感資訊' },
+      { c:'#34d399', l:'06 · Reuse', t:'報告結構版本化；資料抓取流程半自動化後，每週整理時間從 4 小時降至 30 分鐘' }
+    ]
+  }
+};
+
+const DB_DATA = {
+  legal: {
+    prompt: '幫我審這份合約，看看有沒有問題',
+    bad: {
+      hdr: 'Prompt-only 做法',
+      items: [
+        '輸出：條列 20 個「可能的問題」，無優先順序',
+        '缺：未指定準據法，建議無法操作',
+        '缺：無輸出格式，每次結果結構不同',
+        '驗收：法務不知道 AI 有沒有遺漏關鍵條款',
+        '重複性：下次新合約重新給 prompt，結果差異大'
+      ]
+    },
+    good: {
+      hdr: 'SDW 做法',
+      items: [
+        'Problem：自動識別高風險條款（責任限制、IP、自動續約）',
+        'Context：SaaS 服務協議、台灣法、乙方角色',
+        'Output：風險摘要表（高/中/低）+ 可操作修改草稿',
+        'Validation：所有責任條款已標記；建議有具體條文修改方向',
+        'Reuse：風險 Pattern 存知識庫，下次比對時間 -60%'
+      ]
+    }
+  },
+  cs: {
+    prompt: '做一個客服機器人，回答客戶問題',
+    bad: {
+      hdr: 'Prompt-only 做法',
+      items: [
+        '輸出：一個通用的回覆腳本，無邊界定義',
+        '缺：遇到投訴或法律問題不知如何處理',
+        '缺：無人工接手觸發條件，客訴直接被 AI 回覆',
+        '驗收：CSAT 下降，但不知道是哪類問題造成的',
+        '重複性：每次改 prompt 都要重測，無版本控管'
+      ]
+    },
+    good: {
+      hdr: 'SDW 做法',
+      items: [
+        'Problem：高峰期回應延遲 4h，70% 為重複性問題',
+        'Context：退換貨/訂單/帳號三類；排除投訴與法律爭議',
+        'Output：對話流程設計文件 + Prompt 模板集 + 接手規則',
+        'Validation：目標類型自動率 ≥80%；誤判率 <5%',
+        'Reuse：新產品線只需更新 FAQ，框架不變'
+      ]
+    }
+  },
+  research: {
+    prompt: '幫我研究一下我們的競品',
+    bad: {
+      hdr: 'Prompt-only 做法',
+      items: [
+        '輸出：列出 10 個競品，各寫 2 句描述',
+        '缺：沒有比較維度，決策者無法使用',
+        '缺：來源混雜，無法判斷資訊時效性',
+        '驗收：報告寫了 8 頁，但開會時沒人看',
+        '重複性：下季度再做時，格式與上次完全不同'
+      ]
+    },
+    good: {
+      hdr: 'SDW 做法',
+      items: [
+        'Problem：業務決策缺乏結構化競品情報',
+        'Context：台灣市場前五大 SaaS；定價/功能/客群/近 6 個月動態',
+        'Output：競品矩陣 + 單頁摘要 + 機會缺口分析；Notion 資料庫',
+        'Validation：五家全覆蓋；機會缺口有可操作建議',
+        'Reuse：Notion 資料庫持續維護，季度更新可半自動化'
+      ]
+    }
+  }
+};
+
+let currentFn = 'pm';
+let specRevealed = false;
+let currentDB = 'legal';
+
+function selectFn(fn, btn) {
+  currentFn = fn;
+  specRevealed = false;
+  document.querySelectorAll('.fn-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderVague();
+  resetSpec();
+  const cvBtn = document.getElementById('da-convert-btn');
+  if (cvBtn) cvBtn.disabled = false;
+}
+
+function renderVague() {
+  const d = SPEC_DATA[currentFn];
+  const vEl = document.getElementById('da-vague');
+  if (vEl) vEl.textContent = d.vague;
+  const pEl = document.getElementById('da-probs');
+  if (pEl) {
+    pEl.innerHTML = d.problems.map(p => `<div class="da-prob">${p}</div>`).join('');
+  }
+}
+
+function revealSpec() {
+  if (specRevealed) return;
+  specRevealed = true;
+  const btn = document.getElementById('da-btn');
+  if (btn) btn.disabled = true;
+  const rstBtn = document.getElementById('da-rst');
+  if (rstBtn) rstBtn.style.display = '';
+  const ph = document.getElementById('da-placeholder');
+  if (ph) ph.style.display = 'none';
+  const container = document.getElementById('spc-cards');
+  if (!container) return;
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.innerHTML = '';
+  const d = SPEC_DATA[currentFn];
+  d.layers.forEach((layer, i) => {
+    const card = document.createElement('div');
+    card.className = 'spc-card';
+    card.style.setProperty('--lc', layer.c);
+    card.innerHTML = `<div class="spc-label">${layer.l}</div><div class="spc-content">${layer.t}</div>`;
+    container.appendChild(card);
+    setTimeout(() => card.classList.add('vis'), i * 130);
+  });
+}
+
+function resetSpec() {
+  specRevealed = false;
+  const btn = document.getElementById('da-btn');
+  if (btn) btn.disabled = false;
+  const rstBtn = document.getElementById('da-rst');
+  if (rstBtn) rstBtn.style.display = 'none';
+  const ph = document.getElementById('da-placeholder');
+  if (ph) ph.style.display = '';
+  const container = document.getElementById('spc-cards');
+  if (container) { container.style.display = 'none'; container.innerHTML = ''; }
+}
+
+function selectDB(key, btn) {
+  currentDB = key;
+  document.querySelectorAll('#dp-b .vb').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  renderDB();
+}
+
+function renderDB() {
+  const d = DB_DATA[currentDB];
+  const el = document.getElementById('db-content');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="cc">
+      <div class="cch">${d.bad.hdr}</div>
+      <div class="ccb err-bg">
+        <div class="cil" style="color:var(--tx3);font-size:.82rem;font-style:italic;margin-bottom:.6rem">"${d.prompt}"</div>
+        ${d.bad.items.map(item => `<div class="ci" style="color:var(--tx2)"><span style="color:var(--err);margin-right:.4rem">✗</span>${item}</div>`).join('')}
+      </div>
+    </div>
+    <div class="cc">
+      <div class="cch ac">${d.good.hdr}</div>
+      <div class="ccb">
+        ${d.good.items.map(item => `<div class="ci civ">${item}</div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── End Interactive Demo Data ─────────────────────────────────────
+
+function filterCS(cat, btn) {
+  document.querySelectorAll('.csf').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#cs-grid .cs-card').forEach(card => {
+    if (cat === 'all' || card.dataset.cat === cat) card.classList.remove('hidden');
+    else card.classList.add('hidden');
+  });
+}
+function selA(key, btn) {
+  document.querySelectorAll('.vb').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  const d = DA[key];
+  document.getElementById('da-vague').textContent = d.vague;
+  const spec = document.getElementById('da-spec');
+  spec.innerHTML = renderSpec(d);
+  spec.querySelectorAll('.sf').forEach((el, i) => {
+    el.style.transitionDelay = (i * 0.08) + 's';
+    setTimeout(() => el.classList.add('vis'), 25 + i * 75);
+  });
+}
+
+// ══ AGENT DEMO ════════════════════════════════════
+let agRunning = false, agTimers = [];
+function agSleep(ms){ return new Promise(r => { agTimers.push(setTimeout(r, ms)); }); }
+
+function setAgStage(n){
+  document.querySelectorAll('.ag-stage').forEach((s,i)=>{
+    s.classList.remove('act','don');
+    if(i<n) s.classList.add('don'); else if(i===n) s.classList.add('act');
+  });
+  document.querySelectorAll('.ag-sline').forEach((l,i)=> l.classList.toggle('lit', i<n));
+}
+
+function agType(text, cb){
+  const el=document.getElementById('ag-pt'), cur=document.getElementById('ag-cur');
+  el.textContent=''; cur.style.opacity='1';
+  let i=0;
+  function step(){ if(i<text.length){ el.textContent+=text[i++]; agTimers.push(setTimeout(step, 18+Math.random()*12)); } else { setTimeout(()=>{ cur.style.opacity='0'; cb&&cb(); },240); } }
+  step();
+}
+
+function agAppend(cls, txt){
+  const tb=document.getElementById('ag-tb');
+  const d=document.createElement('div'); d.innerHTML='<span class="'+cls+'">'+txt+'</span>';
+  tb.appendChild(d); tb.scrollTop=tb.scrollHeight;
+}
+
+async function startAgentDemo(){
+  if(agRunning) return; agRunning=true;
+  document.getElementById('ag-run').disabled=true;
+  document.getElementById('ag-tb').innerHTML='';
+  document.getElementById('ag-sts').textContent='';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+
+  setAgStage(0);
+  document.getElementById('ag-sts').textContent='1/4 · Discovery...';
+  await new Promise(res=> agType('請探索 repo，了解現有架構與測試框架，不要修改任何檔案。完成後列出疑問再等待確認。', res));
+  await agSleep(160);
+  const disc=[
+    ['t-head','── Discovery ─────────────────────────────────────'],
+    ['t-dim', '> Reading CLAUDE.md ...'],
+    ['t-dim', '  ok  架構：Node.js + PostgreSQL + pdf-parse'],
+    ['t-dim', '  ok  測試：Jest + Playwright   CI：GitHub Actions'],
+    ['t-dim', '  no  禁止：不得直接修改 CRM schema（須走 migration）'],
+    ['t-dim', ''],
+    ['t-dim', '> Scanning src/ tests/ ...'],
+    ['t-dim', '  src/parsers/pdf-a.ts   -- A 格式解析（已完成）'],
+    ['t-dim', '  src/parsers/pdf-b.ts   -- 不存在（需新建）'],
+    ['t-dim', '  src/crm/writer.ts      -- CRM 寫入介面（有測試）'],
+    ['t-dim', '  tests/                 -- 覆蓋率 42%'],
+    ['t-hi',  ''],
+    ['t-hi',  '  Discovery 完成，確認 3 個問題後再開始規劃：'],
+    ['t-warn','  Q1  B 格式欄位對應表放在哪裡？'],
+    ['t-warn','  Q2  CRM 寫入 timeout 上限是多少秒？'],
+    ['t-warn','  Q3  100 份測試 PDF 已備妥確認？'],
+  ];
+  for(let i=0;i<disc.length;i++){ await agSleep(i*72); agAppend(disc[i][0],disc[i][1]); }
+  await agSleep(disc.length*72+320);
+
+  setAgStage(1);
+  document.getElementById('ag-sts').textContent='2/4 · Planning...';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+  await new Promise(res=> agType('確認：B格式表在 docs/，timeout=10s，測試PDF已備妥。請列出計畫，不實作，等確認。', res));
+  await agSleep(160);
+  const plan=[
+    ['t-head','── Planning ──────────────────────────────────────'],
+    ['t-dim', '> 分析 Spec Non-goals ...'],
+    ['t-dim', '  no  掃描圖片PDF  no  UI重設計  no  多物流商'],
+    ['t-hi',  ''],
+    ['t-hi',  '  建議計畫（5 Tasks · 預計 9 工作天）：'],
+    ['t-ok',  '  T1  B 格式 PDF 解析器（含欄位映射）  [3d] high-risk'],
+    ['t-ok',  '  T2  欄位驗證 + 異常標記邏輯           [1d]'],
+    ['t-ok',  '  T3  CRM 寫入整合（含重試 x3 機制）    [2d]'],
+    ['t-ok',  '  T4  人工複核佇列介面                  [2d]'],
+    ['t-ok',  '  T5  E2E 測試（100 份測試集）           [1d]'],
+    ['t-warn',''],
+    ['t-warn','  ⚠  T1 完成後建議先做局部驗收'],
+    ['t-warn','     B 格式解析若失敗會影響後續所有 task'],
+    ['t-dim', ''],
+    ['t-dim', '  確認計畫後請說「開始執行 T1」'],
+  ];
+  for(let i=0;i<plan.length;i++){ await agSleep(i*65); agAppend(plan[i][0],plan[i][1]); }
+  await agSleep(plan.length*65+320);
+
+  setAgStage(2);
+  document.getElementById('ag-sts').textContent='3/4 · Execution...';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+  await new Promise(res=> agType('計畫確認，開始執行 T1。完成後自行跑驗收，失敗請修正後重跑，直到通過。', res));
+  await agSleep(160);
+  agAppend('t-head','── Execution ────────────────────────────────────');
+  const tasks=[
+    {id:'T1',lbl:'B 格式解析器',file:'src/parsers/pdf-b.ts',dur:1100},
+    {id:'T2',lbl:'欄位驗證+異常標記',file:'src/validators/fields.ts',dur:760},
+    {id:'T3',lbl:'CRM 寫入整合',file:'src/crm/writer.ts, retry.ts',dur:920},
+    {id:'T4',lbl:'人工複核佇列',file:'src/queue/review-queue.ts',dur:700},
+    {id:'T5',lbl:'E2E 測試',file:'tests/e2e/pdf-flow.spec.ts',dur:600},
+  ];
+  const tb=document.getElementById('ag-tb');
+  for(let i=0;i<tasks.length;i++){
+    const t=tasks[i];
+    await agSleep(i===0?0:170);
+    const sd=document.createElement('div');
+    sd.innerHTML='<span class="t-dim">&gt; Executing '+t.id+' · '+t.lbl+' ...</span>';
+    tb.appendChild(sd); tb.scrollTop=tb.scrollHeight;
+    await agSleep(65);
+    const row=document.createElement('div'); row.className='ag-trow';
+    row.innerHTML='<span style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;color:var(--tx3);width:9rem;flex-shrink:0">&nbsp;&nbsp;'+t.id+'</span><div class="ag-tbw"><div class="ag-tbar" id="atb-'+i+'"></div></div><span class="ag-tck" id="atck-'+i+'">ok</span>';
+    tb.appendChild(row); tb.scrollTop=tb.scrollHeight;
+    await agSleep(55);
+    document.getElementById('atb-'+i).style.width='100%';
+    await agSleep(t.dur);
+    document.getElementById('atck-'+i).style.opacity='1';
+    const fd=document.createElement('div');
+    fd.innerHTML='<span class="t-dim" style="padding-left:.75rem;font-size:.7rem">  -> '+t.file+'</span>';
+    tb.appendChild(fd); tb.scrollTop=tb.scrollHeight;
+  }
+  await agSleep(300);
+
+  setAgStage(3);
+  document.getElementById('ag-sts').textContent='4/4 · Verification...';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+  await new Promise(res=> agType('npm run test:pdf-accuracy -- --threshold=0.95 && npx playwright test', res));
+  await agSleep(160);
+  const vfy=[
+    ['t-head','── Verification ──────────────────────────────────'],
+    ['t-dim', '> npm run test:pdf-accuracy ...'],
+    ['t-dim', '  Testing 100 PDF samples（A:60  B:40）'],
+    ['t-ok',  '  A format accuracy: 98.2%  ok'],
+    ['t-ok',  '  B format accuracy: 96.8%  ok'],
+    ['t-ok',  '  Overall: 97.3% >= 95% threshold  PASS'],
+    ['t-dim', ''],
+    ['t-dim', '> npx playwright test ...'],
+    ['t-ok',  '  ok  PDF upload flow   (12/12)'],
+    ['t-ok',  '  ok  CRM write+retry   (8/8)'],
+    ['t-ok',  '  ok  Review queue UI   (6/6)'],
+    ['t-dim', ''],
+    ['t-ok',  '  All acceptance criteria passed'],
+    ['t-hi',  '  Accuracy 97.3%  Avg 18s/pdf  Coverage 89%'],
+    ['t-hi',  ''],
+    ['t-hi',  '  Next: PR review -> Handoff Checklist -> deploy'],
+  ];
+  for(let i=0;i<vfy.length;i++){ await agSleep(i*80); agAppend(vfy[i][0],vfy[i][1]); }
+  await agSleep(vfy.length*80+200);
+  document.getElementById('ag-sts').textContent='ok  完整流程模擬完成';
+  document.getElementById('ag-run').disabled=false;
+  agRunning=false;
+}
+
+function resetAgent(){
+  agTimers.forEach(t=>clearTimeout(t)); agTimers=[];
+  agRunning=false;
+  document.getElementById('ag-tb').innerHTML='<span style="color:var(--tx3);font-style:italic">點擊「開始模擬」查看 Agent 完整執行流程</span>';
+  document.getElementById('ag-pt').textContent='';
+  document.getElementById('ag-cur').style.opacity='1';
+  document.getElementById('ag-run').disabled=false;
+  document.getElementById('ag-sts').textContent='';
+  setAgStage(0);
+}
+
+// ══ DEMO B ═════════════════════════════════════════
+const MODES = [
+  { id:'trad', name:'傳統 Coding', color:'#94a3b8', bg:'rgba(100,116,139,.18)',
+    scope:'function / module / commit', start:'程式碼實作',
+    human:'設計、撰寫、測試、除錯，全部由人主導',
+    ai:'無（或基本語法補全）',
+    delivery:'function / commit / module',
+    best:['核心架構設計','安全關鍵程式碼','高複雜度算法','需要細粒度控制'],
+    fail:'速度瓶頸、人力不足時進度停滯，交付週期長，回修迴圈耗時',
+    verify:'code review + unit test' },
+  { id:'aias', name:'AI 輔助 Coding', color:'#38bdf8', bg:'rgba(14,165,233,.15)',
+    scope:'snippet / function / local diff', start:'程式碼實作',
+    human:'引導方向、確認 AI 補全結果',
+    ai:'程式碼補全、解釋錯誤訊息、產生 snippet',
+    delivery:'snippet / function / local diff',
+    best:['個人效率提升','快速查詢語法','熟悉語言的日常加速'],
+    fail:'局部正確但整體架構不一致，容易產生不符合專案慣例的 code',
+    verify:'人工確認每個 snippet 的正確性' },
+  { id:'vibe', name:'Vibe Coding', color:'#c084fc', bg:'rgba(168,85,247,.15)',
+    scope:'prototype / demo', start:'計畫拆解（快速）',
+    human:'下 prompt、微調結果、決定方向',
+    ai:'快速生成與修改 prototype，快速迭代',
+    delivery:'prototype / demo / 概念驗證',
+    best:['快速驗概念','Hackathon','探索性實作','MVP 雛形展示'],
+    fail:'規格不足、難以維護、難以驗收、缺乏資料契約與 production 邊界，不適合進入企業既有系統',
+    verify:'能跑、外觀看起來正確就算過' },
+  { id:'agnt', name:'Agentic Coding', color:'#fbbf24', bg:'rgba(245,158,11,.15)',
+    scope:'task / PR / feature slice', start:'規格定義',
+    human:'定義任務、設定驗收條件、審查結果、取捨判斷',
+    ai:'讀取 repo、規劃實作、跨檔案修改、執行測試、反覆修正',
+    delivery:'task / PR / feature slice',
+    best:['明確任務的自動化','測試補強','Legacy 局部改造','API 串接'],
+    fail:'目標不清楚時，錯誤會被快速放大，難以定位原因，缺乏驗收標準時無法收斂',
+    verify:'automated test + CI pipeline + 人工審查 PR' },
+  { id:'sdd', name:'Spec-Driven Agentic', color:'#4ade80', bg:'rgba(74,222,128,.12)',
+    scope:'verified feature / workflow', start:'問題識別（最早）',
+    human:'問題定義、spec 審核與拍板（AI 可協助起草）、驗收設計、架構取捨判斷',
+    ai:'接手 repo-level 工程任務、反覆修正、提交可審查的候選結果',
+    delivery:'verified feature / workflow',
+    best:['企業既有系統整合','可維護的功能交付','多人協作','高驗收要求'],
+    fail:'規格品質決定交付品質：spec 寫不好，output 也不會好',
+    verify:'spec 定義的 AC + automated tests + 六大企業驗收 + Handoff Checklist' }
+];
+
+function initModeB() {
+  const el = document.getElementById('mode-tabs');
+  if (!el) return;
+  el.innerHTML = MODES.map((m,i) =>
+    `<button class="mtb ${i===0?'active':''}" style="${i===0?`background:${m.bg};color:${m.color};`:''}" onclick="switchMode(${i},this)">${m.name}</button>`
+  ).join('');
+  renderMode(0);
+}
+
+function switchMode(idx, btn) {
+  document.querySelectorAll('.mtb').forEach(b => { b.classList.remove('active'); b.style.background=''; b.style.color=''; });
+  btn.classList.add('active'); btn.style.background = MODES[idx].bg; btn.style.color = MODES[idx].color;
+  renderMode(idx);
+}
+
+function renderMode(idx) {
+  const det = document.getElementById('mode-det');
+  if (!det) return;
+  const m = MODES[idx];
+  det.innerHTML = `
+    <div class="mdh" style="border-left:3px solid ${m.color}">
+      <div class="mdt" style="color:${m.color}">${m.name}</div>
+      <div class="mds">介入起點：<strong>${m.start}</strong>　｜　交付範疇：<strong>${m.scope}</strong></div>
+    </div>
+    <div class="mdg">
+      <div class="mdc"><div class="mdcl">人的主要工作</div><div class="mdcv">${m.human}</div></div>
+      <div class="mdc"><div class="mdcl">AI 的主要工作</div><div class="mdcv">${m.ai}</div></div>
+      <div class="mdc"><div class="mdcl">適合時機</div><div class="mdcv"><ul>${m.best.map(b=>`<li>${b}</li>`).join('')}</ul></div></div>
+      <div class="mdc"><div class="mdcl">主要交付物</div><div class="mdcv" style="margin-bottom:.75rem;font-family:'JetBrains Mono',monospace;font-size:.82rem">${m.delivery}</div><div class="mdcl">驗收方式</div><div class="mdcv">${m.verify}</div></div>
+      <div class="mdc" style="grid-column:1/-1;border-right:none;border-bottom:none"><div class="mdcl">失敗模式 ⚠</div><div class="mdcv fail-txt">${m.fail}</div></div>
+    </div>`;
+}
+
+// ══ DEMO E ═════════════════════════════════════════
+const ACE_SC = {
+  fn: { g:'使用者上傳一份 A 格式 PDF 申請表（數位原生，共 12 個欄位）', w:'系統解析完成', t:'欄位準確率 ≥ 95%，並產生結構化 JSON 輸出，無欄位遺失', v:'npm run test:pdf-accuracy -- --threshold=0.95' },
+  ed: { g:'使用者上傳一份欄位部分留空的 B 格式 PDF', w:'系統解析完成', t:'空欄位以 null 填入，其餘欄位正確解析，並標記異常欄位清單於輸出 JSON 的 "flags" 欄', v:'npm test -- --grep "edge: empty fields"' },
+  er: { g:'系統嘗試寫入 CRM 但連線逾時', w:'第一次寫入失敗', t:'系統自動重試 3 次；若仍失敗則記錄 error log（含 timestamp、錯誤碼、原始 payload），送出告警並不丟失原始資料', v:'npm test -- --grep "CRM retry" && 手動確認 error log 格式符合規範' },
+  pf: { g:'系統同時收到 10 份 PDF 處理請求', w:'並發處理完成', t:'每份 PDF 處理時間 ≤ 30 秒，無請求逾時，無資料遺失，CPU 使用率 < 80%', v:'npm run test:perf -- --concurrency=10 --timeout=30000' }
+};
+
+function fillSc() {
+  const v = document.getElementById('ace-sc').value; if(!v) return;
+  const s = ACE_SC[v];
+  document.getElementById('ace-g').value = s.g;
+  document.getElementById('ace-w').value = s.w;
+  document.getElementById('ace-t').value = s.t;
+  document.getElementById('ace-v').value = s.v;
+  upACE();
+}
+
+function upACE() {
+  const g = document.getElementById('ace-g').value.trim();
+  const w = document.getElementById('ace-w').value.trim();
+  const t = document.getElementById('ace-t').value.trim();
+  const v = document.getElementById('ace-v').value.trim();
+  if(!g && !w && !t){ document.getElementById('ace-out').textContent = '在左側填寫條件，這裡會即時顯示格式化結果...'; return; }
+  let out = '';
+  if(g) out += `Given ${g}\n`;
+  if(w) out += `When  ${w}\n`;
+  if(t) out += `Then  ${t}`;
+  if(v) out += `\n\nVerify by:\n  ${v}`;
+  document.getElementById('ace-out').textContent = out;
+}
+
+function copyACE() {
+  const txt = document.getElementById('ace-out').textContent;
+  if(!txt || txt.startsWith('在左側')) return;
+  cpText(txt, document.querySelector('#dp-e .cpb'));
+}
+
+// ══ DEMO PANEL SWITCH ══════════════════════════════
+function sd(id, btn) {
+  document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('dp-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══ TEMPLATES ══════════════════════════════════════
+function cpT(id) {
+  cpText(document.getElementById(id).innerText || document.getElementById(id).textContent,
+         document.querySelector(`[onclick="cpT('${id}')"]`));
+}
+
+// ══ CLIPBOARD ══════════════════════════════════════
+function cpText(text, btn) {
+  const done = () => {
+    showToast();
+    if(btn){ const o=btn.textContent; btn.textContent='已複製 ✓'; btn.classList.add('ok'); setTimeout(()=>{ btn.textContent=o; btn.classList.remove('ok'); },2000); }
+  };
+  if(navigator.clipboard){ navigator.clipboard.writeText(text).then(done).catch(fb); } else { fb(); }
+  function fb() {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); done();
+  }
+}
+
+function showToast() {
+  const t = document.getElementById('toast'); t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+// ══ NAV ACTIVE STATE ═══════════════════════════════
+function initNav() {
+  const secs = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.nav-links a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting) links.forEach(l => l.classList.toggle('active', l.getAttribute('href')==='#'+e.target.id));
+    });
+  }, { rootMargin: '-35% 0px -55% 0px' });
+  secs.forEach(s => obs.observe(s));
+}
+
+// ══ INIT ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initModeB();
+  initNav();
+  renderVague();
+  renderDB();
+});
+</script>
+</body>
+</html>
