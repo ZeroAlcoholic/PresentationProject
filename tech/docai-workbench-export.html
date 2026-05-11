@@ -1,0 +1,5301 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DocAI 互動探索工作台</title>
+  <style>
+:root {
+  --bg: #f3ede2;
+  --panel: rgba(252, 249, 242, 0.92);
+  --panel-strong: #fffdf8;
+  --line: #d7cfbf;
+  --soft-line: rgba(21, 34, 49, 0.12);
+  --ink: #152231;
+  --muted: #6b7787;
+  --accent: #0b5d7a;
+  --accent-soft: rgba(11, 93, 122, 0.12);
+  --warm: #9b5d2d;
+  --warm-soft: rgba(155, 93, 45, 0.14);
+  --shadow: 0 20px 54px rgba(21, 34, 49, 0.08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(255, 247, 233, 0.96), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(11, 93, 122, 0.1), transparent 34%),
+    linear-gradient(180deg, #f8f2e9 0%, var(--bg) 100%);
+}
+input, select, button { font: inherit; }
+button { border: none; }
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.76rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+}
+.sidebar {
+  padding: 24px 20px;
+  border-right: 1px solid var(--soft-line);
+  background: rgba(252, 249, 242, 0.8);
+  backdrop-filter: blur(14px);
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+}
+.brand-block h1, .hero h2, .map-head h2, .inspector h2 { margin: 0; }
+.brand-block p:last-child {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.68;
+}
+.sidebar-card, .panel {
+  border-radius: 24px;
+  border: 1px solid var(--soft-line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.sidebar-card { padding: 16px; }
+.overview-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.stat-box, .badge, .preset-button {
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.82);
+}
+.stat-box {
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+.stat-box strong { font-size: 1rem; }
+.stat-box span { color: var(--muted); font-size: .82rem; }
+.control-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.control-block { display: grid; gap: 6px; }
+.control-block-wide { grid-column: 1 / -1; }
+.control-block label {
+  font-size: .76rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.control-block input, .control-block select {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+}
+.preset-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.preset-button {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.preset-button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.legend-card ul {
+  padding-left: 18px;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  line-height: 1.58;
+}
+.main {
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+.hero {
+  padding: 24px 26px;
+  display: grid;
+  gap: 14px;
+  background:
+    linear-gradient(140deg, rgba(255,255,255,.94), rgba(248,243,234,.84)),
+    linear-gradient(180deg, rgba(11,93,122,.05), transparent 60%);
+}
+.hero p { margin: 0; color: var(--muted); line-height: 1.68; }
+.hero-pills, .badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.badge {
+  padding: 8px 10px;
+  font-size: .82rem;
+}
+.mark-row, .node-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mark, .node-mark {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.86);
+  color: var(--muted);
+  font-size: .7rem;
+  letter-spacing: .04em;
+}
+.mark-delivery-self-build, .node-mark-delivery-self-build { color: #5d4b16; }
+.mark-delivery-integration, .node-mark-delivery-integration { color: #355070; }
+.mark-delivery-research, .node-mark-delivery-research { color: #7a2340; }
+.mark-stack-dl, .node-mark-stack-dl { color: #7a4c29; }
+.mark-stack-llm, .node-mark-stack-llm { color: #0b5d7a; }
+.mark-stack-hybrid, .node-mark-stack-hybrid { color: #2f6f4f; }
+.mark-stack-ops, .node-mark-stack-ops { color: #5f6b78; }
+.mark-adaptation-finetune, .node-mark-adaptation-finetune { color: #7a2340; }
+.mark-adaptation-prompt, .node-mark-adaptation-prompt { color: #0b5d7a; }
+.mark-adaptation-domain-data, .node-mark-adaptation-domain-data { color: #5d6b58; }
+.mark-adaptation-none, .node-mark-adaptation-none { color: #6b7280; }
+.canvas-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+.map {
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+.map-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: end;
+}
+.map-head p:last-child {
+  max-width: 360px;
+  text-align: right;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.6;
+}
+.map-stage {
+  position: relative;
+  min-height: 900px;
+  border-radius: 22px;
+  overflow: auto;
+  border: 1px dashed rgba(11, 93, 122, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.72), rgba(248,243,234,.88));
+}
+#graphEdges, #graphNodes {
+  position: absolute;
+  inset: 0;
+}
+.lane-label {
+  position: absolute;
+  left: 18px;
+  font-size: .75rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lane-band {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  border-radius: 22px;
+  border: 1px solid rgba(11,93,122,.08);
+  background: rgba(255,255,255,.34);
+}
+.node-card {
+  position: absolute;
+  width: 232px;
+  min-height: 116px;
+  padding: 14px 15px;
+  border-radius: 20px;
+  border: 1px solid var(--soft-line);
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 14px 30px rgba(21,34,49,.08);
+  cursor: pointer;
+  transition: transform .18s ease, opacity .18s ease, border-color .18s ease, background .18s ease;
+  text-align: left;
+}
+.node-card:hover { transform: translateY(-2px); }
+.node-card.active {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(11,93,122,.08), rgba(255,255,255,.98));
+  box-shadow: 0 18px 40px rgba(11,93,122,.18);
+}
+.node-card.related {
+  border-color: rgba(155,93,45,.26);
+  background: #fff7ef;
+}
+.node-card.dim { opacity: .26; box-shadow: none; }
+.node-card h3 { margin: 0; font-size: .98rem; line-height: 1.35; }
+.node-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: .84rem;
+  line-height: 1.46;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.node-marks {
+  margin-top: 10px;
+}
+.node-meta {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: var(--warm);
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.empty-state {
+  position: absolute;
+  inset: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(11,93,122,.24);
+  border-radius: 18px;
+  color: var(--muted);
+  background: rgba(255,255,255,.7);
+}
+.edge-line {
+  fill: none;
+  stroke: rgba(21,34,49,.09);
+  stroke-width: 2;
+}
+.edge-line.emphasis {
+  stroke: rgba(11,93,122,.46);
+  stroke-width: 2.5;
+}
+.edge-line.dim {
+  stroke: rgba(21,34,49,.05);
+}
+.inspector {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 24px;
+}
+.detail-lead, .secondary {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.inspect-grid {
+  display: grid;
+  gap: 12px;
+}
+.inspect-block {
+  display: grid;
+  gap: 8px;
+}
+.inspect-block h3 {
+  margin: 0;
+  font-size: .78rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.note-block {
+  padding: 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(155,93,45,.08), rgba(255,255,255,.8));
+  border: 1px solid rgba(155,93,45,.18);
+}
+@media (max-width: 1220px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--soft-line);
+  }
+  .canvas-layout { grid-template-columns: 1fr; }
+  .inspector { position: static; }
+}
+@media (max-width: 760px) {
+  .main, .sidebar { padding: 16px; }
+  .control-card { grid-template-columns: 1fr; }
+  .overview-stats { grid-template-columns: 1fr 1fr; }
+  .map-head { display: grid; }
+}
+.detail-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  line-height: 1.58;
+}
+.detail-list li { margin: 0; }
+.view-tabs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.view-tab {
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.82);
+  text-align: left;
+  cursor: pointer;
+}
+.view-tab strong {
+  display: block;
+  font-size: .92rem;
+}
+.view-tab span {
+  display: block;
+  margin-top: 4px;
+  font-size: .8rem;
+  color: var(--muted);
+}
+.view-tab.active {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(11,93,122,.08), rgba(255,255,255,.98));
+  box-shadow: 0 14px 30px rgba(11,93,122,.12);
+}
+
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block"><p class="eyebrow">Interactive Workbench</p><h1>文件智慧探索工作台</h1><p>同一份資料，切換結構、技術、場景與研究視角。</p></div>
+      <section class="sidebar-card overview-card"><p class="eyebrow">總覽</p><div class="overview-stats" id="summaryStats"></div></section>
+      <section class="sidebar-card view-card"><p class="eyebrow">工作視圖</p><div class="view-tabs" id="viewTabs"></div></section>
+      <section class="sidebar-card control-card">
+        <div class="control-block control-block-wide"><label for="searchInput">搜尋</label><input id="searchInput" type="search" placeholder="搜尋節點、技術標記、風險或應用場景"></div>
+        <div class="control-block"><label for="modeSelect">關聯視圖</label><select id="modeSelect"></select></div>
+        <div class="control-block"><label for="layerSelect">層級</label><select id="layerSelect"></select></div>
+        <div class="control-block"><label for="familySelect">技術家族</label><select id="familySelect"></select></div>
+        <div class="control-block"><label for="tagSelect">技術標記</label><select id="tagSelect"></select></div>
+        <div class="control-block"><label for="useCaseSelect">應用場景</label><select id="useCaseSelect"></select></div>
+      </section>
+      <section class="sidebar-card preset-card"><p class="eyebrow">預設視角</p><div class="preset-list" id="presetStrip"></div></section>
+      <section class="sidebar-card legend-card"><p class="eyebrow">圖例</p><ul><li>深色節點：目前選取</li><li>淺色節點：目前關聯</li><li>淡化節點：目前視圖外圍</li><li>強調連線：目前關聯路徑</li></ul></section>
+    </aside>
+    <main class="main">
+      <section class="hero panel"><div><p class="eyebrow">Workbench</p><h2 id="heroTitle"></h2></div><p id="heroText"></p><div class="hero-pills" id="heroPills"></div></section>
+      <section class="canvas-layout">
+        <section class="map panel"><div class="map-head"><div><p class="eyebrow" id="mapEyebrow">Map View</p><h2 id="mapTitle">技能樹地圖</h2></div><p id="graphHint"></p></div><div class="map-stage" id="graphStage"><svg id="graphEdges"></svg><div id="graphNodes"></div></div></section>
+        <aside class="inspector panel">
+          <div><p class="eyebrow">Inspector</p><h2 id="detailTitle"></h2></div>
+          <p class="detail-lead" id="detailSummary"></p>
+          <div class="badge-row" id="detailTags"></div><div class="mark-row" id="detailMarks"></div>
+          <div class="inspect-grid">
+            <section class="inspect-block"><h3>輸入</h3><div class="badge-row" id="detailInput"></div></section>
+            <section class="inspect-block"><h3>輸出</h3><div class="badge-row" id="detailOutput"></div></section>
+            <section class="inspect-block"><h3>依賴</h3><div class="badge-row" id="detailDependencies"></div></section>
+            <section class="inspect-block"><h3>應用場景</h3><div class="badge-row" id="detailUseCases"></div></section>
+            <section class="inspect-block"><h3>指標</h3><div class="badge-row" id="detailMetrics"></div></section>
+            <section class="inspect-block"><h3>代表來源</h3><div class="badge-row" id="detailReferences"></div></section><section class="inspect-block"><h3>開發判讀</h3><ul class="detail-list" id="detailImplementation"></ul></section>
+          </div>
+          <section class="inspect-block"><h3>優勢</h3><ul class="detail-list" id="detailStrengths"></ul></section>
+          <section class="inspect-block"><h3>限制</h3><ul class="detail-list" id="detailWeaknesses"></ul></section>
+          <section class="inspect-block note-block"><h3>失敗模式</h3><ul class="detail-list" id="detailFailureModes"></ul></section>
+          <section class="inspect-block note-block"><h3>Technique Card</h3><p class="detail-lead" id="detailDefinition"></p><p class="detail-lead" id="detailMechanism"></p><ul class="detail-list" id="detailNotes"></ul></section><section class="inspect-block note-block"><h3>白皮書軸線</h3><div class="badge-row" id="detailAxes"></div></section>
+        </aside>
+      </section>
+    </main>
+  </div>
+  <script>
+window.DOCAI_SKILL_TREE_DATA = {
+  "metadata": {
+    "title": "文件智慧技能樹",
+    "schema_version": "3.3.0",
+    "description": "Shared skill-tree data for lightweight and interactive modes.",
+    "root_id": "docai-skill-tree",
+    "layer_order": [
+      "核心",
+      "主幹",
+      "技能",
+      "代表技術"
+    ],
+    "relation_types": [
+      "hierarchy",
+      "dependency",
+      "supports"
+    ],
+    "default_selected_id": "input-routing",
+    "taxonomy": {
+      "families": {
+        "root": "根節點",
+        "foundation": "輸入基礎",
+        "pipeline": "前處理",
+        "recognition": "文字辨識",
+        "structure": "結構理解",
+        "parsing": "解析抽取",
+        "multimodal": "多模態推理",
+        "ops": "系統工程",
+        "evaluation": "評測資料"
+      },
+      "tags": {
+        "document-intelligence": "文件智慧",
+        "root": "根節點",
+        "input": "輸入路由",
+        "routing": "路由判斷",
+        "pdf": "PDF",
+        "text-layer": "文字層",
+        "scan": "掃描件",
+        "ocr-route": "OCR 路線",
+        "camera": "拍照文件",
+        "mobile-capture": "行動拍攝",
+        "multilingual": "多語",
+        "zh-hant": "繁體中文",
+        "preprocess": "前處理",
+        "quality": "品質檢查",
+        "quality-control": "品質控管",
+        "deskew": "傾斜校正",
+        "dewarp": "變形校正",
+        "denoise": "去噪",
+        "binarize": "二值化",
+        "deblur": "去模糊",
+        "detection": "偵測",
+        "segmentation": "分割",
+        "obb": "旋轉框",
+        "keypoints": "關鍵點",
+        "ocr": "OCR",
+        "printed": "印刷文字",
+        "detector": "文字偵測",
+        "recognizer": "文字辨識器",
+        "transformer": "Transformer",
+        "htr": "手寫辨識",
+        "handwriting": "手寫",
+        "scene-text": "場景文字",
+        "polygon": "多邊形框",
+        "cloud": "雲端",
+        "ocr-api": "OCR API",
+        "edge": "端側",
+        "on-device": "裝置端",
+        "layout": "版面理解",
+        "table": "表格",
+        "kie": "欄位抽取",
+        "reading-order": "閱讀順序",
+        "html": "HTML 結構",
+        "cells": "Cell 結構",
+        "entities": "實體",
+        "forms": "表單",
+        "layoutlm": "LayoutLM",
+        "bros": "BROS",
+        "layout-aware": "Layout-aware",
+        "parsing": "文件解析",
+        "json": "JSON",
+        "markdown": "Markdown",
+        "docvqa": "文件問答",
+        "qa": "問答",
+        "query": "查詢式抽取",
+        "targeted-extraction": "目標欄位抽取",
+        "schema": "Schema 對應",
+        "normalization": "正規化",
+        "ocr-first": "OCR-first",
+        "pipeline": "管線",
+        "ocr-free": "OCR-free",
+        "donut": "Donut 路線",
+        "vlm": "VLM",
+        "ocr-fusion": "OCR 融合",
+        "llm": "LLM",
+        "agent": "Agent",
+        "on-demand-ocr": "按需 OCR",
+        "deployment": "部署",
+        "ops": "系統工程",
+        "on-prem": "地端",
+        "privacy": "隱私",
+        "managed-service": "託管服務",
+        "observability": "可觀測性",
+        "fallback": "回退機制",
+        "hitl": "人工覆核",
+        "review": "覆核",
+        "evaluation": "評測",
+        "dataset": "資料集",
+        "benchmark": "Benchmark",
+        "cer": "CER",
+        "wer": "WER",
+        "layout-metrics": "版面指標",
+        "table-metrics": "表格指標",
+        "kie-metrics": "KIE 指標",
+        "end-to-end": "端到端",
+        "parsing-eval": "解析評測",
+        "labeling": "標註",
+        "annotation": "Annotation",
+        "evidence": "證據標註",
+        "pdfminer": "pdfminer.six",
+        "trocr": "TrOCR",
+        "layoutlmv3": "LayoutLMv3",
+        "pubtables": "PubTables",
+        "pubtabnet": "PubTabNet",
+        "omnidocbench": "OmniDocBench",
+        "classify": "文件分類",
+        "relations": "關係抽取",
+        "selection-marks": "勾選標記",
+        "signature": "簽章",
+        "barcode": "條碼",
+        "retrieval": "檢索就緒",
+        "compliance": "合規",
+        "throughput": "吞吐",
+        "latency": "延遲",
+        "cost": "成本",
+        "docvqa-metrics": "DocVQA 指標",
+        "teds": "TEDS",
+        "anls": "ANLS",
+        "doclaynet": "DocLayNet"
+      },
+      "use_cases": {
+        "receipts": "收據 / 發票",
+        "medical-claims": "醫療理賠",
+        "enterprise-automation": "企業文件自動化",
+        "financial-statements": "財報 / 報表",
+        "identity-documents": "身分證件",
+        "historical-archives": "歷史典藏",
+        "multilingual-documents": "多語文件",
+        "taiwan-documents": "台灣繁中文件",
+        "contracts": "合約 / 表單",
+        "education": "教育試卷 / 手寫作答"
+      },
+      "view_modes": {
+        "selected": "鄰近關聯",
+        "subtree": "子樹",
+        "family": "技術家族",
+        "layer": "層級",
+        "tag": "技術標記",
+        "use_case": "應用場景",
+        "preset": "預設視角"
+      },
+      "implementation": {
+        "delivery": {
+          "self-build": "企業可自建",
+          "integration": "整合優先",
+          "research": "超出一般自建"
+        },
+        "stack": {
+          "ops": "工程",
+          "dl": "DL",
+          "llm": "LLM",
+          "hybrid": "混合"
+        },
+        "adaptation": {
+          "none": "免微調",
+          "prompt": "提示優先",
+          "finetune": "需微調",
+          "domain-data": "需域資料"
+        },
+        "effort": {
+          "low": "低",
+          "medium": "中",
+          "high": "高"
+        }
+      }
+    },
+    "view": {
+      "family_colors": {
+        "root": "#184e77",
+        "foundation": "#5d6b58",
+        "pipeline": "#a05c2d",
+        "recognition": "#5f0f40",
+        "structure": "#355070",
+        "parsing": "#2f6f4f",
+        "multimodal": "#0b7285",
+        "ops": "#6b7280",
+        "evaluation": "#7c5c1d"
+      }
+    },
+    "whitepaper_axes": [
+      {
+        "id": "problem-taxonomy",
+        "label": "問題定義",
+        "summary": "OCR、HTR、layout、table、KIE、parsing、VQA、OCR-free"
+      },
+      {
+        "id": "input-modality",
+        "label": "輸入型態",
+        "summary": "Native PDF、掃描 PDF、拍照件、多語與低品質掃描"
+      },
+      {
+        "id": "preprocessing",
+        "label": "前處理",
+        "summary": "品質 gate、幾何校正、影像增強、ROI 偵測"
+      },
+      {
+        "id": "recognition-core",
+        "label": "辨識核心",
+        "summary": "印刷 OCR、HTR、Transformer OCR、雲端與端側 OCR"
+      },
+      {
+        "id": "structure-parsing",
+        "label": "結構與解析",
+        "summary": "layout、reading order、table、KIE、document parsing"
+      },
+      {
+        "id": "multimodal-llm",
+        "label": "多模態與 LLM",
+        "summary": "OCR-first、OCR-free、VLM、Layout-aware LLM、Agentic OCR"
+      },
+      {
+        "id": "ops-eval",
+        "label": "系統工程與評測",
+        "summary": "部署、合規、觀測、人審、CER/WER、TEDS、OmniDocBench"
+      }
+    ],
+    "workbench_views": [
+      {
+        "id": "tree",
+        "label": "技能樹",
+        "description": "完整能力主幹與相鄰關聯",
+        "focus_nodes": [
+          "docai-skill-tree"
+        ]
+      },
+      {
+        "id": "evaluation",
+        "label": "評測地圖",
+        "description": "從指標、benchmark 與 observability 反看系統品質",
+        "focus_nodes": [
+          "evaluation-data",
+          "observability"
+        ],
+        "metric_nodes": [
+          "ocr-metrics",
+          "layout-metrics",
+          "table-metrics",
+          "kie-metrics",
+          "docvqa-metrics",
+          "e2e-parsing-eval"
+        ],
+        "benchmark_nodes": [
+          "datasets-benchmarks",
+          "labeling-spec",
+          "pubtables",
+          "docvqa-benchmark",
+          "omnidocbench"
+        ],
+        "support_nodes": [
+          "printed-ocr",
+          "reading-order",
+          "layout-segmentation",
+          "form-elements",
+          "table-structure",
+          "key-value-extraction",
+          "document-vqa",
+          "document-parsing",
+          "retrieval-ready-output",
+          "ocr-free",
+          "vlm-ocr-fusion"
+        ]
+      },
+      {
+        "id": "scenario",
+        "label": "場景架構",
+        "description": "依應用場景讀取處理鏈、風險與治理",
+        "default_use_case": "medical-claims",
+        "focus_nodes": [
+          "input-routing",
+          "preprocessing",
+          "recognition",
+          "structure",
+          "parsing",
+          "ops"
+        ],
+        "scenarios": [
+          {
+            "use_case": "medical-claims",
+            "label": "醫療理賠",
+            "route_nodes": [
+              "camera-doc",
+              "multilingual-doc",
+              "quality-gate",
+              "roi-detection",
+              "handwriting-htr",
+              "key-value-extraction",
+              "query-extraction",
+              "human-review",
+              "privacy-compliance",
+              "edge-onprem"
+            ],
+            "governance_nodes": [
+              "observability",
+              "privacy-compliance",
+              "human-review"
+            ]
+          },
+          {
+            "use_case": "receipts",
+            "label": "收據 / 發票",
+            "route_nodes": [
+              "camera-doc",
+              "scanned-pdf",
+              "quality-gate",
+              "printed-ocr",
+              "table-detection",
+              "table-structure",
+              "key-value-extraction",
+              "schema-mapping",
+              "cloud-managed"
+            ],
+            "governance_nodes": [
+              "observability",
+              "throughput-cost"
+            ]
+          },
+          {
+            "use_case": "contracts",
+            "label": "合約 / 表單",
+            "route_nodes": [
+              "native-pdf",
+              "document-classification",
+              "layout-segmentation",
+              "reading-order",
+              "form-elements",
+              "document-parsing",
+              "retrieval-ready-output",
+              "layout-aware-llm"
+            ],
+            "governance_nodes": [
+              "observability",
+              "human-review",
+              "privacy-compliance"
+            ]
+          }
+        ]
+      }
+    ],
+    "implementation_rubric": {
+      "summary": "這裡的自建以一般金融企業的數據/AI 團隊為準，不假設擁有大型基座模型研發團隊。",
+      "delivery": {
+        "self-build": "一般金融企業可承接的自建，通常是流程編排、資料契約、治理、規則引擎，或基於現成模型做輕量微調，而不是重做 foundation model。",
+        "integration": "已有成熟 API 或開源基座時，企業主工作通常是整合、驗收、回退與成本控制。",
+        "research": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合 PoC、合作研發或前沿探索。"
+      },
+      "adaptation": {
+        "none": "可先用既有 pretrained / API / 規則起步，把重點放在評測與門檻設定。",
+        "prompt": "先用 prompt、query 或 tool routing 驗證需求，需求穩定後再評估微調。",
+        "finetune": "對一般企業來說，這通常代表可承受的小中型微調，例如 YOLO、分類器、KIE backbone 或 OCR 後處理適配，而不是從零訓練大模型。",
+        "domain-data": "不一定要訓練模型，但一定需要域內樣本、錯誤切片與規則校正。"
+      },
+      "evidence": [
+        "Azure Document Intelligence custom models",
+        "Google Document AI custom extractor overview",
+        "Google Document AI custom-based extraction",
+        "Azure prebuilt general document/layout guidance",
+        "AWS Textract AnalyzeDocument / Queries",
+        "LayoutLMv3",
+        "TrOCR",
+        "FUNSD"
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "docai-skill-tree",
+      "label": "文件智慧技能樹",
+      "short_label": "文件智慧技能樹",
+      "layer": "核心",
+      "family": "root",
+      "pipeline_stage": "root",
+      "parent": null,
+      "summary": "OCR、版面、抽取、推理與評測的共用地圖",
+      "tags": [
+        "document-intelligence",
+        "root"
+      ],
+      "input": [],
+      "output": [
+        "結構化資料",
+        "可驗證結果"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "把 OCR 放回 Document Intelligence 全域脈絡",
+        "同時覆蓋輸入、解析、部署與評測"
+      ],
+      "weaknesses": [
+        "仍需依實際文件分布補齊細節"
+      ],
+      "failure_modes": [
+        "若把應用場景誤當技術主幹，整體樹會失真"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "edge",
+        "cloud",
+        "hybrid"
+      ],
+      "depth": 0,
+      "references": [
+        "whitepaper.md",
+        "report.md"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "high",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "input-routing",
+      "label": "輸入與路由",
+      "short_label": "輸入與路由",
+      "layer": "主幹",
+      "family": "foundation",
+      "pipeline_stage": "foundation",
+      "parent": "docai-skill-tree",
+      "summary": "先判斷文件來源與處理入口",
+      "tags": [
+        "input",
+        "routing"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "先分流 Native PDF 與影像件，可大幅降低成本"
+      ],
+      "weaknesses": [
+        "錯分會讓成本與錯誤率一起上升"
+      ],
+      "failure_modes": [
+        "把 Native PDF 全丟進 OCR"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 1,
+      "references": [
+        "pdfminer.six",
+        "Google Document AI overview"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "一般金融企業可自己做好的是分流策略與路由決策，不是從零做 PDF/OCR 基座。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "preprocessing",
+      "label": "前處理",
+      "short_label": "前處理",
+      "layer": "主幹",
+      "family": "pipeline",
+      "pipeline_stage": "pipeline",
+      "parent": "docai-skill-tree",
+      "summary": "先穩定影像品質，再進入辨識",
+      "tags": [
+        "preprocess",
+        "quality-control"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "對拍照件與低品質掃描件影響最大"
+      ],
+      "weaknesses": [
+        "過度增強可能破壞字形與細節"
+      ],
+      "failure_modes": [
+        "只追求影像好看，忽略下游可用性"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 1,
+      "references": [
+        "Google Enterprise OCR deskew",
+        "OCRmyPDF"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "none",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "可先用既有 pretrained、API 或規則起步，先把評測與門檻做紮實。"
+      }
+    },
+    {
+      "id": "recognition",
+      "label": "文字辨識",
+      "short_label": "文字辨識",
+      "layer": "主幹",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "docai-skill-tree",
+      "summary": "取得文字、位置與信心分數",
+      "tags": [
+        "ocr",
+        "htr"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "提供文字、位置與信心分數三種基礎訊號"
+      ],
+      "weaknesses": [
+        "只保留文字不保留座標時，後續 KIE 與稽核會失真"
+      ],
+      "failure_modes": [
+        "閱讀順序錯誤導致後續解析失準"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 1,
+      "references": [
+        "Azure Read OCR",
+        "Textract"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "structure",
+      "label": "結構理解",
+      "short_label": "結構理解",
+      "layer": "主幹",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "docai-skill-tree",
+      "summary": "看懂版面、表格、欄位與閱讀順序",
+      "tags": [
+        "layout",
+        "table",
+        "kie"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "真正決定文件是否能轉成可用資料"
+      ],
+      "weaknesses": [
+        "域轉移明顯，公開資料集不一定能直接落地"
+      ],
+      "failure_modes": [
+        "雙欄當單欄",
+        "表格與內文混在一起"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 1,
+      "references": [
+        "DocLayNet",
+        "LayoutLMv3",
+        "PubTables-1M"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
+    },
+    {
+      "id": "parsing",
+      "label": "解析與抽取",
+      "short_label": "解析與抽取",
+      "layer": "主幹",
+      "family": "parsing",
+      "pipeline_stage": "parsing",
+      "parent": "docai-skill-tree",
+      "summary": "把文件內容轉成可用資料",
+      "tags": [
+        "parsing",
+        "json"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "直接對接業務 schema、索引與下游流程"
+      ],
+      "weaknesses": [
+        "若沒有 evidence 與 validation，容易變成不可稽核輸出"
+      ],
+      "failure_modes": [
+        "欄位正確但結構錯位"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 1,
+      "references": [
+        "OmniDocBench",
+        "document parsing survey"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "multimodal",
+      "label": "多模態與推理",
+      "short_label": "多模態與推理",
+      "layer": "主幹",
+      "family": "multimodal",
+      "pipeline_stage": "multimodal",
+      "parent": "docai-skill-tree",
+      "summary": "整合 OCR、VLM、LLM 與 agent",
+      "tags": [
+        "vlm",
+        "llm",
+        "agent"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "處理長尾版型與語意推理較強"
+      ],
+      "weaknesses": [
+        "成本高、可控性較弱、幻覺風險更高"
+      ],
+      "failure_modes": [
+        "回答合理但無證據"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 1,
+      "references": [
+        "Donut",
+        "LayoutLLM",
+        "DocLLM",
+        "DocVLM"
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "hybrid",
+        "adaptation": "prompt",
+        "effort": "high",
+        "build_reason": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合研究、PoC 或外部合作。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
+    },
+    {
+      "id": "ops",
+      "label": "系統工程",
+      "short_label": "系統工程",
+      "layer": "主幹",
+      "family": "ops",
+      "pipeline_stage": "ops",
+      "parent": "docai-skill-tree",
+      "summary": "部署、觀測、覆核、治理",
+      "tags": [
+        "deployment",
+        "ops"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "把模型能力轉成可維運系統"
+      ],
+      "weaknesses": [
+        "若沒有觀測與回退，系統很快失控"
+      ],
+      "failure_modes": [
+        "高風險文件直接進自動化流程"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 1,
+      "references": [
+        "Azure Document Intelligence",
+        "AWS Textract"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "evaluation-data",
+      "label": "評測與資料",
+      "short_label": "評測與資料",
+      "layer": "主幹",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "docai-skill-tree",
+      "summary": "指標、資料集、標註規格",
+      "tags": [
+        "evaluation",
+        "dataset",
+        "benchmark"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "把模型表現與真實風險對齊"
+      ],
+      "weaknesses": [
+        "若資料分布與真實任務脫節，指標會失真"
+      ],
+      "failure_modes": [
+        "只看 CER/WER 而忽略閱讀順序與欄位正確性"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 1,
+      "references": [
+        "OCR-D",
+        "TEDS",
+        "OmniDocBench"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "native-pdf",
+      "label": "Native PDF 解析",
+      "short_label": "Native PDF 解析",
+      "layer": "技能",
+      "family": "foundation",
+      "pipeline_stage": "foundation",
+      "parent": "input-routing",
+      "summary": "有文字層時直接抽字與座標",
+      "tags": [
+        "pdf",
+        "text-layer"
+      ],
+      "input": [],
+      "output": [
+        "文字",
+        "座標"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "成本低、速度快、可直接保留字元座標"
+      ],
+      "weaknesses": [
+        "文字順序與段落邊界仍可能需要重建"
+      ],
+      "failure_modes": [
+        "編碼異常",
+        "字元順序不等於閱讀順序"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "financial-statements",
+        "taiwan-documents",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "抽字正確率",
+        "閱讀順序一致性"
+      ],
+      "references": [
+        "pdfminer.six"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "PDF 文字層抽取已有成熟工具，通常不值得從零實作 parser。",
+        "tuning_reason": "文字層抽取本身不需要微調，重點在閱讀順序與後處理。"
+      }
+    },
+    {
+      "id": "scanned-pdf",
+      "label": "掃描 PDF",
+      "short_label": "掃描 PDF",
+      "layer": "技能",
+      "family": "foundation",
+      "pipeline_stage": "foundation",
+      "parent": "input-routing",
+      "summary": "影像頁面需走 OCR 管線",
+      "tags": [
+        "scan",
+        "ocr-route"
+      ],
+      "input": [],
+      "output": [
+        "ocr-route"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "適用大部分紙本數位化流程"
+      ],
+      "weaknesses": [
+        "高度依賴解析度與前處理"
+      ],
+      "failure_modes": [
+        "低 dpi 造成細字與表格線流失"
+      ],
+      "use_cases": [
+        "receipts",
+        "medical-claims",
+        "historical-archives",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "OCRmyPDF"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "它主要是文件入口型別，不是單獨訓練目標；重點在路由到後續 OCR 管線。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "camera-doc",
+      "label": "拍照文件",
+      "short_label": "拍照文件",
+      "layer": "技能",
+      "family": "foundation",
+      "pipeline_stage": "foundation",
+      "parent": "input-routing",
+      "summary": "拍照件仰賴品質與幾何校正",
+      "tags": [
+        "camera",
+        "mobile-capture"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "適合行動端收件與現場蒐集"
+      ],
+      "weaknesses": [
+        "容易受反光、透視與截切影響"
+      ],
+      "failure_modes": [
+        "邊角欄位被裁切"
+      ],
+      "use_cases": [
+        "receipts",
+        "identity-documents",
+        "medical-claims",
+        "education"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "mobile capture best practices"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必重訓模型，但一定要用真實拍照件校正品質門檻與前處理。"
+      }
+    },
+    {
+      "id": "multilingual-doc",
+      "label": "多語與繁中",
+      "short_label": "多語與繁中",
+      "layer": "技能",
+      "family": "foundation",
+      "pipeline_stage": "foundation",
+      "parent": "input-routing",
+      "summary": "處理語系、字集、混排與直排",
+      "tags": [
+        "multilingual",
+        "zh-hant"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "對台灣文件與跨國文件是基本能力"
+      ],
+      "weaknesses": [
+        "字集覆蓋與字形相似容易出錯"
+      ],
+      "failure_modes": [
+        "繁簡混排誤判",
+        "直排閱讀順序錯誤"
+      ],
+      "use_cases": [
+        "multilingual-documents",
+        "taiwan-documents",
+        "historical-archives"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "CASIA"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "high",
+        "build_reason": "繁中、多語、混排與字集規則通常要自己定義驗收與正規化。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "quality-gate",
+      "label": "品質檢查",
+      "short_label": "品質檢查",
+      "layer": "技能",
+      "family": "pipeline",
+      "pipeline_stage": "pipeline",
+      "parent": "preprocessing",
+      "summary": "檢查模糊、反光、截切、旋轉",
+      "tags": [
+        "quality",
+        "quality-control",
+        "routing"
+      ],
+      "input": [],
+      "output": [
+        "quality-score",
+        "issue-flags"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "能把壞件提早分流"
+      ],
+      "weaknesses": [
+        "需要明確定義品質門檻"
+      ],
+      "failure_modes": [
+        "誤殺可用樣本",
+        "放行不可用樣本"
+      ],
+      "use_cases": [
+        "receipts",
+        "medical-claims",
+        "identity-documents",
+        "education"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "quality recall",
+        "低誤殺率"
+      ],
+      "references": [
+        "Google Document AI quality detection"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "品質門檻、分流規則與人工覆核條件高度依賴你的文件風險與成本模型。",
+        "tuning_reason": "可先用既有 pretrained、API 或規則起步，先把評測與門檻做紮實。"
+      }
+    },
+    {
+      "id": "deskew-dewarp",
+      "label": "傾斜與變形校正",
+      "short_label": "傾斜與變形校正",
+      "layer": "技能",
+      "family": "pipeline",
+      "pipeline_stage": "pipeline",
+      "parent": "preprocessing",
+      "summary": "deskew、dewarp、rectification",
+      "tags": [
+        "deskew",
+        "dewarp"
+      ],
+      "input": [],
+      "output": [
+        "rectified-image"
+      ],
+      "dependencies": [
+        "quality-gate"
+      ],
+      "strengths": [
+        "可先修正幾何失真再做 OCR",
+        "對拍照件與掃描件都常有直接幫助"
+      ],
+      "weaknesses": [
+        "若偵測四角點不穩，容易引入新失真"
+      ],
+      "failure_modes": [
+        "過度拉平造成字形變形"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "document rectification",
+        "mobile document capture"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "none",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "可先用既有 pretrained、API 或規則起步，先把評測與門檻做紮實。"
+      }
+    },
+    {
+      "id": "image-enhancement",
+      "label": "影像增強",
+      "short_label": "影像增強",
+      "layer": "技能",
+      "family": "pipeline",
+      "pipeline_stage": "pipeline",
+      "parent": "preprocessing",
+      "summary": "去噪、二值化、去模糊、超解析",
+      "tags": [
+        "denoise",
+        "binarize",
+        "deblur"
+      ],
+      "input": [],
+      "output": [
+        "enhanced-image"
+      ],
+      "dependencies": [
+        "quality-gate"
+      ],
+      "strengths": [
+        "能改善低對比、噪聲與模糊影像的可讀性"
+      ],
+      "weaknesses": [
+        "增強過頭可能破壞細字與表格線"
+      ],
+      "failure_modes": [
+        "影像看起來更銳利，但 OCR 反而更差"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "OCR preprocessing survey",
+        "super-resolution for OCR"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "none",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "可先用既有 pretrained、API 或規則起步，先把評測與門檻做紮實。"
+      }
+    },
+    {
+      "id": "roi-detection",
+      "label": "區域偵測",
+      "short_label": "區域偵測",
+      "layer": "技能",
+      "family": "pipeline",
+      "pipeline_stage": "pipeline",
+      "parent": "preprocessing",
+      "summary": "文件邊界、ROI、表格區、欄位區",
+      "tags": [
+        "detection",
+        "segmentation",
+        "obb",
+        "keypoints"
+      ],
+      "input": [],
+      "output": [
+        "roi-boxes",
+        "masks"
+      ],
+      "dependencies": [
+        "quality-gate"
+      ],
+      "strengths": [
+        "把全頁問題縮成關鍵區域問題"
+      ],
+      "weaknesses": [
+        "標註規格不一致會直接影響下游"
+      ],
+      "failure_modes": [
+        "框太緊裁掉欄位",
+        "框太鬆導致 OCR 噪聲增加"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "receipts",
+        "identity-documents",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "ROI recall",
+        "關鍵欄位保留率"
+      ],
+      "references": [
+        "Ultralytics detect/seg/OBB/pose"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "這屬於企業可做的 YOLO 類微調範圍，尤其當 ROI 與欄位區塊直接決定下游品質時。",
+        "tuning_reason": "ROI 定義和標註規格高度依賴任務；若欄位或區塊邊界是關鍵，通常要做域內微調。"
+      }
+    },
+    {
+      "id": "printed-ocr",
+      "label": "印刷 OCR",
+      "short_label": "印刷 OCR",
+      "layer": "技能",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "recognition",
+      "summary": "辨識印刷文字",
+      "tags": [
+        "ocr",
+        "printed"
+      ],
+      "input": [],
+      "output": [
+        "tokens",
+        "bbox",
+        "confidence"
+      ],
+      "dependencies": [
+        "deskew-dewarp"
+      ],
+      "strengths": [
+        "可提供 evidence 與 confidence"
+      ],
+      "weaknesses": [
+        "對低品質、手寫與複雜版面仍有限"
+      ],
+      "failure_modes": [
+        "數字與相似字混淆",
+        "字正確但順序錯誤"
+      ],
+      "use_cases": [
+        "receipts",
+        "enterprise-automation",
+        "financial-statements",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "CER",
+        "WER",
+        "欄位命中"
+      ],
+      "references": [
+        "Azure Read OCR",
+        "Google OCR",
+        "Textract"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "對一般金融企業來說，印刷 OCR 通常先整合 EasyOCR、PaddleOCR 或雲端 OCR，比自訓 recognizer 更合理。",
+        "tuning_reason": "若是繁中、特殊字體或掃描品質有明顯落差，可以做有限度適配或後處理校正，但通常不需重做整個 OCR 模型。"
+      }
+    },
+    {
+      "id": "deep-ocr",
+      "label": "深度學習 OCR",
+      "short_label": "深度學習 OCR",
+      "layer": "技能",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "recognition",
+      "summary": "偵測與辨識兩段式 OCR",
+      "tags": [
+        "detector",
+        "recognizer"
+      ],
+      "input": [],
+      "output": [
+        "word-boxes",
+        "text"
+      ],
+      "dependencies": [
+        "deskew-dewarp"
+      ],
+      "strengths": [
+        "模組化偵測加辨識容易替換與調優"
+      ],
+      "weaknesses": [
+        "偵測與辨識錯誤會串聯傳遞"
+      ],
+      "failure_modes": [
+        "字框切不好導致整段辨識崩壞"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "docTR",
+        "PaddleOCR"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "transformer-ocr",
+      "label": "Transformer OCR",
+      "short_label": "Transformer OCR",
+      "layer": "技能",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "recognition",
+      "summary": "以 Transformer 做辨識端",
+      "tags": [
+        "transformer",
+        "ocr"
+      ],
+      "input": [],
+      "output": [
+        "text-sequence"
+      ],
+      "dependencies": [
+        "deep-ocr"
+      ],
+      "strengths": [
+        "在複雜字形與序列建模上通常比傳統 recognizer 更強"
+      ],
+      "weaknesses": [
+        "仍依賴切行或切字品質"
+      ],
+      "failure_modes": [
+        "整頁直接丟 recognizer，缺少偵測與 layout 導致失敗"
+      ],
+      "use_cases": [],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "TrOCR"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "TrOCR 類方法本身就是預訓練後再用人標資料 fine-tune 到印刷或手寫任務。"
+      }
+    },
+    {
+      "id": "handwriting-htr",
+      "label": "手寫辨識 HTR",
+      "short_label": "手寫辨識 HTR",
+      "layer": "技能",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "recognition",
+      "summary": "處理手寫、連筆、文件級 HTR",
+      "tags": [
+        "htr",
+        "handwriting"
+      ],
+      "input": [],
+      "output": [
+        "handwritten-text"
+      ],
+      "dependencies": [
+        "deskew-dewarp",
+        "roi-detection"
+      ],
+      "strengths": [
+        "能涵蓋醫療、教育與典藏等高價值文件"
+      ],
+      "weaknesses": [
+        "資料與字集要求高，泛化困難"
+      ],
+      "failure_modes": [
+        "切行錯誤",
+        "連筆與潦草字無法穩定辨識"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "historical-archives",
+        "education"
+      ],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "HTR survey",
+        "CASIA"
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "手寫字形、語言與版型差異很大，沒有域內標註通常不會穩。"
+      }
+    },
+    {
+      "id": "scene-text",
+      "label": "Scene Text",
+      "short_label": "Scene Text",
+      "layer": "技能",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "recognition",
+      "summary": "自然場景文字與任意形狀文字",
+      "tags": [
+        "scene-text",
+        "polygon"
+      ],
+      "input": [],
+      "output": [
+        "polygon-text"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "可處理自然場景中的任意方向文字"
+      ],
+      "weaknesses": [
+        "對典型文件主幹任務通常不是最高優先"
+      ],
+      "failure_modes": [
+        "把場景文字方法誤當主文件解析主線"
+      ],
+      "use_cases": [
+        "identity-documents"
+      ],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "CRAFT",
+        "scene text survey"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "cloud-ocr",
+      "label": "雲端 OCR",
+      "short_label": "雲端 OCR",
+      "layer": "技能",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "recognition",
+      "summary": "Azure、GCP、Textract 類能力",
+      "tags": [
+        "cloud",
+        "ocr-api"
+      ],
+      "input": [],
+      "output": [
+        "text+layout"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "導入快，通常直接帶 layout 與結構化輸出"
+      ],
+      "weaknesses": [
+        "黑盒更新、成本與資料外送是主要風險"
+      ],
+      "failure_modes": [
+        "平台 schema 與內部業務欄位對不起來"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "receipts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "cloud",
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "Azure Document Intelligence",
+        "Google Document AI",
+        "AWS Textract"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "hybrid",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "這類能力的優勢就是直接買現成服務，不該從零重做。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "edge-ocr",
+      "label": "端側 OCR",
+      "short_label": "端側 OCR",
+      "layer": "技能",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "recognition",
+      "summary": "裝置端辨識與低延遲路線",
+      "tags": [
+        "edge",
+        "on-device"
+      ],
+      "input": [],
+      "output": [
+        "text+position"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "更適合低延遲與高隱私場景"
+      ],
+      "weaknesses": [
+        "模型大小與更新週期受限"
+      ],
+      "failure_modes": [
+        "端上模型版本碎片化，結果不一致"
+      ],
+      "use_cases": [
+        "identity-documents",
+        "medical-claims"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "edge",
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "ML Kit",
+        "Apple Vision",
+        "Windows OCR"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "layout-segmentation",
+      "label": "版面分割",
+      "short_label": "版面分割",
+      "layer": "技能",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "structure",
+      "summary": "切出 title、text、table、figure 等區塊",
+      "tags": [
+        "layout",
+        "segmentation"
+      ],
+      "input": [],
+      "output": [
+        "blocks",
+        "classes"
+      ],
+      "dependencies": [
+        "printed-ocr",
+        "native-pdf"
+      ],
+      "strengths": [
+        "是 reading order、表格與 KIE 的前置條件"
+      ],
+      "weaknesses": [
+        "在企業文件域轉移明顯"
+      ],
+      "failure_modes": [
+        "title 與內文混淆",
+        "table 與 paragraph 邊界不準"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "layout mAP",
+        "區塊正確率"
+      ],
+      "references": [
+        "PubLayNet",
+        "DocLayNet"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "這通常超出一般企業直接從零做的範圍，比較像在既有 backbone 或服務上做適配。",
+        "tuning_reason": "LayoutLMv3 類模型是預訓練基座，但企業文件域轉移強，若要自做通常也是小規模域內適配。"
+      }
+    },
+    {
+      "id": "reading-order",
+      "label": "閱讀順序",
+      "short_label": "閱讀順序",
+      "layer": "技能",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "structure",
+      "summary": "排出正確閱讀流",
+      "tags": [
+        "reading-order"
+      ],
+      "input": [],
+      "output": [
+        "ordered-text"
+      ],
+      "dependencies": [
+        "layout-segmentation"
+      ],
+      "strengths": [
+        "直接影響 OCR 串接、parsing 與評測正確性"
+      ],
+      "weaknesses": [
+        "多欄、註腳與跨頁最難穩定"
+      ],
+      "failure_modes": [
+        "雙欄當單欄",
+        "頁眉頁腳插入正文"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "order accuracy",
+        "pairwise order"
+      ],
+      "references": [
+        "OCR-D"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "閱讀順序常需要規則、幾何與業務文件假設混合處理，自己做可控性更高。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
+    },
+    {
+      "id": "table-detection",
+      "label": "表格偵測",
+      "short_label": "表格偵測",
+      "layer": "技能",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "structure",
+      "summary": "找出表格區域",
+      "tags": [
+        "table",
+        "detection"
+      ],
+      "input": [],
+      "output": [
+        "table-regions"
+      ],
+      "dependencies": [
+        "layout-segmentation",
+        "roi-detection"
+      ],
+      "strengths": [
+        "把表格問題從全頁切離"
+      ],
+      "weaknesses": [
+        "與段落邊界常互相干擾"
+      ],
+      "failure_modes": [
+        "漏整張表",
+        "把內文框成表格"
+      ],
+      "use_cases": [
+        "financial-statements",
+        "receipts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "table mAP"
+      ],
+      "references": [
+        "PubTables-1M",
+        "TableBank"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "若金融文件中的表格區塊穩定且高價值，這也是企業可承接的檢測微調任務。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
+    },
+    {
+      "id": "table-structure",
+      "label": "表格結構",
+      "short_label": "表格結構",
+      "layer": "技能",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "structure",
+      "summary": "轉成 cell、grid、HTML",
+      "tags": [
+        "table",
+        "html",
+        "cells"
+      ],
+      "input": [],
+      "output": [
+        "cells",
+        "html"
+      ],
+      "dependencies": [
+        "table-detection"
+      ],
+      "strengths": [
+        "是財報、收據與報表可用化的核心節點"
+      ],
+      "weaknesses": [
+        "合併儲存格與跨欄最難處理"
+      ],
+      "failure_modes": [
+        "rowspan/colspan 錯位",
+        "內容對了但結構錯"
+      ],
+      "use_cases": [
+        "financial-statements",
+        "receipts",
+        "enterprise-automation"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "TEDS",
+        "table structure accuracy"
+      ],
+      "references": [
+        "PubTabNet",
+        "PubTables-1M",
+        "TEDS"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "這比表格 detection 更難，對一般金融企業通常不是首選自建，較適合基於現成模型再做適配。",
+        "tuning_reason": "PubTables/PubTabNet 提供基座，但商務表格域差大，若真的要做，通常需要域內微調與額外標註。"
+      }
+    },
+    {
+      "id": "key-value-extraction",
+      "label": "欄位擷取 KIE",
+      "short_label": "欄位擷取 KIE",
+      "layer": "技能",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "structure",
+      "summary": "抽 key-value、實體與關係",
+      "tags": [
+        "kie",
+        "entities",
+        "forms"
+      ],
+      "input": [],
+      "output": [
+        "entities",
+        "key-values"
+      ],
+      "dependencies": [
+        "layout-segmentation",
+        "reading-order"
+      ],
+      "strengths": [
+        "最貼近表單與業務欄位抽取"
+      ],
+      "weaknesses": [
+        "高度依賴 OCR token 與 layout quality"
+      ],
+      "failure_modes": [
+        "欄位值抓到鄰近列",
+        "entity 對了但 relation 錯"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "receipts",
+        "enterprise-automation",
+        "identity-documents",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "LayoutLM",
+        "BROS",
+        "FUNSD"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "這是企業會很想自建的地方，但真正落地通常是用既有 backbone 或平台能力，再配合自己的欄位 schema 做適配。",
+        "tuning_reason": "FUNSD 類任務本身就依賴 entity/linking 標註；欄位 schema 一變，通常就要再適配。"
+      }
+    },
+    {
+      "id": "layout-aware-models",
+      "label": "Layout-aware 模型",
+      "short_label": "Layout-aware 模型",
+      "layer": "技能",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "structure",
+      "summary": "LayoutLM、BROS 類模型",
+      "tags": [
+        "layoutlm",
+        "bros",
+        "layout-aware"
+      ],
+      "input": [],
+      "output": [
+        "contextual-document-representation"
+      ],
+      "dependencies": [
+        "printed-ocr",
+        "layout-segmentation"
+      ],
+      "strengths": [
+        "把文字與 2D 位置一起建模"
+      ],
+      "weaknesses": [
+        "OCR serialization 與 bbox quality 仍是弱點"
+      ],
+      "failure_modes": [
+        "文字順序錯誤時模型表現快速下滑"
+      ],
+      "use_cases": [],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "LayoutLMv3",
+        "BROS"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "這類模型是通用 pretrained backbone，真正落地通常要靠下游 fine-tuning。"
+      }
+    },
+    {
+      "id": "document-parsing",
+      "label": "文件解析",
+      "short_label": "文件解析",
+      "layer": "技能",
+      "family": "parsing",
+      "pipeline_stage": "parsing",
+      "parent": "parsing",
+      "summary": "轉成 JSON、Markdown、HTML",
+      "tags": [
+        "parsing",
+        "json",
+        "markdown",
+        "html"
+      ],
+      "input": [],
+      "output": [
+        "json",
+        "markdown",
+        "html"
+      ],
+      "dependencies": [
+        "reading-order",
+        "table-structure"
+      ],
+      "strengths": [
+        "適合接知識庫、ETL 與下游系統"
+      ],
+      "weaknesses": [
+        "需要同時協調文字、表格與版面"
+      ],
+      "failure_modes": [
+        "段落層級錯亂",
+        "表格被打平成純文字"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "financial-statements",
+        "taiwan-documents",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "OmniDocBench",
+        "document parsing survey"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "真正產品價值在輸出 schema、evidence、chunk 與多模組拼接，通常要自己設計。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "document-vqa",
+      "label": "Document VQA",
+      "short_label": "Document VQA",
+      "layer": "技能",
+      "family": "parsing",
+      "pipeline_stage": "parsing",
+      "parent": "parsing",
+      "summary": "問答式文件理解",
+      "tags": [
+        "docvqa",
+        "qa"
+      ],
+      "input": [],
+      "output": [
+        "answer"
+      ],
+      "dependencies": [
+        "reading-order",
+        "layout-segmentation"
+      ],
+      "strengths": [
+        "適合少量欄位與問題導向抽取"
+      ],
+      "weaknesses": [
+        "輸出容易看似合理但缺乏證據"
+      ],
+      "failure_modes": [
+        "答對語意但引用錯位置"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "medical-claims",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "accuracy",
+        "ANLS"
+      ],
+      "references": [
+        "DocVQA"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "llm",
+        "adaptation": "prompt",
+        "effort": "medium",
+        "build_reason": "一般企業較合理的做法是用現有 LLM / VLM 能力加 prompt 和 evidence 設計，而不是自建 VQA 模型。",
+        "tuning_reason": "先用 prompt 或 query 驗證；只有題型固定且量大時再考慮小型任務微調。"
+      }
+    },
+    {
+      "id": "query-extraction",
+      "label": "Query 式擷取",
+      "short_label": "Query 式擷取",
+      "layer": "技能",
+      "family": "parsing",
+      "pipeline_stage": "parsing",
+      "parent": "parsing",
+      "summary": "用問題導向抽少量欄位",
+      "tags": [
+        "query",
+        "targeted-extraction"
+      ],
+      "input": [],
+      "output": [
+        "answers",
+        "evidence"
+      ],
+      "dependencies": [
+        "key-value-extraction",
+        "document-parsing"
+      ],
+      "strengths": [
+        "適合欄位少、版型多的情境"
+      ],
+      "weaknesses": [
+        "query 設計品質直接影響結果"
+      ],
+      "failure_modes": [
+        "答非所問",
+        "空答"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "receipts",
+        "identity-documents",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "Textract Queries"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "llm",
+        "adaptation": "prompt",
+        "effort": "low",
+        "build_reason": "Textract Queries 與 LLM query-based extraction 已很成熟，通常先整合即可。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "schema-mapping",
+      "label": "Schema 對應",
+      "short_label": "Schema 對應",
+      "layer": "技能",
+      "family": "parsing",
+      "pipeline_stage": "parsing",
+      "parent": "parsing",
+      "summary": "把抽取結果對應到業務欄位",
+      "tags": [
+        "schema",
+        "normalization"
+      ],
+      "input": [],
+      "output": [
+        "normalized-record"
+      ],
+      "dependencies": [
+        "key-value-extraction",
+        "document-parsing"
+      ],
+      "strengths": [
+        "把通用抽取轉成可落地資料契約"
+      ],
+      "weaknesses": [
+        "跨版本與跨文件型別時維護成本高"
+      ],
+      "failure_modes": [
+        "欄位名對了但值單位或格式錯"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "medical-claims",
+        "financial-statements",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "schema mapping design",
+        "document ETL"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "ocr-first-pipeline",
+      "label": "OCR-first",
+      "short_label": "OCR-first",
+      "layer": "技能",
+      "family": "multimodal",
+      "pipeline_stage": "multimodal",
+      "parent": "multimodal",
+      "summary": "模組化、可稽核、可回退",
+      "tags": [
+        "ocr-first",
+        "pipeline"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [
+        "printed-ocr",
+        "layout-segmentation",
+        "key-value-extraction"
+      ],
+      "strengths": [
+        "最容易做 evidence、觀測與 fallback"
+      ],
+      "weaknesses": [
+        "錯誤逐層傳遞，整合成本高"
+      ],
+      "failure_modes": [
+        "上游 OCR 差，後面所有模組一起受害"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "enterprise-automation",
+        "financial-statements",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "document parsing survey",
+        "OmniDocBench"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "hybrid",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "模組串接、evidence 保留、回退與 SLA 設計本身就是自建價值所在。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
+    },
+    {
+      "id": "ocr-free",
+      "label": "OCR-free",
+      "short_label": "OCR-free",
+      "layer": "技能",
+      "family": "multimodal",
+      "pipeline_stage": "multimodal",
+      "parent": "multimodal",
+      "summary": "影像直出結構化結果",
+      "tags": [
+        "ocr-free",
+        "donut"
+      ],
+      "input": [],
+      "output": [
+        "generated-json"
+      ],
+      "dependencies": [
+        "quality-gate"
+      ],
+      "strengths": [
+        "避開 OCR error propagation"
+      ],
+      "weaknesses": [
+        "可解釋性與可驗證性較弱"
+      ],
+      "failure_modes": [
+        "生成看似合理但證據不足"
+      ],
+      "use_cases": [
+        "receipts",
+        "enterprise-automation"
+      ],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "Donut"
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合研究、PoC 或外部合作。",
+        "tuning_reason": "OCR-free 路線對文件型態與輸出 schema 非常敏感，通常要靠任務資料微調。"
+      }
+    },
+    {
+      "id": "vlm-ocr-fusion",
+      "label": "VLM + OCR 融合",
+      "short_label": "VLM + OCR 融合",
+      "layer": "技能",
+      "family": "multimodal",
+      "pipeline_stage": "multimodal",
+      "parent": "multimodal",
+      "summary": "把 OCR 與版面訊號餵給 VLM",
+      "tags": [
+        "vlm",
+        "ocr-fusion"
+      ],
+      "input": [],
+      "output": [
+        "answers",
+        "fields"
+      ],
+      "dependencies": [
+        "printed-ocr",
+        "layout-segmentation"
+      ],
+      "strengths": [
+        "兼顧文字證據與語意推理"
+      ],
+      "weaknesses": [
+        "token budget 與輸入整形複雜"
+      ],
+      "failure_modes": [
+        "關鍵 bbox 與文字被捨棄"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "medical-claims",
+        "contracts"
+      ],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "DocVLM"
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "hybrid",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合研究、PoC 或外部合作。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
+    },
+    {
+      "id": "layout-aware-llm",
+      "label": "Layout-aware LLM",
+      "short_label": "Layout-aware LLM",
+      "layer": "技能",
+      "family": "multimodal",
+      "pipeline_stage": "multimodal",
+      "parent": "multimodal",
+      "summary": "讓 LLM 更會使用 layout 與 bbox",
+      "tags": [
+        "llm",
+        "layout-aware"
+      ],
+      "input": [],
+      "output": [
+        "generated-extraction"
+      ],
+      "dependencies": [
+        "layout-aware-models",
+        "document-parsing"
+      ],
+      "strengths": [
+        "對推理與指令式抽取較強"
+      ],
+      "weaknesses": [
+        "仍需嚴格 evidence 設計與約束"
+      ],
+      "failure_modes": [
+        "會答但無法定位來源"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "financial-statements",
+        "contracts"
+      ],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "LayoutLLM",
+        "DocLLM"
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "llm",
+        "adaptation": "prompt",
+        "effort": "high",
+        "build_reason": "對一般金融企業來說，這通常不算可自建核心模型，而是研究或實驗性整合方向。",
+        "tuning_reason": "應用開發可先用 prompt + layout serialization 驗證；若要穩定固定欄位任務，再評估小規模微調。"
+      }
+    },
+    {
+      "id": "agentic-ocr",
+      "label": "Agentic OCR",
+      "short_label": "Agentic OCR",
+      "layer": "技能",
+      "family": "multimodal",
+      "pipeline_stage": "multimodal",
+      "parent": "multimodal",
+      "summary": "按需解析而不是全文解析",
+      "tags": [
+        "agent",
+        "on-demand-ocr"
+      ],
+      "input": [],
+      "output": [
+        "selective-ocr"
+      ],
+      "dependencies": [
+        "query-extraction"
+      ],
+      "strengths": [
+        "有機會降低全文解析成本"
+      ],
+      "weaknesses": [
+        "仍屬前沿，評測與穩定性不足"
+      ],
+      "failure_modes": [
+        "agent 漏掉必要區域"
+      ],
+      "use_cases": [
+        "enterprise-automation"
+      ],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "AgenticOCR"
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "llm",
+        "adaptation": "prompt",
+        "effort": "high",
+        "build_reason": "這通常超出一般企業穩定量產的能力範圍，較適合探索性 PoC。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
+    },
+    {
+      "id": "edge-onprem",
+      "label": "Edge / On-prem",
+      "short_label": "Edge / On-prem",
+      "layer": "技能",
+      "family": "ops",
+      "pipeline_stage": "ops",
+      "parent": "ops",
+      "summary": "資料留在端側或私有環境",
+      "tags": [
+        "edge",
+        "on-prem",
+        "privacy"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [
+        "edge-ocr"
+      ],
+      "strengths": [
+        "隱私與法遵較佳"
+      ],
+      "weaknesses": [
+        "維運與更新成本較高"
+      ],
+      "failure_modes": [
+        "多端版本不一致"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "identity-documents"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "edge",
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "ML Kit",
+        "Apple Vision",
+        "Windows OCR"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "high",
+        "build_reason": "地端部署真正難的是系統整合、權限、更新與審計，不是模型論文本身。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "cloud-managed",
+      "label": "雲端平台",
+      "short_label": "雲端平台",
+      "layer": "技能",
+      "family": "ops",
+      "pipeline_stage": "ops",
+      "parent": "ops",
+      "summary": "雲端託管 OCR、layout、KIE",
+      "tags": [
+        "cloud",
+        "managed-service"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [
+        "cloud-ocr",
+        "key-value-extraction"
+      ],
+      "strengths": [
+        "快速導入，平台能力完整"
+      ],
+      "weaknesses": [
+        "成本、鎖定與資料出境需審慎評估"
+      ],
+      "failure_modes": [
+        "schema 跟業務需求無法完全對齊"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "receipts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "cloud",
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "Azure Document Intelligence",
+        "Google Document AI",
+        "AWS Textract"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "observability",
+      "label": "觀測與分流",
+      "short_label": "觀測與分流",
+      "layer": "技能",
+      "family": "ops",
+      "pipeline_stage": "ops",
+      "parent": "ops",
+      "summary": "記錄 confidence、錯誤切片、fallback",
+      "tags": [
+        "observability",
+        "fallback"
+      ],
+      "input": [],
+      "output": [
+        "quality-report"
+      ],
+      "dependencies": [
+        "quality-gate",
+        "schema-mapping"
+      ],
+      "strengths": [
+        "讓系統知道自己在哪裡失敗"
+      ],
+      "weaknesses": [
+        "若沒有錯誤 taxonomy，資料只會越積越亂"
+      ],
+      "failure_modes": [
+        "只記總分不記錯誤切片"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "confidence routing best practices"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "human-review",
+      "label": "人工覆核",
+      "short_label": "人工覆核",
+      "layer": "技能",
+      "family": "ops",
+      "pipeline_stage": "ops",
+      "parent": "ops",
+      "summary": "低信心與衝突案例進人工覆核",
+      "tags": [
+        "hitl",
+        "review"
+      ],
+      "input": [],
+      "output": [
+        "review-queue"
+      ],
+      "dependencies": [
+        "observability",
+        "query-extraction"
+      ],
+      "strengths": [
+        "高風險欄位可控"
+      ],
+      "weaknesses": [
+        "若分流不準，人工成本很快失控"
+      ],
+      "failure_modes": [
+        "人審結果沒有回流成資料資產"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "enterprise-automation",
+        "identity-documents",
+        "contracts"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "human in the loop workflow",
+        "document QA operations"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "ocr-metrics",
+      "label": "OCR 指標",
+      "short_label": "OCR 指標",
+      "layer": "技能",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "evaluation-data",
+      "summary": "CER、WER、欄位命中",
+      "tags": [
+        "cer",
+        "wer"
+      ],
+      "input": [],
+      "output": [
+        "ocr-report"
+      ],
+      "dependencies": [
+        "printed-ocr",
+        "handwriting-htr"
+      ],
+      "strengths": [
+        "是文字辨識基礎評測"
+      ],
+      "weaknesses": [
+        "單看 CER/WER 不足以代表文件可用性"
+      ],
+      "failure_modes": [
+        "reading order 錯時指標本身也失真"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "evaluation_metrics": [
+        "CER",
+        "WER"
+      ],
+      "references": [
+        "OCR-D"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "layout-metrics",
+      "label": "版面指標",
+      "short_label": "版面指標",
+      "layer": "技能",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "evaluation-data",
+      "summary": "mAP、reading order",
+      "tags": [
+        "layout-metrics"
+      ],
+      "input": [],
+      "output": [
+        "layout-report"
+      ],
+      "dependencies": [
+        "layout-segmentation",
+        "reading-order"
+      ],
+      "strengths": [
+        "能把文字對但結構錯的問題抓出來"
+      ],
+      "weaknesses": [
+        "不同資料集標註稅則差異大"
+      ],
+      "failure_modes": [
+        "只報整體 mAP，看不到特定類別失敗"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "PubLayNet",
+        "DocLayNet",
+        "OCR-D"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "table-metrics",
+      "label": "表格指標",
+      "short_label": "表格指標",
+      "layer": "技能",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "evaluation-data",
+      "summary": "TEDS 與 table mAP",
+      "tags": [
+        "table-metrics"
+      ],
+      "input": [],
+      "output": [
+        "table-report"
+      ],
+      "dependencies": [
+        "table-detection",
+        "table-structure"
+      ],
+      "strengths": [
+        "TEDS 對結構錯位比簡單 exact match 更敏感"
+      ],
+      "weaknesses": [
+        "若只測 detection，看不到結構崩壞"
+      ],
+      "failure_modes": [
+        "表格框得對但 HTML 錯得很嚴重"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "TEDS",
+        "PubTables-1M"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "kie-metrics",
+      "label": "KIE 指標",
+      "short_label": "KIE 指標",
+      "layer": "技能",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "evaluation-data",
+      "summary": "entity F1 與欄位 exact match",
+      "tags": [
+        "kie-metrics"
+      ],
+      "input": [],
+      "output": [
+        "kie-report"
+      ],
+      "dependencies": [
+        "key-value-extraction"
+      ],
+      "strengths": [
+        "最能反映欄位抽取是否可用"
+      ],
+      "weaknesses": [
+        "若沒有正規化規則，容易低估模型實際可用性"
+      ],
+      "failure_modes": [
+        "entity 對但格式錯",
+        "value 對但 evidence link 錯"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "FUNSD"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "e2e-parsing-eval",
+      "label": "端到端評測",
+      "short_label": "端到端評測",
+      "layer": "技能",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "evaluation-data",
+      "summary": "整體 parsing 與多層級評測",
+      "tags": [
+        "end-to-end",
+        "parsing-eval"
+      ],
+      "input": [],
+      "output": [
+        "e2e-report"
+      ],
+      "dependencies": [
+        "document-parsing",
+        "vlm-ocr-fusion",
+        "ocr-free"
+      ],
+      "strengths": [
+        "能同時比較 pipeline 與端到端路線"
+      ],
+      "weaknesses": [
+        "若沒有模組級切片，很難知道壞在哪一層"
+      ],
+      "failure_modes": [
+        "總分接近但錯誤型態完全不同"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "OmniDocBench"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "datasets-benchmarks",
+      "label": "資料集與 benchmark",
+      "short_label": "資料集與 benchmark",
+      "layer": "技能",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "evaluation-data",
+      "summary": "PubLayNet、DocLayNet、PubTables、FUNSD、DocVQA、OmniDocBench",
+      "tags": [
+        "dataset",
+        "benchmark"
+      ],
+      "input": [],
+      "output": [
+        "benchmark-plan"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "把研究任務與實際驗收指標對齊"
+      ],
+      "weaknesses": [
+        "公開 benchmark 與企業文件域仍可能不一致"
+      ],
+      "failure_modes": [
+        "只在公開資料集上好看，落地後全面失速"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "PubLayNet",
+        "DocLayNet",
+        "PubTables-1M",
+        "FUNSD",
+        "DocVQA",
+        "OmniDocBench"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "labeling-spec",
+      "label": "標註規格",
+      "short_label": "標註規格",
+      "layer": "技能",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "evaluation-data",
+      "summary": "bbox、polygon、cell、schema、evidence 規格",
+      "tags": [
+        "labeling",
+        "annotation",
+        "evidence"
+      ],
+      "input": [],
+      "output": [
+        "labeling-spec"
+      ],
+      "dependencies": [
+        "datasets-benchmarks"
+      ],
+      "strengths": [
+        "決定資料能否重訓、比較與回流"
+      ],
+      "weaknesses": [
+        "前期定義不清會讓整批資料失去一致性"
+      ],
+      "failure_modes": [
+        "欄位與 evidence 對不上",
+        "polygon 與 bbox 規則混亂"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 2,
+      "references": [
+        "Google Document schema",
+        "Azure labeling guidance"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "pdfminer",
+      "label": "pdfminer.six",
+      "short_label": "pdfminer.six",
+      "layer": "代表技術",
+      "family": "foundation",
+      "pipeline_stage": "foundation",
+      "parent": "native-pdf",
+      "summary": "PDF 文字層與字元座標",
+      "tags": [
+        "pdfminer"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "原生 PDF 抽字與座標是低成本起點"
+      ],
+      "weaknesses": [
+        "不負責語意段落與閱讀順序重建"
+      ],
+      "failure_modes": [
+        "抽到字卻無法直接形成可用段落"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 3,
+      "references": [
+        "pdfminer.six"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "trocr",
+      "label": "TrOCR",
+      "short_label": "TrOCR",
+      "layer": "代表技術",
+      "family": "recognition",
+      "pipeline_stage": "recognition",
+      "parent": "transformer-ocr",
+      "summary": "Transformer OCR 代表方法",
+      "tags": [
+        "trocr"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "代表 Transformer recognizer 路線"
+      ],
+      "weaknesses": [
+        "仍需搭配穩定切行或切字"
+      ],
+      "failure_modes": [
+        "把 recognizer 當成整頁解析器使用"
+      ],
+      "use_cases": [],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 3,
+      "references": [
+        "TrOCR"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "donut",
+      "label": "Donut",
+      "short_label": "Donut",
+      "layer": "代表技術",
+      "family": "multimodal",
+      "pipeline_stage": "multimodal",
+      "parent": "ocr-free",
+      "summary": "OCR-free 文件理解代表模型",
+      "tags": [
+        "donut"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "代表 OCR-free 端到端文件理解路線"
+      ],
+      "weaknesses": [
+        "可解釋性與 evidence 保留較弱"
+      ],
+      "failure_modes": [
+        "輸出看似合理但難以定位錯誤來源"
+      ],
+      "use_cases": [],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 3,
+      "references": [
+        "Donut"
+      ],
+      "implementation": {
+        "delivery": "research",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "通常超出一般企業 AI 團隊可穩定維護的範圍，較適合研究、PoC 或外部合作。",
+        "tuning_reason": "先用 prompt、query 或 tool routing 驗證需求，穩定後再評估微調。"
+      }
+    },
+    {
+      "id": "layoutlm",
+      "label": "LayoutLM 系列",
+      "short_label": "LayoutLM 系列",
+      "layer": "代表技術",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "layout-aware-models",
+      "summary": "layout-aware 文件模型代表",
+      "tags": [
+        "layoutlm",
+        "layoutlmv3"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "代表 text + layout 聯合建模"
+      ],
+      "weaknesses": [
+        "非常依賴 OCR serialization 與 bbox 品質"
+      ],
+      "failure_modes": [
+        "閱讀順序錯誤時下游 KIE 全面失真"
+      ],
+      "use_cases": [],
+      "maturity": "emerging",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 3,
+      "references": [
+        "LayoutLM",
+        "LayoutLMv3",
+        "BROS"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
+    },
+    {
+      "id": "pubtables",
+      "label": "PubTables / PubTabNet",
+      "short_label": "PubTables / PubTabNet",
+      "layer": "代表技術",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "table-structure",
+      "summary": "表格資料集與指標核心來源",
+      "tags": [
+        "pubtables",
+        "pubtabnet"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "表格任務有明確 detection / structure 資料基礎"
+      ],
+      "weaknesses": [
+        "學術表格到商務表格仍有域差"
+      ],
+      "failure_modes": [
+        "只在論文表格好用，遇到真實報表就失速"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 3,
+      "references": [
+        "PubTables-1M",
+        "PubTabNet",
+        "TEDS"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "已有成熟 API 或開源基座時，企業主工作在整合、驗收、回退與成本控制。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      }
+    },
+    {
+      "id": "docvqa-benchmark",
+      "label": "DocVQA",
+      "short_label": "DocVQA",
+      "layer": "代表技術",
+      "family": "parsing",
+      "pipeline_stage": "parsing",
+      "parent": "document-vqa",
+      "summary": "文件問答 benchmark",
+      "tags": [
+        "docvqa"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "可驗證問題導向抽取與推理能力"
+      ],
+      "weaknesses": [
+        "benchmark 分數不等於可稽核生產能力"
+      ],
+      "failure_modes": [
+        "答對答案但沒有 evidence 仍被誤判為可用"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 3,
+      "references": [
+        "DocVQA"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "omnidocbench",
+      "label": "OmniDocBench",
+      "short_label": "OmniDocBench",
+      "layer": "代表技術",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "e2e-parsing-eval",
+      "summary": "多來源 parsing benchmark",
+      "tags": [
+        "omnidocbench"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "適合做多來源 parsing 路線比較"
+      ],
+      "weaknesses": [
+        "不能只看總分，還要看文件類型切片"
+      ],
+      "failure_modes": [
+        "總分接近但文件型別表現差很大卻沒被看見"
+      ],
+      "use_cases": [],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "depth": 3,
+      "references": [
+        "OmniDocBench"
+      ],
+      "evaluation_metrics": [
+        "multi-level parsing score",
+        "文件類型分層結果"
+      ],
+      "implementation": {
+        "delivery": "integration",
+        "stack": "ops",
+        "adaptation": "none",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      }
+    },
+    {
+      "id": "document-classification",
+      "label": "文件分類",
+      "short_label": "文件分類",
+      "layer": "技能",
+      "family": "foundation",
+      "pipeline_stage": "foundation",
+      "parent": "input-routing",
+      "summary": "先分出文件類型與最佳處理路線",
+      "tags": [
+        "classify",
+        "routing"
+      ],
+      "input": [],
+      "output": [
+        "document-class",
+        "route-decision"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "先分類可減少不必要的 OCR 與複雜模型推理",
+        "可直接綁定 use-case 專屬 schema"
+      ],
+      "weaknesses": [
+        "文件種類交疊時容易誤判"
+      ],
+      "failure_modes": [
+        "把報表丟到收據模型",
+        "把身分證件丟到一般 OCR 路線"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "medical-claims",
+        "identity-documents"
+      ],
+      "evaluation_metrics": [],
+      "references": [
+        "Google Document AI classify processors"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "medium",
+        "build_reason": "這很適合一般企業 AI 團隊自建，因為分類類別和路由通常高度貼近內部文件體系。",
+        "tuning_reason": "這類任務通常是小型分類微調，屬於企業可承受範圍；Azure custom classification 也明確把它做成帶訓練文件的任務。"
+      },
+      "depth": 2
+    },
+    {
+      "id": "form-elements",
+      "label": "表單與非文字元素",
+      "short_label": "表單與非文字元素",
+      "layer": "技能",
+      "family": "structure",
+      "pipeline_stage": "structure",
+      "parent": "structure",
+      "summary": "checkbox、selection mark、簽章、條碼等元素",
+      "tags": [
+        "forms",
+        "selection-marks",
+        "signature",
+        "barcode"
+      ],
+      "input": [],
+      "output": [
+        "marks",
+        "signatures",
+        "codes"
+      ],
+      "dependencies": [],
+      "strengths": [
+        "補齊純文字以外的文件證據"
+      ],
+      "weaknesses": [
+        "不同元素需要不同偵測與驗證規則"
+      ],
+      "failure_modes": [
+        "selection mark 遺漏",
+        "章戳或條碼被當成噪聲"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "identity-documents",
+        "contracts"
+      ],
+      "evaluation_metrics": [],
+      "references": [
+        "Azure Layout",
+        "Textract AnalyzeDocument"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "dl",
+        "adaptation": "finetune",
+        "effort": "high",
+        "build_reason": "checkbox、章戳、勾選框等元素若和內部流程高度綁定，企業可用 YOLO 類方法自行微調。",
+        "tuning_reason": "對企業來說，通常是可控的小中型微調或 domain adaptation，不是從零訓練大模型。"
+      },
+      "depth": 2
+    },
+    {
+      "id": "retrieval-ready-output",
+      "label": "檢索就緒輸出",
+      "short_label": "檢索就緒輸出",
+      "layer": "技能",
+      "family": "parsing",
+      "pipeline_stage": "parsing",
+      "parent": "parsing",
+      "summary": "把解析結果整理成可索引與可追溯片段",
+      "tags": [
+        "retrieval",
+        "json",
+        "markdown"
+      ],
+      "input": [],
+      "output": [
+        "chunks",
+        "anchors",
+        "source-links"
+      ],
+      "dependencies": [
+        "document-parsing",
+        "schema-mapping"
+      ],
+      "strengths": [
+        "讓知識庫與檢索系統吃到更乾淨的結構",
+        "保留來源位置更利於回溯"
+      ],
+      "weaknesses": [
+        "若 chunk 與結構切分錯誤，檢索品質會下降"
+      ],
+      "failure_modes": [
+        "把表格切碎",
+        "段落與欄位邊界錯置"
+      ],
+      "use_cases": [
+        "enterprise-automation",
+        "financial-statements",
+        "contracts"
+      ],
+      "evaluation_metrics": [
+        "檢索覆蓋率",
+        "來源可回溯率"
+      ],
+      "references": [
+        "whitepaper.md retrieval discussion"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "這是資料契約與索引設計問題，自己做比換模型更重要。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      },
+      "depth": 2
+    },
+    {
+      "id": "privacy-compliance",
+      "label": "隱私與合規",
+      "short_label": "隱私與合規",
+      "layer": "技能",
+      "family": "ops",
+      "pipeline_stage": "ops",
+      "parent": "ops",
+      "summary": "處理醫療、金融與個資文件的治理要求",
+      "tags": [
+        "privacy",
+        "compliance"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "把模型能力放進真實法遵邊界內"
+      ],
+      "weaknesses": [
+        "常限制模型與部署選項"
+      ],
+      "failure_modes": [
+        "敏感資料外洩",
+        "審計資訊不足"
+      ],
+      "use_cases": [
+        "medical-claims",
+        "identity-documents",
+        "financial-statements"
+      ],
+      "evaluation_metrics": [],
+      "references": [
+        "compliance review"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "edge",
+        "cloud",
+        "hybrid"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      },
+      "depth": 2
+    },
+    {
+      "id": "throughput-cost",
+      "label": "吞吐、延遲、成本",
+      "short_label": "吞吐、延遲、成本",
+      "layer": "技能",
+      "family": "ops",
+      "pipeline_stage": "ops",
+      "parent": "ops",
+      "summary": "在批次與即時流程間取得平衡",
+      "tags": [
+        "throughput",
+        "latency",
+        "cost"
+      ],
+      "input": [],
+      "output": [],
+      "dependencies": [],
+      "strengths": [
+        "直接決定可否規模化落地"
+      ],
+      "weaknesses": [
+        "常與精度與可驗證性互相拉扯"
+      ],
+      "failure_modes": [
+        "高峰時段排隊過長",
+        "高成本模型被誤用到低價值文件"
+      ],
+      "use_cases": [],
+      "evaluation_metrics": [],
+      "references": [
+        "operations budgeting"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "edge",
+        "cloud",
+        "hybrid"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "medium",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      },
+      "depth": 2
+    },
+    {
+      "id": "docvqa-metrics",
+      "label": "DocVQA 指標",
+      "short_label": "DocVQA 指標",
+      "layer": "技能",
+      "family": "evaluation",
+      "pipeline_stage": "evaluation",
+      "parent": "evaluation-data",
+      "summary": "accuracy、ANLS 等問答式評測",
+      "tags": [
+        "docvqa-metrics",
+        "anls"
+      ],
+      "input": [],
+      "output": [
+        "docvqa-report"
+      ],
+      "dependencies": [
+        "document-vqa"
+      ],
+      "strengths": [
+        "反映問題導向抽取與推理品質"
+      ],
+      "weaknesses": [
+        "不一定能反映 evidence 與稽核需求"
+      ],
+      "failure_modes": [
+        "答對文字但沒抓到來源位置"
+      ],
+      "use_cases": [],
+      "evaluation_metrics": [
+        "accuracy",
+        "ANLS"
+      ],
+      "references": [
+        "DocVQA"
+      ],
+      "maturity": "production",
+      "deployment_mode": [
+        "hybrid"
+      ],
+      "implementation": {
+        "delivery": "self-build",
+        "stack": "ops",
+        "adaptation": "domain-data",
+        "effort": "low",
+        "build_reason": "以一般金融企業能力來看，可自建的通常是流程、規則、資料契約，或基於現成模型做輕量微調。",
+        "tuning_reason": "未必需要重新訓練，但需要域內樣本、錯誤切片與校正規則。"
+      },
+      "depth": 2
+    }
+  ],
+  "edges": [
+    {
+      "id": "h-63",
+      "source": "evaluation-data",
+      "target": "docvqa-metrics",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-62",
+      "source": "ops",
+      "target": "throughput-cost",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-61",
+      "source": "ops",
+      "target": "privacy-compliance",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-60",
+      "source": "parsing",
+      "target": "retrieval-ready-output",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-59",
+      "source": "structure",
+      "target": "form-elements",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-58",
+      "source": "input-routing",
+      "target": "document-classification",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-57",
+      "source": "e2e-parsing-eval",
+      "target": "omnidocbench",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-56",
+      "source": "document-vqa",
+      "target": "docvqa-benchmark",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-55",
+      "source": "table-structure",
+      "target": "pubtables",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-54",
+      "source": "layout-aware-models",
+      "target": "layoutlm",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-53",
+      "source": "ocr-free",
+      "target": "donut",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-52",
+      "source": "transformer-ocr",
+      "target": "trocr",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-51",
+      "source": "native-pdf",
+      "target": "pdfminer",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-50",
+      "source": "evaluation-data",
+      "target": "labeling-spec",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-49",
+      "source": "evaluation-data",
+      "target": "datasets-benchmarks",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-48",
+      "source": "evaluation-data",
+      "target": "e2e-parsing-eval",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-47",
+      "source": "evaluation-data",
+      "target": "kie-metrics",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-46",
+      "source": "evaluation-data",
+      "target": "table-metrics",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-45",
+      "source": "evaluation-data",
+      "target": "layout-metrics",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-44",
+      "source": "evaluation-data",
+      "target": "ocr-metrics",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-43",
+      "source": "ops",
+      "target": "human-review",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-42",
+      "source": "ops",
+      "target": "observability",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-41",
+      "source": "ops",
+      "target": "cloud-managed",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-40",
+      "source": "ops",
+      "target": "edge-onprem",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-39",
+      "source": "multimodal",
+      "target": "agentic-ocr",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-38",
+      "source": "multimodal",
+      "target": "layout-aware-llm",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-37",
+      "source": "multimodal",
+      "target": "vlm-ocr-fusion",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-36",
+      "source": "multimodal",
+      "target": "ocr-free",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-35",
+      "source": "multimodal",
+      "target": "ocr-first-pipeline",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-34",
+      "source": "parsing",
+      "target": "schema-mapping",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-33",
+      "source": "parsing",
+      "target": "query-extraction",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-32",
+      "source": "parsing",
+      "target": "document-vqa",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-31",
+      "source": "parsing",
+      "target": "document-parsing",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-30",
+      "source": "structure",
+      "target": "layout-aware-models",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-29",
+      "source": "structure",
+      "target": "key-value-extraction",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-28",
+      "source": "structure",
+      "target": "table-structure",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-27",
+      "source": "structure",
+      "target": "table-detection",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-26",
+      "source": "structure",
+      "target": "reading-order",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-25",
+      "source": "structure",
+      "target": "layout-segmentation",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-24",
+      "source": "recognition",
+      "target": "edge-ocr",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-23",
+      "source": "recognition",
+      "target": "cloud-ocr",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-22",
+      "source": "recognition",
+      "target": "scene-text",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-21",
+      "source": "recognition",
+      "target": "handwriting-htr",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-20",
+      "source": "recognition",
+      "target": "transformer-ocr",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-19",
+      "source": "recognition",
+      "target": "deep-ocr",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-18",
+      "source": "recognition",
+      "target": "printed-ocr",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-17",
+      "source": "preprocessing",
+      "target": "roi-detection",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-16",
+      "source": "preprocessing",
+      "target": "image-enhancement",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-15",
+      "source": "preprocessing",
+      "target": "deskew-dewarp",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-14",
+      "source": "preprocessing",
+      "target": "quality-gate",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-13",
+      "source": "input-routing",
+      "target": "multilingual-doc",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-12",
+      "source": "input-routing",
+      "target": "camera-doc",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-11",
+      "source": "input-routing",
+      "target": "scanned-pdf",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-10",
+      "source": "input-routing",
+      "target": "native-pdf",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-9",
+      "source": "docai-skill-tree",
+      "target": "evaluation-data",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-8",
+      "source": "docai-skill-tree",
+      "target": "ops",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-7",
+      "source": "docai-skill-tree",
+      "target": "multimodal",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-6",
+      "source": "docai-skill-tree",
+      "target": "parsing",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-5",
+      "source": "docai-skill-tree",
+      "target": "structure",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-4",
+      "source": "docai-skill-tree",
+      "target": "recognition",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-3",
+      "source": "docai-skill-tree",
+      "target": "preprocessing",
+      "type": "hierarchy"
+    },
+    {
+      "id": "h-2",
+      "source": "docai-skill-tree",
+      "target": "input-routing",
+      "type": "hierarchy"
+    },
+    {
+      "id": "x-1",
+      "source": "native-pdf",
+      "target": "printed-ocr",
+      "type": "supports"
+    },
+    {
+      "id": "x-2",
+      "source": "scanned-pdf",
+      "target": "quality-gate",
+      "type": "dependency"
+    },
+    {
+      "id": "x-3",
+      "source": "camera-doc",
+      "target": "quality-gate",
+      "type": "dependency"
+    },
+    {
+      "id": "x-4",
+      "source": "quality-gate",
+      "target": "deskew-dewarp",
+      "type": "dependency"
+    },
+    {
+      "id": "x-5",
+      "source": "deskew-dewarp",
+      "target": "printed-ocr",
+      "type": "dependency"
+    },
+    {
+      "id": "x-6",
+      "source": "image-enhancement",
+      "target": "printed-ocr",
+      "type": "supports"
+    },
+    {
+      "id": "x-7",
+      "source": "roi-detection",
+      "target": "handwriting-htr",
+      "type": "dependency"
+    },
+    {
+      "id": "x-8",
+      "source": "printed-ocr",
+      "target": "layout-segmentation",
+      "type": "dependency"
+    },
+    {
+      "id": "x-9",
+      "source": "layout-segmentation",
+      "target": "reading-order",
+      "type": "dependency"
+    },
+    {
+      "id": "x-10",
+      "source": "layout-segmentation",
+      "target": "table-detection",
+      "type": "dependency"
+    },
+    {
+      "id": "x-11",
+      "source": "table-detection",
+      "target": "table-structure",
+      "type": "dependency"
+    },
+    {
+      "id": "x-12",
+      "source": "reading-order",
+      "target": "document-parsing",
+      "type": "dependency"
+    },
+    {
+      "id": "x-13",
+      "source": "key-value-extraction",
+      "target": "query-extraction",
+      "type": "supports"
+    },
+    {
+      "id": "x-14",
+      "source": "document-parsing",
+      "target": "schema-mapping",
+      "type": "supports"
+    },
+    {
+      "id": "x-15",
+      "source": "document-parsing",
+      "target": "layout-aware-llm",
+      "type": "supports"
+    },
+    {
+      "id": "x-16",
+      "source": "ocr-first-pipeline",
+      "target": "human-review",
+      "type": "supports"
+    },
+    {
+      "id": "x-17",
+      "source": "observability",
+      "target": "human-review",
+      "type": "dependency"
+    },
+    {
+      "id": "x-18",
+      "source": "ocr-metrics",
+      "target": "observability",
+      "type": "supports"
+    },
+    {
+      "id": "x-19",
+      "source": "layout-metrics",
+      "target": "observability",
+      "type": "supports"
+    },
+    {
+      "id": "x-20",
+      "source": "table-metrics",
+      "target": "observability",
+      "type": "supports"
+    },
+    {
+      "id": "x-21",
+      "source": "kie-metrics",
+      "target": "observability",
+      "type": "supports"
+    },
+    {
+      "id": "x-78",
+      "source": "document-classification",
+      "target": "native-pdf",
+      "type": "supports"
+    },
+    {
+      "id": "x-79",
+      "source": "document-classification",
+      "target": "scanned-pdf",
+      "type": "supports"
+    },
+    {
+      "id": "x-80",
+      "source": "layout-segmentation",
+      "target": "form-elements",
+      "type": "supports"
+    },
+    {
+      "id": "x-81",
+      "source": "document-parsing",
+      "target": "retrieval-ready-output",
+      "type": "supports"
+    },
+    {
+      "id": "x-82",
+      "source": "privacy-compliance",
+      "target": "edge-onprem",
+      "type": "supports"
+    },
+    {
+      "id": "x-83",
+      "source": "throughput-cost",
+      "target": "cloud-managed",
+      "type": "supports"
+    },
+    {
+      "id": "x-84",
+      "source": "docvqa-metrics",
+      "target": "observability",
+      "type": "supports"
+    }
+  ],
+  "highlight_presets": [
+    {
+      "id": "preset-ocr-chain",
+      "label": "OCR 基礎鏈",
+      "description": "輸入分流、前處理、OCR 與 reading order 基礎鏈",
+      "focus": {
+        "nodes": [
+          "input-routing",
+          "scanned-pdf",
+          "camera-doc",
+          "preprocessing",
+          "quality-gate",
+          "deskew-dewarp",
+          "image-enhancement",
+          "roi-detection",
+          "recognition",
+          "printed-ocr",
+          "deep-ocr",
+          "structure",
+          "layout-segmentation",
+          "reading-order"
+        ]
+      },
+      "dim_others": true
+    },
+    {
+      "id": "preset-table-parsing",
+      "label": "表格解析",
+      "description": "表格偵測、結構、TEDS 與 benchmark",
+      "focus": {
+        "nodes": [
+          "structure",
+          "layout-segmentation",
+          "table-detection",
+          "table-structure",
+          "pubtables",
+          "table-metrics",
+          "datasets-benchmarks"
+        ]
+      },
+      "dim_others": true
+    },
+    {
+      "id": "preset-kie-forms",
+      "label": "欄位抽取",
+      "description": "KIE、表單元素、Schema 與 query-based extraction",
+      "focus": {
+        "nodes": [
+          "structure",
+          "key-value-extraction",
+          "layout-aware-models",
+          "layoutlm",
+          "parsing",
+          "query-extraction",
+          "schema-mapping",
+          "kie-metrics",
+          "form-elements"
+        ]
+      },
+      "dim_others": true
+    },
+    {
+      "id": "preset-medical-claims",
+      "label": "醫療理賠",
+      "description": "手寫、欄位、覆核與地端部署",
+      "focus": {
+        "nodes": [
+          "camera-doc",
+          "multilingual-doc",
+          "quality-gate",
+          "roi-detection",
+          "handwriting-htr",
+          "key-value-extraction",
+          "query-extraction",
+          "human-review",
+          "edge-onprem",
+          "privacy-compliance"
+        ]
+      },
+      "dim_others": true
+    },
+    {
+      "id": "preset-multimodal-parsing",
+      "label": "多模態解析",
+      "description": "document parsing、OCR-free、VLM、Layout-aware LLM 與端到端評測",
+      "focus": {
+        "nodes": [
+          "parsing",
+          "document-parsing",
+          "document-vqa",
+          "multimodal",
+          "ocr-first-pipeline",
+          "ocr-free",
+          "donut",
+          "vlm-ocr-fusion",
+          "layout-aware-llm",
+          "agentic-ocr",
+          "e2e-parsing-eval",
+          "omnidocbench",
+          "retrieval-ready-output",
+          "docvqa-metrics"
+        ]
+      },
+      "dim_others": true
+    }
+  ],
+  "technique_cards": {
+    "native-pdf": {
+      "definition": "原生 PDF 文字層解析",
+      "mechanism": "直接取字元、文字塊、座標",
+      "evaluation_metrics": [
+        "抽字正確率",
+        "閱讀順序"
+      ]
+    },
+    "quality-gate": {
+      "definition": "文件品質與分流",
+      "mechanism": "判斷 blur、反光、截切、旋轉",
+      "evaluation_metrics": [
+        "quality recall",
+        "低誤殺率"
+      ]
+    },
+    "printed-ocr": {
+      "definition": "印刷文字辨識",
+      "mechanism": "輸出文字、bbox、confidence",
+      "evaluation_metrics": [
+        "CER",
+        "WER",
+        "欄位命中"
+      ]
+    },
+    "handwriting-htr": {
+      "definition": "手寫文字辨識與文件級切行問題",
+      "mechanism": "結合切行、ROI、語言模型與序列辨識處理連筆與潦草字",
+      "evaluation_metrics": [
+        "CER",
+        "WER",
+        "手寫欄位命中"
+      ],
+      "engineering_notes": [
+        "line-level 與 document-level HTR 要分開看",
+        "若切行不穩，辨識器再強也會失真"
+      ]
+    },
+    "layout-segmentation": {
+      "definition": "版面區塊切分",
+      "mechanism": "輸出 block、class、role",
+      "evaluation_metrics": [
+        "mAP",
+        "區塊正確率"
+      ]
+    },
+    "reading-order": {
+      "definition": "閱讀順序排序",
+      "mechanism": "把 block 與文字串成正確閱讀流",
+      "evaluation_metrics": [
+        "order accuracy"
+      ]
+    },
+    "table-structure": {
+      "definition": "表格轉 cell grid / HTML 的結構辨識",
+      "mechanism": "先找表格區，再推 row、col、cell 與 rowspan/colspan 關係",
+      "evaluation_metrics": [
+        "TEDS",
+        "table mAP"
+      ],
+      "engineering_notes": [
+        "表格 detection 與 structure 要分開驗收",
+        "商務文件表格域轉移要另外測"
+      ]
+    },
+    "key-value-extraction": {
+      "definition": "欄位與實體擷取",
+      "mechanism": "結合文字、座標、版面做 KIE",
+      "evaluation_metrics": [
+        "entity F1",
+        "欄位 exact match"
+      ]
+    },
+    "document-parsing": {
+      "definition": "文件轉 JSON / Markdown / HTML",
+      "mechanism": "整合 OCR、表格、版面輸出",
+      "evaluation_metrics": [
+        "結構完整度",
+        "段落保真度"
+      ]
+    },
+    "query-extraction": {
+      "definition": "問題導向欄位擷取",
+      "mechanism": "針對少量欄位做 query-based extraction",
+      "evaluation_metrics": [
+        "answer coverage",
+        "field exact match"
+      ]
+    },
+    "ocr-free": {
+      "definition": "OCR-free 文件理解",
+      "mechanism": "影像直出結構化結果",
+      "evaluation_metrics": [
+        "field F1",
+        "evidence coverage"
+      ]
+    },
+    "layout-aware-llm": {
+      "definition": "讓 LLM 使用 OCR tokens、bbox 與 layout roles 進行抽取與推理",
+      "mechanism": "把文字與空間訊號整理成提示或結構輸入，提升多區塊推理能力",
+      "evaluation_metrics": [
+        "field F1",
+        "推理穩定度"
+      ],
+      "engineering_notes": [
+        "要嚴格控制 hallucination 與 token budget",
+        "最好保留來源位置，避免生成不可追溯結論"
+      ]
+    },
+    "deployment-governance": {
+      "definition": "部署與治理",
+      "mechanism": "設定 edge / cloud、fallback、人工覆核",
+      "evaluation_metrics": [
+        "SLA",
+        "覆核率",
+        "失敗分流率"
+      ]
+    },
+    "datasets-benchmarks": {
+      "definition": "資料集與 benchmark 盤點",
+      "mechanism": "對應 layout、table、KIE、VQA、parsing 評測",
+      "evaluation_metrics": [
+        "benchmark coverage"
+      ]
+    },
+    "document-vqa": {
+      "definition": "以問題驅動文件抽取與推理",
+      "mechanism": "輸入文件與 query，輸出答案並盡量保留 evidence",
+      "evaluation_metrics": [
+        "accuracy",
+        "ANLS"
+      ],
+      "engineering_notes": [
+        "適合欄位少、版型多的情境",
+        "若無 evidence，答對也不等於可稽核"
+      ]
+    },
+    "omnidocbench": {
+      "definition": "多來源 document parsing benchmark",
+      "mechanism": "同時比較 pipeline-based 與 end-to-end 路線，並用多層級框架評估",
+      "evaluation_metrics": [
+        "multi-level parsing score",
+        "文件類型分層結果"
+      ],
+      "engineering_notes": [
+        "適合做整體 parsing 路線比較",
+        "不能只看總分，還要看文件類型切片"
+      ]
+    },
+    "document-classification": {
+      "definition": "先辨識文件類型，再決定最合適的解析管線",
+      "mechanism": "用文件類別或版型訊號做 routing，決定 Native PDF、OCR、KIE 或場景 processor",
+      "evaluation_metrics": [
+        "route accuracy",
+        "誤分流率"
+      ],
+      "engineering_notes": [
+        "分類錯誤會把整條處理鏈帶歪",
+        "應和 use-case schema 一起驗收，不要只看分類準確率"
+      ]
+    },
+    "form-elements": {
+      "definition": "表單中的 checkbox、selection mark、簽章與條碼等非純文字元素",
+      "mechanism": "先偵測元素位置，再做有無、狀態與對應欄位判讀",
+      "evaluation_metrics": [
+        "element recall",
+        "selection mark accuracy"
+      ],
+      "engineering_notes": [
+        "非文字元素必須保留幾何位置，否則難以對回欄位",
+        "和 KIE 一起驗收比單獨看 detection 更有意義"
+      ]
+    },
+    "retrieval-ready-output": {
+      "definition": "把 parsing 結果整理成可索引、可引用、可回溯的片段",
+      "mechanism": "輸出 chunk、anchor、來源位置與結構關係，供檢索與下游推理使用",
+      "evaluation_metrics": [
+        "檢索覆蓋率",
+        "來源可回溯率"
+      ],
+      "engineering_notes": [
+        "這是解析之後的輸出設計，不是主技能樹主幹",
+        "若 chunk 切錯，後續檢索與回答品質會一起下降"
+      ]
+    },
+    "docvqa-metrics": {
+      "definition": "Document VQA 的問題導向評測",
+      "mechanism": "依題型測 accuracy、ANLS，並另看 evidence 與問題分層表現",
+      "evaluation_metrics": [
+        "accuracy",
+        "ANLS"
+      ],
+      "engineering_notes": [
+        "查字題與結構推理題要分開驗收",
+        "只看最終答案分數會掩蓋 evidence 問題"
+      ]
+    },
+    "table-detection": {
+      "definition": "先找出表格區域，再交給後續結構辨識",
+      "mechanism": "在頁面層輸出 table bbox 或 polygon，供後續 TSR 使用",
+      "evaluation_metrics": [
+        "table mAP"
+      ],
+      "engineering_notes": [
+        "table detection 與 table structure 必須拆開驗收",
+        "多表格頁面與旋轉表格要另外切 slice 檢查"
+      ]
+    }
+  }
+};
+</script>
+  <script>
+const data = window.DOCAI_SKILL_TREE_DATA;
+const CARD_WIDTH = 232;
+const CARD_HEIGHT = 116;
+const nodes = new Map(data.nodes.map((node) => [node.id, node]));
+const children = new Map();
+data.nodes.forEach((node) => {
+  if (!node.parent) return;
+  if (!children.has(node.parent)) children.set(node.parent, []);
+  children.get(node.parent).push(node.id);
+});
+
+const taxonomy = data.metadata.taxonomy || {};
+const familyLabel = (id) => taxonomy.families?.[id] || id;
+const tagLabel = (id) => taxonomy.tags?.[id] || id;
+const useCaseLabel = (id) => taxonomy.use_cases?.[id] || id;
+const modeLabel = (id) => taxonomy.view_modes?.[id] || id;
+const implementationLabels = taxonomy.implementation || {};
+const implementationLabel = (group, id) => implementationLabels?.[group]?.[id] || id;
+const workbenchViews = data.metadata.workbench_views || [
+  { id: "tree", label: "技能樹", description: "完整能力主幹與相鄰關聯", focus_nodes: [data.metadata.root_id] },
+  { id: "evaluation", label: "評測地圖", description: "從指標、benchmark 與 observability 反看系統品質", focus_nodes: ["evaluation-data"] },
+  { id: "scenario", label: "場景架構", description: "依應用場景讀取處理鏈、風險與治理", default_use_case: "medical-claims", focus_nodes: ["input-routing", "preprocessing", "recognition", "structure", "parsing", "ops"] }
+];
+
+const defaultSelected = data.metadata.default_selected_id || (children.get(data.metadata.root_id) || [])[0] || data.metadata.root_id;
+const state = {
+  selected: defaultSelected,
+  search: "",
+  mode: "selected",
+  layer: "",
+  family: "",
+  tag: "",
+  useCase: "",
+  preset: "",
+  workspaceView: workbenchViews[0]?.id || "tree"
+};
+
+const q = (id) => document.getElementById(id);
+const stage = q("graphStage");
+const nodeLayer = q("graphNodes");
+const edgeLayer = q("graphEdges");
+const layers = data.metadata.layer_order || [];
+const families = [...new Set(data.nodes.map((node) => node.family))].filter(Boolean).sort((a, b) => familyLabel(a).localeCompare(familyLabel(b), "zh-Hant"));
+const tags = [...new Set(data.nodes.flatMap((node) => node.tags || []))].filter(Boolean).sort((a, b) => tagLabel(a).localeCompare(tagLabel(b), "zh-Hant"));
+const useCases = [...new Set(data.nodes.flatMap((node) => node.use_cases || []))].filter(Boolean).sort((a, b) => useCaseLabel(a).localeCompare(useCaseLabel(b), "zh-Hant"));
+
+const fillSelect = (id, allLabel, values, labeler = (value) => value) => {
+  q(id).innerHTML = `<option value="">全部${allLabel}</option>${values.map((value) => `<option value="${value}">${labeler(value)}</option>`).join("")}`;
+};
+
+q("modeSelect").innerHTML = [
+  ["selected", modeLabel("selected")],
+  ["subtree", modeLabel("subtree")],
+  ["family", modeLabel("family")],
+  ["layer", modeLabel("layer")],
+  ["tag", modeLabel("tag")],
+  ["use_case", modeLabel("use_case")],
+  ["preset", modeLabel("preset")]
+].map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+fillSelect("layerSelect", "層級", layers);
+fillSelect("familySelect", "技術家族", families, familyLabel);
+fillSelect("tagSelect", "技術標記", tags, tagLabel);
+fillSelect("useCaseSelect", "應用場景", useCases, useCaseLabel);
+q("modeSelect").value = state.mode;
+
+const presetStrip = q("presetStrip");
+data.highlight_presets.forEach((preset) => {
+  const button = document.createElement("button");
+  button.className = "preset-button";
+  button.dataset.id = preset.id;
+  button.title = preset.description;
+  button.textContent = preset.label;
+  button.addEventListener("click", () => {
+    state.mode = "preset";
+    state.preset = preset.id;
+    q("modeSelect").value = "preset";
+    render();
+  });
+  presetStrip.appendChild(button);
+});
+
+const viewTabs = q("viewTabs");
+workbenchViews.forEach((view) => {
+  const button = document.createElement("button");
+  button.className = "view-tab";
+  button.dataset.id = view.id;
+  button.innerHTML = `<strong>${view.label}</strong><span>${view.description}</span>`;
+  button.addEventListener("click", () => {
+    state.workspaceView = view.id;
+    if (view.id === "scenario" && !state.useCase && view.default_use_case) {
+      state.useCase = view.default_use_case;
+      q("useCaseSelect").value = state.useCase;
+    }
+    render();
+  });
+  viewTabs.appendChild(button);
+});
+
+const currentView = () => workbenchViews.find((view) => view.id === state.workspaceView) || workbenchViews[0];
+const ancestors = (id) => {
+  const result = [];
+  let current = nodes.get(id);
+  while (current && current.parent) {
+    result.push(current.parent);
+    current = nodes.get(current.parent);
+  }
+  return result;
+};
+const descendants = (id) => {
+  const found = new Set([id]);
+  (children.get(id) || []).forEach((child) => descendants(child).forEach((value) => found.add(value)));
+  return found;
+};
+const directDependents = (id) => data.nodes.filter((node) => (node.dependencies || []).includes(id)).map((node) => node.id);
+const presetMatches = (preset) => new Set(preset.focus.nodes || []);
+const inflateIds = (seedIds) => {
+  const set = new Set(seedIds.filter(Boolean));
+  seedIds.forEach((id) => {
+    if (!nodes.has(id)) return;
+    set.add(id);
+    ancestors(id).forEach((value) => set.add(value));
+    (nodes.get(id).dependencies || []).forEach((value) => set.add(value));
+    directDependents(id).forEach((value) => set.add(value));
+    (children.get(id) || []).forEach((value) => set.add(value));
+  });
+  set.add(data.metadata.root_id);
+  return set;
+};
+const currentScenario = () => {
+  const view = currentView();
+  const targetUseCase = state.useCase || view.default_use_case || (nodes.get(state.selected)?.use_cases || [])[0];
+  return (view.scenarios || []).find((scenario) => scenario.use_case === targetUseCase) || null;
+};
+const evaluationViewIds = () => {
+  const view = currentView();
+  const seeds = [
+    ...(view.focus_nodes || []),
+    ...(view.metric_nodes || []),
+    ...(view.benchmark_nodes || []),
+    ...(view.support_nodes || [])
+  ];
+  return inflateIds(seeds);
+};
+const scenarioViewIds = () => {
+  const view = currentView();
+  const scenario = currentScenario();
+  const seeds = [data.metadata.root_id, ...(view.focus_nodes || []), ...(scenario?.route_nodes || []), ...(scenario?.governance_nodes || [])];
+  const targetUseCase = scenario?.use_case || state.useCase || view.default_use_case;
+  if (targetUseCase) {
+    data.nodes.filter((node) => (node.use_cases || []).includes(targetUseCase)).forEach((node) => seeds.push(node.id));
+  }
+  return inflateIds(seeds);
+};
+const viewNodeSet = () => {
+  if (state.workspaceView === "evaluation") return evaluationViewIds();
+  if (state.workspaceView === "scenario") return scenarioViewIds();
+  return null;
+};
+const searchHaystack = (node) => [
+  node.label,
+  node.summary,
+  familyLabel(node.family),
+  implementationLabel("delivery", node.implementation?.delivery),
+  implementationLabel("stack", node.implementation?.stack),
+  implementationLabel("adaptation", node.implementation?.adaptation),
+  implementationLabel("effort", node.implementation?.effort),
+  node.implementation?.build_reason,
+  node.implementation?.tuning_reason,
+  ...(node.tags || []).map(tagLabel),
+  ...(node.use_cases || []).map(useCaseLabel),
+  ...(node.strengths || []),
+  ...(node.weaknesses || []),
+  ...(node.failure_modes || []),
+  ...(node.references || [])
+].join(" ").toLowerCase();
+
+const visibleNodes = () => {
+  const viewSet = viewNodeSet();
+  return data.nodes.filter((node) => {
+    if (viewSet && !viewSet.has(node.id)) return false;
+    if (state.search && !searchHaystack(node).includes(state.search)) return false;
+    if (state.layer && node.layer !== state.layer) return false;
+    if (state.family && node.family !== state.family) return false;
+    if (state.tag && !(node.tags || []).includes(state.tag)) return false;
+    if (state.useCase && !(node.use_cases || []).includes(state.useCase) && state.workspaceView !== "scenario") return false;
+    return true;
+  });
+};
+
+const activeSet = () => {
+  const node = nodes.get(state.selected);
+  if (!node) return new Set();
+  if (node.id === data.metadata.root_id && state.mode === "selected") return new Set([node.id]);
+  if (state.mode === "subtree") {
+    const set = descendants(node.id);
+    ancestors(node.id).forEach((id) => set.add(id));
+    return set;
+  }
+  if (state.mode === "family") return new Set(data.nodes.filter((item) => item.family === node.family).map((item) => item.id));
+  if (state.mode === "layer") return new Set(data.nodes.filter((item) => item.layer === node.layer).map((item) => item.id));
+  if (state.mode === "tag") {
+    const target = state.tag || (node.tags || [])[0];
+    return new Set(data.nodes.filter((item) => (item.tags || []).includes(target)).map((item) => item.id));
+  }
+  if (state.mode === "use_case") {
+    const target = state.useCase || (node.use_cases || [])[0];
+    return new Set(data.nodes.filter((item) => (item.use_cases || []).includes(target)).map((item) => item.id));
+  }
+  if (state.mode === "preset" && state.preset) {
+    const preset = data.highlight_presets.find((item) => item.id === state.preset);
+    return preset ? presetMatches(preset) : new Set([node.id]);
+  }
+  const set = new Set([node.id]);
+  ancestors(node.id).forEach((id) => set.add(id));
+  (children.get(node.id) || []).forEach((id) => set.add(id));
+  (node.dependencies || []).forEach((id) => set.add(id));
+  directDependents(node.id).forEach((id) => set.add(id));
+  return set;
+};
+
+const badgeRow = (id, values, mapper = (value) => value, fallback = "未填") => {
+  q(id).innerHTML = (values && values.length ? values : [fallback]).map((value) => `<span class="badge">${mapper(value)}</span>`).join("");
+};
+const implementationMarks = (node, prefix = "mark") => {
+  const impl = node.implementation || {};
+  const marks = [
+    ["delivery", impl.delivery],
+    ["stack", impl.stack],
+    ["adaptation", impl.adaptation]
+  ].filter(([, value]) => value);
+  return marks.map(([group, value]) => `<span class="${prefix} ${prefix}-${group}-${value}">${implementationLabel(group, value)}</span>`).join("");
+};
+const listBlock = (id, values, fallback = "未填") => {
+  q(id).innerHTML = (values && values.length ? values : [fallback]).slice(0, 6).map((value) => `<li>${value}</li>`).join("");
+};
+
+const viewHeroText = (view, selected) => {
+  if (view.id === "evaluation") return `以指標節點、benchmark 與支撐能力檢查 ${selected.label} 的驗收位置。`;
+  if (view.id === "scenario") {
+    const scenario = currentScenario();
+    const label = scenario?.label || useCaseLabel(state.useCase || view.default_use_case || "medical-claims");
+    return `以 ${label} 的處理鏈、治理節點與常見風險來閱讀 ${selected.label}。`;
+  }
+  return `${selected.layer} · ${familyLabel(selected.family)} · ${selected.summary}`;
+};
+
+const renderSummary = (visible, active) => {
+  const selected = nodes.get(state.selected);
+  const view = currentView();
+  q("summaryStats").innerHTML = [
+    ["節點", data.nodes.length],
+    ["可見", visible.length],
+    ["聚焦", active.size || 1],
+    ["主幹", (children.get(data.metadata.root_id) || []).length]
+  ].map(([label, value]) => `<div class="stat-box"><strong>${value}</strong><span>${label}</span></div>`).join("");
+  q("heroTitle").textContent = `${view.label} · ${selected.label}`;
+  q("heroText").textContent = viewHeroText(view, selected);
+  const scenario = view.id === "scenario" ? currentScenario() : null;
+  q("heroPills").innerHTML = [
+    `工作視圖 ${view.label}`,
+    view.id === "evaluation" ? `評測節點 ${(view.metric_nodes || []).length}` : `技術家族 ${familyLabel(selected.family)}`,
+    view.id === "scenario" ? `場景 ${scenario?.label || useCaseLabel(state.useCase || view.default_use_case || "medical-claims")}` : `指標 ${(selected.evaluation_metrics || []).length}`,
+    `場景 ${(selected.use_cases || []).length}`
+  ].map((text) => `<span class="badge">${text}</span>`).join("");
+  q("mapEyebrow").textContent = view.label;
+  q("mapTitle").textContent = view.id === "evaluation" ? "評測地圖" : view.id === "scenario" ? "場景架構" : "技能樹地圖";
+};
+
+const renderDetail = () => {
+  const node = nodes.get(state.selected);
+  const card = data.technique_cards?.[node.id] || {};
+  badgeRow("detailTags", node.tags, tagLabel, "尚未標記");
+  q("detailMarks").innerHTML = implementationMarks(node);
+  badgeRow("detailInput", node.input, (value) => value);
+  badgeRow("detailOutput", node.output, (value) => value);
+  badgeRow("detailDependencies", (node.dependencies || []).map((id) => nodes.get(id)?.label || id), (value) => value);
+  badgeRow("detailUseCases", node.use_cases, useCaseLabel, "未指定");
+  badgeRow("detailMetrics", [...new Set([...(node.evaluation_metrics || []), ...(card.evaluation_metrics || [])])], (value) => value, "未定義");
+  badgeRow("detailReferences", node.references || [], (value) => value, "共享資料");
+  listBlock("detailStrengths", node.strengths, "待補");
+  listBlock("detailWeaknesses", node.weaknesses, "待補");
+  listBlock("detailFailureModes", node.failure_modes, "待補");
+  listBlock("detailNotes", card.engineering_notes, "待補");
+  listBlock("detailImplementation", [
+    `開發模式：${implementationLabel("delivery", node.implementation?.delivery) || "未定義"} · 難度 ${implementationLabel("effort", node.implementation?.effort) || "未定義"}`,
+    `技術型態：${implementationLabel("stack", node.implementation?.stack) || "未定義"}`,
+    `調整需求：${implementationLabel("adaptation", node.implementation?.adaptation) || "未定義"}`,
+    node.implementation?.build_reason || "待補自建 / 整合判斷",
+    node.implementation?.tuning_reason || "待補微調判斷"
+  ], "待補");
+  badgeRow("detailAxes", node.id === data.metadata.root_id ? (data.metadata.whitepaper_axes || []).map((axis) => axis.label) : [familyLabel(node.family), node.layer], (value) => value, "未定義");
+  q("detailTitle").textContent = node.label;
+  q("detailSummary").textContent = node.summary;
+  q("detailDefinition").textContent = card.definition || "";
+  q("detailMechanism").textContent = card.mechanism || "";
+};
+
+const buildVisibleChildren = (visibleIds) => {
+  const visibleChildren = new Map();
+  visibleIds.forEach((id) => visibleChildren.set(id, []));
+  data.nodes.forEach((node) => {
+    if (!node.parent) return;
+    if (!visibleIds.has(node.id) || !visibleIds.has(node.parent)) return;
+    visibleChildren.get(node.parent).push(node.id);
+  });
+  visibleChildren.forEach((list) => list.sort((a, b) => nodes.get(a).label.localeCompare(nodes.get(b).label, "zh-Hant")));
+  return visibleChildren;
+};
+
+const computeTreeLayout = (rootId, visibleChildren) => {
+  const leafGap = 144;
+  const levelGap = 300;
+  const topPad = 56;
+  const leftPad = 72;
+  const positions = new Map();
+  let cursor = 0;
+  let maxDepth = 0;
+
+  const walk = (id, depth) => {
+    maxDepth = Math.max(maxDepth, depth);
+    const kids = visibleChildren.get(id) || [];
+    if (!kids.length) {
+      const y = topPad + cursor * leafGap;
+      cursor += 1;
+      positions.set(id, { x: leftPad + depth * levelGap, y, depth });
+      return y;
+    }
+    const childYs = kids.map((child) => walk(child, depth + 1));
+    const y = (childYs[0] + childYs[childYs.length - 1]) / 2;
+    positions.set(id, { x: leftPad + depth * levelGap, y, depth });
+    return y;
+  };
+
+  walk(rootId, 0);
+  return {
+    positions,
+    width: leftPad + (maxDepth + 1) * levelGap + 320,
+    height: Math.max(860, topPad + Math.max(cursor, 1) * leafGap + 64)
+  };
+};
+
+const renderGraph = (visible) => {
+  const visibleIds = new Set(visible.map((node) => node.id));
+  if (!visible.length) {
+    nodeLayer.innerHTML = `<div class="empty-state">目前條件下沒有可顯示節點。</div>`;
+    edgeLayer.innerHTML = "";
+    q("graphHint").textContent = "目前條件下沒有符合節點";
+    return new Set();
+  }
+  if (!visibleIds.has(state.selected)) state.selected = visible[0]?.id || defaultSelected;
+  const active = activeSet();
+  const visibleChildren = buildVisibleChildren(visibleIds);
+  const layout = computeTreeLayout(data.metadata.root_id, visibleChildren);
+  stage.style.minHeight = `${layout.height}px`;
+  edgeLayer.setAttribute("viewBox", `0 0 ${layout.width} ${layout.height}`);
+  edgeLayer.setAttribute("width", layout.width);
+  edgeLayer.setAttribute("height", layout.height);
+  nodeLayer.style.width = `${layout.width}px`;
+  nodeLayer.style.height = `${layout.height}px`;
+
+  nodeLayer.innerHTML = visible.map((node) => {
+    const pos = layout.positions.get(node.id);
+    if (!pos) return "";
+    const isActive = active.has(node.id) || node.id === state.selected;
+    return `<button class="node-card ${node.id === state.selected ? "active" : ""} ${active.size && !isActive ? "dim" : ""} ${isActive && node.id !== state.selected ? "related" : ""}" data-id="${node.id}" style="left:${pos.x}px;top:${pos.y}px;">
+      <span class="node-meta">${node.layer} · ${familyLabel(node.family)}</span>
+      <h3>${node.label}</h3>
+      <p>${node.summary}</p>
+      <div class="node-marks">${implementationMarks(node, "node-mark")}</div>
+    </button>`;
+  }).join("");
+
+  nodeLayer.querySelectorAll(".node-card").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selected = button.dataset.id;
+      render();
+    });
+  });
+
+  edgeLayer.innerHTML = data.edges
+    .filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
+    .filter((edge) => edge.type === "hierarchy" || (active.has(edge.source) && active.has(edge.target)))
+    .map((edge) => {
+      const from = layout.positions.get(edge.source);
+      const to = layout.positions.get(edge.target);
+      if (!from || !to) return "";
+      const x1 = from.x + CARD_WIDTH;
+      const y1 = from.y + CARD_HEIGHT / 2;
+      const x2 = to.x;
+      const y2 = to.y + CARD_HEIGHT / 2;
+      const mid = (x1 + x2) / 2;
+      const emphasis = edge.type !== "hierarchy" || (active.has(edge.source) && active.has(edge.target));
+      const dim = active.size && !active.has(edge.source) && !active.has(edge.target);
+      return `<path class="edge-line ${emphasis ? "emphasis" : ""} ${dim ? "dim" : ""}" d="M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}" />`;
+    }).join("");
+
+  const view = currentView();
+  q("graphHint").textContent = state.search ? `搜尋結果 ${visible.length}` : `${view.description} · ${visible.length} 個節點`;
+  return active;
+};
+
+const render = () => {
+  const visible = visibleNodes();
+  const active = renderGraph(visible);
+  renderSummary(visible, active);
+  renderDetail();
+  document.querySelectorAll(".preset-button").forEach((button) => button.classList.toggle("active", state.mode === "preset" && button.dataset.id === state.preset));
+  document.querySelectorAll(".view-tab").forEach((button) => button.classList.toggle("active", button.dataset.id === state.workspaceView));
+};
+
+q("searchInput").addEventListener("input", (event) => { state.search = event.target.value.trim().toLowerCase(); render(); });
+q("modeSelect").addEventListener("change", (event) => { state.mode = event.target.value; render(); });
+q("layerSelect").addEventListener("change", (event) => { state.layer = event.target.value; render(); });
+q("familySelect").addEventListener("change", (event) => {
+  state.family = event.target.value;
+  if (state.family) {
+    state.mode = "family";
+    q("modeSelect").value = "family";
+  }
+  render();
+});
+q("tagSelect").addEventListener("change", (event) => {
+  state.tag = event.target.value;
+  if (state.tag) {
+    state.mode = "tag";
+    q("modeSelect").value = "tag";
+  }
+  render();
+});
+q("useCaseSelect").addEventListener("change", (event) => {
+  state.useCase = event.target.value;
+  if (state.useCase) {
+    state.mode = "use_case";
+    q("modeSelect").value = "use_case";
+  }
+  render();
+});
+
+render();
+
+
+
+
+
+</script>
+</body>
+</html>
+

@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>V03 AI 基礎設施研究報告：NVIDIA、AMD、Broadcom</title>
+  <style>
+    :root {
+      --bg: #f3f6f8;
+      --paper: #ffffff;
+      --ink: #15202b;
+      --muted: #52606d;
+      --line: #d9e2ec;
+      --soft: #edf2f7;
+      --soft-2: #f8fbfd;
+      --nvda: #76b900;
+      --amd: #c2410c;
+      --avgo: #005f73;
+      --warn-bg: #fff7ed;
+      --warn: #9a3412;
+      --shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(118,185,0,0.08), transparent 26%),
+        radial-gradient(circle at top right, rgba(0,95,115,0.08), transparent 24%),
+        linear-gradient(180deg, #f9fbfc 0%, var(--bg) 100%);
+      font: 15px/1.65 "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    }
+    .page {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 22px 20px 72px;
+    }
+    .hero, .section-card, .chart-card, .sticky-nav {
+      background: var(--paper);
+      border: 1px solid rgba(217, 226, 236, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .hero { padding: 30px; margin-bottom: 18px; }
+    .hero h1 { margin: 8px 0 10px; font-size: 34px; line-height: 1.2; letter-spacing: 0.02em; }
+    .hero p { margin: 0 0 10px; }
+    .eyebrow, .small, .ref, .source, .muted { color: var(--muted); }
+    .eyebrow, .small, .source { font-size: 13px; }
+    .hero-grid, .grid, .chart-grid { display: grid; gap: 18px; }
+    .hero-grid { grid-template-columns: 2.2fr 1fr; margin-top: 18px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
+    .metric {
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--soft-2), #f2f6f9);
+    }
+    .metric .label { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+    .metric .value { font-weight: 700; font-size: 28px; line-height: 1.15; }
+    .metric .detail { margin-top: 6px; font-size: 12px; color: var(--muted); }
+    .sticky-nav { position: sticky; top: 12px; z-index: 10; padding: 10px; margin-bottom: 18px; }
+    .nav-row, .button-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .nav-row a, .button-row button, .mini-switch button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .button-row button.active, .mini-switch button.active, .nav-row a:hover {
+      background: #eaf2ff;
+      border-color: #bfd5ff;
+      color: #1d4ed8;
+    }
+    .section-card { padding: 24px; margin-top: 18px; }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 1.25;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    h3 { margin: 0 0 10px; font-size: 18px; line-height: 1.3; }
+    p { margin: 0 0 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 10px 9px; vertical-align: top; }
+    th { background: #f8fafc; text-align: left; white-space: nowrap; }
+    .warning {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--warn-bg);
+      border: 1px solid #fed7aa;
+      color: var(--warn);
+    }
+    ul { margin: 6px 0 0 18px; padding: 0; }
+    li { margin-bottom: 8px; }
+    .chart-card { padding: 18px; background: linear-gradient(180deg, #fbfdff, #f6f9fb); }
+    .chart-card h3 { margin-bottom: 4px; min-height: 52px; }
+    .chart-caption { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+    .chart-wrap {
+      position: relative;
+      min-height: 320px;
+      overflow: hidden;
+      border: 1px solid #e5edf5;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(245,249,252,0.92));
+      padding: 6px;
+    }
+    svg.chart-svg { width: 100%; height: auto; display: block; overflow: hidden; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+    .legend span { display: inline-flex; gap: 7px; align-items: center; }
+    .swatch { width: 11px; height: 11px; border-radius: 999px; display: inline-block; }
+    .chart-note, .source { margin-top: 8px; }
+    .chart-card[data-cat].hidden { display: none; }
+    .refs { columns: 2 320px; column-gap: 30px; font-size: 14px; }
+    .refs li { break-inside: avoid; margin-left: 18px; }
+    .framework-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .framework-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #f9fcff, #f2f7fb);
+    }
+    .framework-card h3 { margin-bottom: 8px; font-size: 16px; }
+    .framework-card p { margin-bottom: 8px; font-size: 14px; }
+    .tooltip {
+      position: fixed;
+      z-index: 99;
+      pointer-events: none;
+      background: rgba(17, 24, 39, 0.96);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+      max-width: 320px;
+      font-size: 12px;
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.12s ease, transform 0.12s ease;
+    }
+    .tooltip.show { opacity: 1; transform: translateY(0); }
+    .mini-switch { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .foot-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      background: #f3f4f6;
+      padding: 1px 5px;
+      border-radius: 6px;
+      font-size: 0.94em;
+    }
+    @media (max-width: 1080px) {
+      .hero-grid, .chart-grid, .grid.two, .grid.three, .foot-grid, .framework-grid { grid-template-columns: 1fr; }
+      .refs { columns: 1; }
+      .chart-card h3 { min-height: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">V03 單檔互動研究報告｜公司主體數據僅使用本地官方 PDF｜另以外部方法論微調分析框架與閱讀順序</div>
+      <h1>NVIDIA、AMD、Broadcom：AI 基礎設施公司比較研究報告</h1>
+      <p>
+        本報告以<strong>財務分析視角</strong>為主軸，回答「誰的規模最大、誰最會賺、誰的獲利結構較佳、誰的商業結構最不同、風險輪廓如何分化」等問題。
+        主比較口徑以三家公司最近完整年度 GAAP 財報為核心；季度新聞稿與簡報僅用於補充最新管理層表述與近期動能，不替代年度主表。<span class="ref">Ref N2, A4, B5, QN1, QA1, QB1</span>
+      </p>
+      <div class="hero-grid">
+        <div class="grid three">
+          <div class="metric"><div class="label">規模最大</div><div class="value">NVIDIA</div><div class="detail">FY2026 營收 US$215.9B。Ref N2</div></div>
+          <div class="metric"><div class="label">GAAP 獲利能力最強</div><div class="value">NVIDIA</div><div class="detail">毛利率 71.1%、營益率 60.4%、淨利率 55.6%。Ref N2, N3</div></div>
+          <div class="metric"><div class="label">業務結構最混合</div><div class="value">Broadcom</div><div class="detail">半導體 + 基礎軟體雙引擎。Ref B1, B4</div></div>
+          <div class="metric"><div class="label">AI 純度相對最高</div><div class="value">NVIDIA</div><div class="detail">官方自述為 data center scale AI infrastructure company。Ref N1</div></div>
+          <div class="metric"><div class="label">成長但仍在獲利爬坡</div><div class="value">AMD</div><div class="detail">FY2025 營益率 10.7%，低於 NVIDIA 與 Broadcom。Ref A4</div></div>
+          <div class="metric"><div class="label">最新季度 AI 補充</div><div class="value">Broadcom Q1 FY26</div><div class="detail">AI revenue US$8.4B、年增 106%。Ref QB1</div></div>
+        </div>
+        <div class="warning">
+          <strong>先看限制：</strong>
+          <ul>
+            <li>三家公司財年不同：NVIDIA 截止 2026-01-25、AMD 截止 2025-12-27、Broadcom 截止 2025-11-02。Ref N2, A4, B5</li>
+            <li>Broadcom FY2024 為 53 週、FY2025 為 52 週，年增率判讀需保留。Ref B10</li>
+            <li>NVIDIA Compute &amp; Networking、AMD Data Center、Broadcom Semiconductor Solutions 均不是純 AI 營收。不可直接比較。Ref N3, A2, B4</li>
+            <li>若資料無法在三家公司間建立一致口徑，本報告一律標示「不可直接比較」或「待查證」。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <nav class="sticky-nav">
+      <div class="nav-row">
+        <a href="#source-inventory">Source Inventory</a>
+        <a href="#research-framework">Research Framework</a>
+        <a href="#executive-summary">Executive Summary</a>
+        <a href="#company-comparison">Company Comparison</a>
+        <a href="#financial-analysis">Financial Analysis</a>
+        <a href="#business-positioning">Business Structure &amp; AI Positioning</a>
+        <a href="#risks">Risks / Caveats</a>
+        <a href="#references">References</a>
+      </div>
+    </nav>
+
+    <section id="source-inventory" class="section-card">
+      <h2>Source Inventory</h2>
+      <table>
+        <thead>
+          <tr><th>文件</th><th>公司</th><th>類型</th><th>主要用途</th><th>口徑提醒</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>10K-NVDA.pdf</code></td><td>NVIDIA</td><td>FY2026 年報</td><td>年度營收、毛利、營業利益、淨利、分部、風險主來源</td><td>完整年度 GAAP 主比較基礎</td></tr>
+          <tr><td><code>0000002488-26-000018.pdf</code></td><td>AMD</td><td>FY2025 年報</td><td>年度主財報、Data Center 分部、出口管制與 ZT Systems</td><td>完整年度 GAAP 主比較基礎</td></tr>
+          <tr><td><code>0001730168-25-000121 10K.pdf</code></td><td>Broadcom</td><td>FY2025 年報</td><td>年度主財報、半導體/基礎軟體分部、客戶集中、TSMC、VMware</td><td>FY2024 為 53 週、FY2025 為 52 週</td></tr>
+          <tr><td><code>NVDA-F4Q26-Quarterly-Presentation.pdf</code></td><td>NVIDIA</td><td>Q4 FY26 簡報</td><td>最新季度 GAAP/Non-GAAP 概況、FY27 Q1 指引補充</td><td>單季資料，不與年度主表混算</td></tr>
+          <tr><td><code>2026-02-03_AMD_Reports_Fourth_Quarter_and_Full_Year_2025_1276.pdf</code></td><td>AMD</td><td>Q4/FY2025 財報新聞稿</td><td>最新年度管理層口徑、Q4 快照、full-year 摘要</td><td>新聞稿摘要，細節以年報為準</td></tr>
+          <tr><td><code>Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend.pdf</code></td><td>Broadcom</td><td>Q1 FY26 財報新聞稿</td><td>最新季度營運、AI revenue 補充與 Q2 guidance</td><td>單季與前瞻指引，不與年度 GAAP 直接混合</td></tr>
+          <tr><td><code>20260304 Broadcom_Company_Overview.pdf</code></td><td>Broadcom</td><td>公司簡報</td><td>商業結構、產品線、5 年 GAAP/Non-GAAP 補充</td><td>簡報含非 GAAP；使用時需明確標記</td></tr>
+        </tbody>
+      </table>
+      <p class="source">本報告所有公司數字、圖表主體與主要結論均回溯至上述本地官方文件；外部網站僅作方法論與章節設計輔助，不作公司數字來源。</p>
+    </section>
+
+    <section id="research-framework" class="section-card">
+      <h2>Research Framework</h2>
+      <p>V03 補上一層較接近財務分析課程的閱讀框架：先理解商業模式與風險，再回到 MD&amp;A 與財報主表，最後才做跨公司比較。這些方法論只用來改善報告層次與解讀順序，不會覆寫公司官方揭露。<span class="ref">Ref M1-M5</span></p>
+      <div class="framework-grid">
+        <div class="framework-card">
+          <h3>10-K 閱讀順序</h3>
+          <p>先看 <code>Business</code>，再看 <code>Risk Factors</code>、<code>MD&amp;A</code>、最後回到 <code>Financial Statements</code>。這讓報告不是只抄表，而是先回答企業做什麼、風險在哪、數字如何形成。<span class="ref">Ref M1</span></p>
+        </div>
+        <div class="framework-card">
+          <h3>管理層敘事骨架</h3>
+          <p>章節對應策略、資源、風險、績效與前景，讓 narrative 跟 numbers 互相連動，因此保留 Business Structure、Risks 與 Latest Management Supplement 三條主線。<span class="ref">Ref M2, M3</span></p>
+        </div>
+        <div class="framework-card">
+          <h3>Growth × Return Quality</h3>
+          <p>比較不只看營收誰大，也看誰能把營收留成營業利益與淨利。V03 因此把規模、利潤率與利潤橋接圖並列，避免只看成長、不看回報品質。<span class="ref">Ref M4</span></p>
+        </div>
+        <div class="framework-card">
+          <h3>估值延伸邊界</h3>
+          <p>ERP、beta、risk-free rate 等參數確實重要，但本報告沒有拿外部市場參數硬做 WACC 或正式估值，因此維持「財報分析為主、估值延伸為止」的邊界。<span class="ref">Ref M5</span></p>
+        </div>
+      </div>
+      <p class="source">說明：Ref M1-M5 為外部方法論來源，只用於報告架構與分析流程補充；所有公司數字、表格與主要判斷仍回溯至本地官方 PDF。</p>
+    </section>
+
+    <section id="executive-summary" class="section-card">
+      <h2>Executive Summary</h2>
+      <p><strong>誰的規模最大、誰最會賺？</strong>若以最新完整年度 GAAP 口徑比較，NVIDIA 明顯同時是規模最大與獲利能力最強者。FY2026 營收 US$215.9B，淨利 US$120.1B，毛利率 71.1%，營益率 60.4%，淨利率 55.6%；Broadcom 次之，FY2025 營收 US$63.9B、淨利 US$23.1B；AMD FY2025 營收 US$34.6B、淨利 US$4.3B。<span class="ref">Ref N2, N3, A4, B5</span></p>
+      <p><strong>誰的獲利結構最好？</strong>NVIDIA 的毛利、營業利益與淨利率都居首，顯示其 AI 基礎設施平台在技術、軟體生態與系統整合上具高度定價能力。Broadcom 的 GAAP 獲利結構也很強，但其高毛利同時來自基礎軟體，而非單靠 AI 半導體。AMD 的毛利率已有改善，但營益率與淨利率仍遠低於另外兩家，表示其仍處於成長與投資擴張並行階段。<span class="ref">Ref N2, N3, A3, A4, B3, B5</span></p>
+      <p><strong>三家公司的 AI 定位有何本質差異？</strong>NVIDIA 的官方自我定位最接近「AI 基礎設施平台公司」；AMD 是「高效能與 AI 運算」供應商，資料中心 AI 是其最重要但非唯一成長引擎；Broadcom 則是「半導體 + 基礎軟體」的混合型基礎設施平台，AI 故事同時來自 custom AI accelerators、AI networking 與 VMware/VCF 生態。<span class="ref">Ref N1, A1, B1, B4</span></p>
+      <p><strong>風險輪廓如何不同？</strong>NVIDIA 的核心風險偏向客戶集中、出口管制與高毛利對少數高端平台節奏的敏感度；AMD 對中國出口限制與供應鏈地緣風險更敏感，且其 AI 擴張仍伴隨資本配置與整合執行挑戰；Broadcom 則兼具高客戶集中、TSMC 製造集中、VMware 整合與新商業模式風險。<span class="ref">Ref N4, N5, N6, A5, A6, A7, B2, B3, B6, B7</span></p>
+    </section>
+
+    <section id="company-comparison" class="section-card">
+      <h2>Company Comparison</h2>
+      <div class="grid two">
+        <div>
+          <h3>可比較欄位、數字、來源與口徑整理</h3>
+          <table>
+            <thead><tr><th>公司</th><th>主比較年度</th><th>營收</th><th>毛利率</th><th>營益率</th><th>淨利率</th><th>資料來源</th></tr></thead>
+            <tbody>
+              <tr><td>NVIDIA</td><td>FY2026</td><td>US$215,938M</td><td>71.1%</td><td>60.4%</td><td>55.6%</td><td>Ref N2, N3</td></tr>
+              <tr><td>AMD</td><td>FY2025</td><td>US$34,639M</td><td>50.0%<br><span class="small">年報摘要揭露</span></td><td>10.7%<br><span class="small">營業利益 ÷ 營收推算</span></td><td>12.5%<br><span class="small">淨利 ÷ 營收推算</span></td><td>Ref A3, A4</td></tr>
+              <tr><td>Broadcom</td><td>FY2025</td><td>US$63,887M</td><td>68.0%<br><span class="small">年報摘要揭露</span></td><td>40.0%<br><span class="small">年報摘要揭露</span></td><td>36.2%<br><span class="small">淨利 ÷ 營收推算</span></td><td>Ref B3, B5</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3>不可比項目、待查證項目、需推算項目</h3>
+          <table>
+            <thead><tr><th>項目</th><th>處理方式</th><th>原因</th></tr></thead>
+            <tbody>
+              <tr><td>純 AI 營收</td><td>待查證</td><td>三家公司未在現有文件中以一致定義揭露。Ref N3, A2, B4</td></tr>
+              <tr><td>資料中心/AI 分部直接排名</td><td>不可直接比較</td><td>NVIDIA、AMD、Broadcom 的分部定義不同。Ref N3, A2, B4</td></tr>
+              <tr><td>AMD、Broadcom 營益率/淨利率部分歷史值</td><td>允許推算</td><td>可由年報財務報表直接推得，且於圖註明。Ref A4, B5</td></tr>
+              <tr><td>Broadcom 最新 AI revenue</td><td>僅作季度補充</td><td>來自 Q1 FY26 新聞稿，不與年度主表混算。Ref QB1</td></tr>
+              <tr><td>風險雷達分數</td><td>研究者序位化 proxy</td><td>非公司原始數值，依揭露風險強弱做 1–5 映射。Ref N4-N6, A5-A7, B2-B7</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="financial-analysis" class="section-card">
+      <h2>Financial Analysis</h2>
+      <p>這一節聚焦於財務分析可比較核心：規模、獲利能力、利潤留存、歷年趨勢與最新季度補充。互動按鈕可切換圖表視角，目的在於提升解讀效率，而不是製造展示效果。</p>
+      <div class="button-row" id="chart-filter">
+        <button class="active" data-filter="all">全部圖表</button>
+        <button data-filter="absolute">絕對值</button>
+        <button data-filter="ratio">比率</button>
+        <button data-filter="structure">結構</button>
+        <button data-filter="risk">風險</button>
+        <button data-filter="trend">趨勢</button>
+        <button data-filter="quarter">季度補充</button>
+      </div>
+      <div class="chart-grid">
+        <article class="chart-card" data-cat="absolute">
+          <h3>圖 1．規模與獲利比較：最新完整年度營收與淨利</h3>
+          <div class="chart-caption">單位：十億美元（US$ bn）。回答問題：誰規模最大、誰最會賺？</div>
+          <div class="chart-wrap"><svg id="chart-scale" class="chart-svg" viewBox="0 0 720 420"></svg></div>
+          <div class="legend"><span><i class="swatch" style="background:#9ca3af"></i>營收</span><span><i class="swatch" style="background:#111827"></i>淨利</span></div>
+          <p class="source">來源：Ref N2, A4, B5</p>
+          <p class="chart-note">解讀：NVIDIA 在營收與淨利兩端都顯著領先；Broadcom 的淨利規模也高，但需記得其收入組成含大量基礎軟體。Ref B1, B4, B5</p>
+        </article>
+        <article class="chart-card" data-cat="ratio">
+          <h3>圖 2．獲利能力比較：毛利率、營益率、淨利率</h3>
+          <div class="chart-caption">單位：%。回答問題：誰的獲利結構最好？</div>
+          <div class="chart-wrap"><svg id="chart-margins" class="chart-svg" viewBox="0 0 720 430"></svg></div>
+          <div class="legend"><span><i class="swatch" style="background:#cbd5e1"></i>毛利率</span><span><i class="swatch" style="background:#64748b"></i>營益率</span><span><i class="swatch" style="background:#0f172a"></i>淨利率</span></div>
+          <p class="source">來源：Ref N2, N3, A3, A4, B3, B5</p>
+          <p class="chart-note">解讀：NVIDIA 的高毛利、高營益率與高淨利率組合最完整；Broadcom 次之；AMD 的毛利已改善，但費用與投資壓力使營益率與淨利率仍偏低。</p>
+        </article>
+        <article class="chart-card" data-cat="absolute ratio">
+          <h3>圖 3．利潤結構拆解：Revenue → Gross Profit → Operating Income → Net Income</h3>
+          <div class="chart-caption">單位：十億美元（US$ bn）。回答問題：利潤在各家公司是如何被保留下來的？</div>
+          <div class="chart-wrap"><svg id="chart-bridge" class="chart-svg" viewBox="0 0 720 540"></svg></div>
+          <p class="source">來源：Ref N2, A4, B5</p>
+          <p class="chart-note">解讀：NVIDIA 從營收到淨利的留存最強；Broadcom 中段獲利強，但受其他/稅項殘差影響較大；AMD 的成本與營運費用仍吃掉較多收入。殘差項含其他收益/費損、稅項與非常項目等，非單一科目。Ref N2, A4, B5</p>
+        </article>
+        <article class="chart-card" data-cat="structure">
+          <h3>圖 4．業務結構比較：最新年度分部營收 100% Stacked Bar</h3>
+          <div class="chart-caption">單位：占公司年度營收比重（%）。回答問題：三家公司商業結構有何本質差異？</div>
+          <div class="chart-wrap"><svg id="chart-mix" class="chart-svg" viewBox="0 0 720 390"></svg></div>
+          <p class="source">來源：Ref N3, A2, B4</p>
+          <p class="chart-note">解讀：NVIDIA 的收入極度集中於 Compute &amp; Networking；AMD 仍較平均分散；Broadcom 則呈現半導體與基礎軟體雙引擎。注意：這些分部並非純 AI 營收。</p>
+        </article>
+        <article class="chart-card" data-cat="structure ratio">
+          <h3>圖 5．綜合定位：Bubble Chart（規模 × 淨利率 × AI/資料中心 proxy）</h3>
+          <div class="chart-caption">X 軸：營收（US$ bn）；Y 軸：淨利率（%）；泡泡大小：AI/資料中心相關 proxy。</div>
+          <div class="chart-wrap"><svg id="chart-bubble" class="chart-svg" viewBox="0 0 720 430"></svg></div>
+          <div class="legend"><span><i class="swatch" style="background:var(--nvda)"></i>NVIDIA</span><span><i class="swatch" style="background:var(--amd)"></i>AMD</span><span><i class="swatch" style="background:var(--avgo)"></i>Broadcom</span></div>
+          <p class="source">來源：Ref N2, N3, A2, A4, B4, B5</p>
+          <p class="chart-note">解讀：泡泡大小不是純 AI 營收，而是最接近 AI/資料中心的分部占比 proxy。NVIDIA 使用 Compute &amp; Networking 占比、AMD 使用 Data Center 占比、Broadcom 使用 Semiconductor Solutions 占比；此指標僅供定位，不可直接當成 AI revenue。待查證：三家一致口徑純 AI 營收。</p>
+        </article>
+        <article class="chart-card" data-cat="risk">
+          <h3>圖 6．風險輪廓雷達圖</h3>
+          <div class="chart-caption">尺度：1–5，5 代表該維度風險相對較高。回答問題：各公司的風險輪廓有何不同？</div>
+          <div class="chart-wrap"><svg id="chart-risk" class="chart-svg" viewBox="0 0 720 470"></svg></div>
+          <div class="legend"><span><i class="swatch" style="background:var(--nvda)"></i>NVIDIA</span><span><i class="swatch" style="background:var(--amd)"></i>AMD</span><span><i class="swatch" style="background:var(--avgo)"></i>Broadcom</span></div>
+          <p class="source">來源：Ref N4-N6, A5-A7, B2-B7</p>
+          <p class="chart-note">解讀：此圖為研究者依官方風險揭露做的序位化 proxy，不是公司原始數值。評分維度包括客戶集中、出口/中國風險、供應鏈集中、整合/商業模式複雜度與獲利波動敏感度；僅供比較框架，不宜視為精確量化風險。</p>
+        </article>
+        <article class="chart-card" data-cat="trend">
+          <h3>圖 7．趨勢分析：3 年財務趨勢切換圖</h3>
+          <div class="chart-caption">回答問題：三家公司的營收與利潤率變化趨勢如何？</div>
+          <div class="mini-switch" id="trend-switch">
+            <button class="active" data-metric="revenue">營收</button>
+            <button data-metric="grossMargin">毛利率</button>
+            <button data-metric="opMargin">營益率</button>
+            <button data-metric="netMargin">淨利率</button>
+          </div>
+          <div class="chart-wrap"><svg id="chart-trend" class="chart-svg" viewBox="0 0 720 430"></svg></div>
+          <p class="source">來源：Ref N2-N3, A3-A4, B3, B5</p>
+          <p class="chart-note">解讀：此圖的三個點代表各公司「最近三個完整年度」，不是跨公司共用同一曆年時間軸。各點的精確 fiscal year 請以 tooltip 為準；部分歷史利潤率為依報表推算。Broadcom FY2024 為 53 週，趨勢解讀需保留。</p>
+        </article>
+        <article class="chart-card" data-cat="quarter">
+          <h3>圖 8．最新季度補充快照：單季營收與 GAAP 淨利</h3>
+          <div class="chart-caption">單位：十億美元（US$ bn）。回答問題：最近一次管理層揭露顯示什麼動能？</div>
+          <div class="chart-wrap"><svg id="chart-quarter" class="chart-svg" viewBox="0 0 720 420"></svg></div>
+          <p class="source">來源：Ref QN1, QA1, QB1</p>
+          <p class="chart-note">解讀：這是補充視角，不是年度正式比較。三家公司單季期間不同：NVIDIA 為 Q4 FY26、AMD 為 Q4 2025、Broadcom 為 Q1 FY26，因此不可直接拿來做正式排名。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="business-positioning" class="section-card">
+      <h2>Business Structure &amp; AI Positioning</h2>
+      <div class="grid three">
+        <div>
+          <h3>NVIDIA</h3>
+          <p>年報明確寫為「data center scale AI infrastructure company」，主軸是 GPU、CPU、網路、CUDA、SDK 與 vertical software stacks 的平台化組合。<span class="ref">Ref N1</span></p>
+          <p>FY2026 Compute &amp; Networking 營收 US$193.5B，占總營收約 89.6%，是三家公司中最接近「以 AI 基礎設施為核心收入引擎」者。<span class="ref">Ref N2, N3</span></p>
+          <p>季度簡報顯示 Q4 FY26 營收 US$68.1B、淨利 US$43.0B，且 FY27 Q1 non-GAAP outlook 明示「不假設中國資料中心運算營收」，補充了出口限制對短期展望的敏感性。<span class="ref">Ref QN1, QN2</span></p>
+        </div>
+        <div>
+          <h3>AMD</h3>
+          <p>AMD 官方定位是「high performance and AI computing」，強調從 CPU、GPU、DPU、AI NIC、FPGA 到 rack-scale platform 的 full-stack 能力。<span class="ref">Ref A1</span></p>
+          <p>FY2025 Data Center 營收 US$16.6B，占總營收約 48.0%，雖然已成最大單一分部，但公司整體仍兼具 client、gaming、embedded 等多元結構。<span class="ref">Ref A2, A4</span></p>
+          <p>年報與 FY2025 新聞稿都強調 EPYC 與 Instinct 的擴張、Helios AI rack-scale 平台，以及 ZT Systems 對端到端 AI 基礎設計能力的補強。<span class="ref">Ref A1, A7, QA1</span></p>
+        </div>
+        <div>
+          <h3>Broadcom</h3>
+          <p>Broadcom 的 AI 故事分成兩半：一半是半導體端的 custom AI accelerators / XPUs 與 AI networking，另一半是 VMware / VCF 與基礎軟體平台。<span class="ref">Ref B1, B4</span></p>
+          <p>FY2025 Semiconductor Solutions 營收 US$36.9B，占 57.7%；Infrastructure Software 營收 US$27.0B，占 42.3%。因此其整體財務結果無法被解讀為純 AI 半導體結果。<span class="ref">Ref B4, B5</span></p>
+          <p>Q1 FY26 新聞稿補充指出 AI revenue 為 US$8.4B、年增 106%，顯示其 AI 半導體動能仍在加速，但這是單季 AI revenue，不能直接映回 FY2025 全年 segment 口徑。<span class="ref">Ref QB1</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="risks" class="section-card">
+      <h2>Risks / Caveats</h2>
+      <div class="grid two">
+        <div>
+          <h3>NVIDIA 風險重點</h3>
+          <ul>
+            <li>客戶集中度高：FY2026 一家直接客戶占營收 22%，另一家占 14%，且部分間接客戶估計亦可能各占 10% 以上。Ref N4</li>
+            <li>毛利敏感度高：FY2026 毛利率由 75.0% 降至 71.1%，年報提及 Blackwell full-scale datacenter solutions 轉換與 H20 相關 US$4.5B 費用。Ref N3</li>
+            <li>供應鏈與出口控制：供應鏈主要在亞洲，且過去三年持續受擴大的出口限制影響。Ref N5, N6</li>
+          </ul>
+        </div>
+        <div>
+          <h3>AMD 風險重點</h3>
+          <ul>
+            <li>出口管制明顯影響財務：MI308 受美國對中國出口限制影響，曾於 2025 年第二季認列約 US$800M 庫存及相關費用，後於第四季回轉部分費用。Ref A5</li>
+            <li>供應鏈地緣風險：年報載明產品組裝與最終測試大量位於中國、馬來西亞、台灣，且台海情勢可能影響交付。Ref A6</li>
+            <li>整合與執行：ZT Systems 併購與製造業務出售提升端到端 AI 能力，但也引入整合、估值與 earn-out 等執行風險。Ref A1, A7</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Broadcom 風險重點</h3>
+          <ul>
+            <li>客戶集中：FY2025 一家半導體客戶直銷占總營收 32%，前五大終端客戶合計約占 40%。Ref B3</li>
+            <li>製造集中：FY2025 約 95% 晶圓由 TSMC 生產。Ref B2</li>
+            <li>整合與新商業模式：VMware 整合、AI racks/systems leasing 或 deferred payment 模式，都可能拖累毛利、現金流與執行節奏。Ref B2, B6</li>
+          </ul>
+        </div>
+        <div>
+          <h3>跨公司比較限制</h3>
+          <ul>
+            <li>財年不同、週數不同與分部定義不同，因此「年增率」與「AI 相關占比」只能輔助理解，不宜機械排名。Ref N2, A4, B5, B10</li>
+            <li>Broadcom 同時含大型基礎軟體；NVIDIA/AMD 更偏半導體與平台。整體獲利結構高低，不等於單一 AI 晶片業務強弱。Ref B1, B4</li>
+            <li>待查證：三家公司一致定義的純 AI revenue、AI GPU revenue、AI 軟體 revenue。現有檔案不足以支撐正式比較。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <h2>Latest Management Supplement</h2>
+      <div class="grid three">
+        <div class="metric"><div class="label">NVIDIA Q4 FY26</div><div class="value">營收 68.1 / 淨利 43.0</div><div class="detail">GAAP，單位：US$ bn。Ref QN1</div></div>
+        <div class="metric"><div class="label">AMD Q4 2025</div><div class="value">營收 10.3 / 淨利 1.5</div><div class="detail">GAAP，單位：US$ bn。Ref QA1</div></div>
+        <div class="metric"><div class="label">Broadcom Q1 FY26</div><div class="value">營收 19.3 / 淨利 7.3</div><div class="detail">GAAP，另揭露 AI revenue 8.4。單位：US$ bn。Ref QB1</div></div>
+      </div>
+      <p class="source">這三組資料僅作近期營運補充，不構成正式跨公司季度可比分析，因其季度邊界與季節性背景不同。Ref QN1, QA1, QB1</p>
+    </section>
+
+    <section id="references" class="section-card">
+      <h2>References</h2>
+      <div class="foot-grid">
+        <div>
+          <ol class="refs">
+            <li><strong>Ref N1</strong>：<code>10K-NVDA.pdf</code>，p.4。Business overview；NVIDIA 自述為 data center scale AI infrastructure company。</li>
+            <li><strong>Ref N2</strong>：<code>10K-NVDA.pdf</code>，p.51。Consolidated Statements of Income。</li>
+            <li><strong>Ref N3</strong>：<code>10K-NVDA.pdf</code>，p.40-41。Margins、segment revenue、gross margin drivers。</li>
+            <li><strong>Ref N4</strong>：<code>10K-NVDA.pdf</code>，p.23。客戶集中與商業安排風險。</li>
+            <li><strong>Ref N5</strong>：<code>10K-NVDA.pdf</code>，p.8。供應鏈在亞洲、TSMC/Samsung 與製造模式。</li>
+            <li><strong>Ref N6</strong>：<code>10K-NVDA.pdf</code>，p.9。出口限制與競爭/法規風險。</li>
+            <li><strong>Ref QN1</strong>：<code>NVDA-F4Q26-Quarterly-Presentation.pdf</code>，p.9。Q4 FY26 GAAP P&amp;L。</li>
+            <li><strong>Ref QN2</strong>：<code>NVDA-F4Q26-Quarterly-Presentation.pdf</code>，p.11。Q1 FY27 Outlook，不假設中國資料中心運算營收。</li>
+            <li><strong>Ref A1</strong>：<code>0000002488-26-000018.pdf</code>，p.2、5。AMD overview、AI strategy、Helios、ZT Systems。</li>
+            <li><strong>Ref A2</strong>：<code>0000002488-26-000018.pdf</code>，p.52。Segment revenue by segment。</li>
+            <li><strong>Ref A3</strong>：<code>0000002488-26-000018.pdf</code>，p.53。Gross margin summary。</li>
+            <li><strong>Ref A4</strong>：<code>0000002488-26-000018.pdf</code>，p.58。Consolidated Statements of Operations。</li>
+            <li><strong>Ref A5</strong>：<code>0000002488-26-000018.pdf</code>，p.34-35、50-51。MI308 出口管制、庫存費用與回轉。</li>
+            <li><strong>Ref A6</strong>：<code>0000002488-26-000018.pdf</code>，p.44。中國/台灣供應鏈與地緣政治風險。</li>
+            <li><strong>Ref A7</strong>：<code>0000002488-26-000018.pdf</code>，p.75-77。ZT Systems acquisition 與製造業務 divestiture。</li>
+            <li><strong>Ref QA1</strong>：<code>2026-02-03_AMD_Reports_Fourth_Quarter_and_Full_Year_2025_1276.pdf</code>，p.1。Q4 與 full-year 2025 新聞稿摘要。</li>
+            <li><strong>Ref B1</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.3-7。Broadcom business overview、AI semiconductor solutions、VMware Private AI。</li>
+            <li><strong>Ref B2</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.16-17。TSMC 95%、design wins、AI racks/systems model risk。</li>
+            <li><strong>Ref B3</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.40。Results of Operations、gross margin、operating income、customer concentration。</li>
+            <li><strong>Ref B4</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.41-42。Net Revenue by Segment / Operating Income by Segment。</li>
+            <li><strong>Ref B5</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.48。Consolidated Statements of Operations。</li>
+            <li><strong>Ref B6</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.24、54。VMware integration / acquisition rationale and risks。</li>
+            <li><strong>Ref B7</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.14-15。Tariffs, trade tensions and macro risk。</li>
+            <li><strong>Ref B8</strong>：<code>20260304 Broadcom_Company_Overview.pdf</code>，p.22。FY2021-FY2025 GAAP/Non-GAAP reconciliation table。</li>
+            <li><strong>Ref QB1</strong>：<code>Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend.pdf</code>，p.1。Q1 FY26 revenue、net income、AI revenue、segment split。</li>
+            <li><strong>Ref B10</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.39、54。FY2025 52 週、FY2024 53 週。</li>
+            <li><strong>Ref M1</strong>：SEC / Investor.gov，How to Read a 10-K。用途：建立 10-K 閱讀順序與分析流程。</li>
+            <li><strong>Ref M2</strong>：IFRS，Management Commentary Practice Statement。用途：管理層敘事與績效、資源、風險、前景框架。</li>
+            <li><strong>Ref M3</strong>：IFRS，Management Commentary Supporting Materials。用途：將 narrative 與財務主表連動的章節模板。</li>
+            <li><strong>Ref M4</strong>：McKinsey，How to choose between growth and ROIC。用途：以成長 × 回報品質理解比較邏輯。</li>
+            <li><strong>Ref M5</strong>：Damodaran，Current Data。用途：提醒正式估值仍需 ERP、beta、risk-free rate 等市場參數。</li>
+          </ol>
+        </div>
+        <div>
+          <h3>報告方法與自我限制</h3>
+          <p>1. 以三家公司最新完整年度 GAAP 財報作為主比較基準。</p>
+          <p>2. 歷年趨勢主要採年報主表；若年報未直接給利潤率，則由報表數值推算，並於圖表說明。</p>
+          <p>3. AI/資料中心相關曝險使用分部占比 proxy，不等同純 AI revenue。</p>
+          <p>4. 風險雷達圖為研究者以官方揭露做的 ordinal mapping；它是解讀工具，不是公司原始揭露值。</p>
+          <p>5. Ref M1-M5 只用來優化分析框架與章節順序，不作公司數字來源，也不覆寫本地官方 PDF。</p>
+          <p>6. 若資料無法建立一致口徑，本報告不推估、不補值，改標示為不可直接比較或待查證。</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="tooltip" class="tooltip"></div>
+  <script>
+    const colors = {
+      nvda: getComputedStyle(document.documentElement).getPropertyValue("--nvda").trim(),
+      amd: getComputedStyle(document.documentElement).getPropertyValue("--amd").trim(),
+      avgo: getComputedStyle(document.documentElement).getPropertyValue("--avgo").trim()
+    };
+    const companyMeta = {
+      NVIDIA: { color: colors.nvda, short: "NVDA" },
+      AMD: { color: colors.amd, short: "AMD" },
+      Broadcom: { color: colors.avgo, short: "AVGO" }
+    };
+    const dataset = {
+      annual: [
+        { company: "NVIDIA", year: "FY2026", revenue: 215.938, netIncome: 120.067, grossMargin: 71.1, opMargin: 60.4, netMargin: 55.6 },
+        { company: "AMD", year: "FY2025", revenue: 34.639, netIncome: 4.335, grossMargin: 50.0, opMargin: 10.7, netMargin: 12.5 },
+        { company: "Broadcom", year: "FY2025", revenue: 63.887, netIncome: 23.126, grossMargin: 68.0, opMargin: 40.0, netMargin: 36.2 }
+      ],
+      bridges: [
+        { company: "NVIDIA", steps: [
+          { label: "Revenue", value: 215.938, type: "start" }, { label: "Cost of revenue", value: -62.475, type: "down" },
+          { label: "Gross profit", value: 153.463, type: "total" }, { label: "Operating expenses", value: -23.076, type: "down" },
+          { label: "Operating income", value: 130.387, type: "total" }, { label: "Other/tax residual", value: -10.320, type: "down" },
+          { label: "Net income", value: 120.067, type: "final" }
+        ]},
+        { company: "AMD", steps: [
+          { label: "Revenue", value: 34.639, type: "start" }, { label: "Cost of sales", value: -17.487, type: "down" },
+          { label: "Gross profit", value: 17.152, type: "total" }, { label: "Operating expenses", value: -13.458, type: "down" },
+          { label: "Operating income", value: 3.694, type: "total" }, { label: "Other/tax residual", value: 0.641, type: "up" },
+          { label: "Net income", value: 4.335, type: "final" }
+        ]},
+        { company: "Broadcom", steps: [
+          { label: "Revenue", value: 63.887, type: "start" }, { label: "Cost of revenue", value: -20.593, type: "down" },
+          { label: "Gross profit", value: 43.294, type: "total" }, { label: "Operating expenses", value: -17.810, type: "down" },
+          { label: "Operating income", value: 25.484, type: "total" }, { label: "Other/tax residual", value: -2.358, type: "down" },
+          { label: "Net income", value: 23.126, type: "final" }
+        ]}
+      ],
+      mix: [
+        { company: "NVIDIA", parts: [{ label: "Compute & Networking", value: 89.6, color: "#2563eb" }, { label: "Graphics", value: 10.4, color: "#93c5fd" }] },
+        { company: "AMD", parts: [{ label: "Data Center", value: 48.0, color: "#f97316" }, { label: "Client & Gaming", value: 42.0, color: "#fdba74" }, { label: "Embedded", value: 10.0, color: "#ffedd5" }] },
+        { company: "Broadcom", parts: [{ label: "Semiconductor Solutions", value: 57.7, color: "#0f766e" }, { label: "Infrastructure Software", value: 42.3, color: "#5eead4" }] }
+      ],
+      bubble: [
+        { company: "NVIDIA", revenue: 215.938, netMargin: 55.6, proxy: 89.6, proxyLabel: "Compute & Networking share" },
+        { company: "AMD", revenue: 34.639, netMargin: 12.5, proxy: 48.0, proxyLabel: "Data Center share" },
+        { company: "Broadcom", revenue: 63.887, netMargin: 36.2, proxy: 57.7, proxyLabel: "Semiconductor Solutions share" }
+      ],
+      risk: {
+        axes: ["客戶集中", "出口/中國", "供應鏈集中", "整合複雜度", "獲利波動"],
+        values: { NVIDIA: [5, 4, 4, 2, 4], AMD: [2, 5, 4, 3, 4], Broadcom: [5, 3, 5, 5, 3] }
+      },
+      trends: {
+        years: ["2023/2024 base", "2024/2025 base", "2025/2026 latest"],
+        revenue: { NVIDIA: [60.922, 130.497, 215.938], AMD: [22.680, 25.785, 34.639], Broadcom: [35.819, 51.574, 63.887] },
+        grossMargin: { NVIDIA: [72.7, 75.0, 71.1], AMD: [46.1, 49.0, 50.0], Broadcom: [68.9, 63.0, 68.0] },
+        opMargin: { NVIDIA: [54.1, 62.4, 60.4], AMD: [1.8, 7.4, 10.7], Broadcom: [45.2, 26.1, 40.0] },
+        netMargin: { NVIDIA: [48.8, 55.8, 55.6], AMD: [3.8, 6.4, 12.5], Broadcom: [39.3, 11.4, 36.2] }
+      },
+      quarter: [
+        { company: "NVIDIA", period: "Q4 FY26", revenue: 68.1, netIncome: 43.0, source: "Ref QN1" },
+        { company: "AMD", period: "Q4 2025", revenue: 10.3, netIncome: 1.5, source: "Ref QA1" },
+        { company: "Broadcom", period: "Q1 FY26", revenue: 19.311, netIncome: 7.349, source: "Ref QB1" }
+      ]
+    };
+    function svgEl(tag, attrs = {}, text) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+    function wrapSvgText(svg, x, y, lines, attrs = {}, lineGap = 14) {
+      const text = svgEl("text", { x, y, ...attrs });
+      lines.forEach((line, i) => {
+        const tspan = svgEl("tspan", { x, dy: i === 0 ? 0 : lineGap }, line);
+        text.appendChild(tspan);
+      });
+      svg.appendChild(text);
+      return text;
+    }
+    function clearSvg(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+    function addTip(el, html) { el.dataset.tip = html; }
+    function attachTooltipHandlers() {
+      const tooltip = document.getElementById("tooltip");
+      document.querySelectorAll("[data-tip]").forEach((el) => {
+        el.addEventListener("mousemove", (e) => {
+          tooltip.innerHTML = el.dataset.tip;
+          tooltip.classList.add("show");
+          tooltip.style.left = `${e.clientX + 16}px`;
+          tooltip.style.top = `${e.clientY + 16}px`;
+        });
+        el.addEventListener("mouseleave", () => tooltip.classList.remove("show"));
+      });
+    }
+    function drawScaleChart() {
+      const svg = document.getElementById("chart-scale");
+      clearSvg(svg);
+      const W = 720, H = 420, m = { top: 18, right: 20, bottom: 70, left: 72 };
+      const innerW = W - m.left - m.right, innerH = H - m.top - m.bottom, max = 240;
+      const groupW = innerW / dataset.annual.length, barW = 36;
+      for (let i = 0; i <= 6; i++) {
+        const val = i * 40, y = m.top + innerH - (val / max) * innerH;
+        svg.appendChild(svgEl("line", { x1: m.left, y1: y, x2: W - m.right, y2: y, stroke: "#e5e7eb" }));
+        svg.appendChild(svgEl("text", { x: m.left - 8, y: y + 4, "text-anchor": "end", fill: "#52606d", "font-size": 11 }, `${val}`));
+      }
+      dataset.annual.forEach((d, i) => {
+        const gx = m.left + i * groupW + groupW / 2, revH = d.revenue / max * innerH, niH = d.netIncome / max * innerH;
+        const revX = gx - 42, niX = gx + 8, revY = m.top + innerH - revH, niY = m.top + innerH - niH;
+        const r1 = svgEl("rect", { x: revX, y: revY, width: barW, height: revH, rx: 8, fill: "#9ca3af" });
+        const r2 = svgEl("rect", { x: niX, y: niY, width: barW, height: niH, rx: 8, fill: "#111827" });
+        addTip(r1, `<strong>${d.company}</strong><br>${d.year} 營收：US$${d.revenue.toFixed(1)}B<br>來源：主年度財報`);
+        addTip(r2, `<strong>${d.company}</strong><br>${d.year} 淨利：US$${d.netIncome.toFixed(1)}B<br>來源：主年度財報`);
+        svg.appendChild(r1); svg.appendChild(r2);
+        svg.appendChild(svgEl("text", { x: gx - 24, y: revY - 8, "text-anchor": "middle", fill: "#374151", "font-size": 11 }, d.revenue.toFixed(1)));
+        svg.appendChild(svgEl("text", { x: gx + 26, y: niY - 8, "text-anchor": "middle", fill: "#111827", "font-size": 11 }, d.netIncome.toFixed(1)));
+        svg.appendChild(svgEl("text", { x: gx, y: H - 26, "text-anchor": "middle", fill: "#15202b", "font-size": 13, "font-weight": 700 }, d.company));
+        svg.appendChild(svgEl("text", { x: gx, y: H - 10, "text-anchor": "middle", fill: "#52606d", "font-size": 11 }, d.year));
+      });
+      svg.appendChild(svgEl("text", { x: 10, y: 18, fill: "#52606d", "font-size": 11 }, "US$ bn"));
+    }
+    function drawMarginsChart() {
+      const svg = document.getElementById("chart-margins");
+      clearSvg(svg);
+      const W = 720, H = 430, m = { top: 24, right: 18, bottom: 84, left: 62 };
+      const innerW = W - m.left - m.right, innerH = H - m.top - m.bottom;
+      const groups = ["grossMargin", "opMargin", "netMargin"];
+      const labels = { grossMargin: "毛利率", opMargin: "營益率", netMargin: "淨利率" };
+      const fills = { grossMargin: "#cbd5e1", opMargin: "#64748b", netMargin: "#0f172a" };
+      for (let i = 0; i <= 8; i++) {
+        const v = i * 10, y = m.top + innerH - v / 80 * innerH;
+        svg.appendChild(svgEl("line", { x1: m.left, y1: y, x2: W - m.right, y2: y, stroke: "#e5e7eb" }));
+        svg.appendChild(svgEl("text", { x: m.left - 8, y: y + 4, "text-anchor": "end", fill: "#52606d", "font-size": 11 }, `${v}%`));
+      }
+      groups.forEach((g, gi) => {
+        const gx = m.left + gi * (innerW / groups.length) + 28;
+        dataset.annual.forEach((d, di) => {
+          const x = gx + di * 56, h = d[g] / 80 * innerH, y = m.top + innerH - h;
+          const rect = svgEl("rect", { x, y, width: 36, height: h, rx: 8, fill: fills[g] });
+          addTip(rect, `<strong>${d.company}</strong><br>${labels[g]}：${d[g].toFixed(1)}%<br>${d.year}`);
+          svg.appendChild(rect);
+          svg.appendChild(svgEl("text", { x: x + 18, y: y - 6, "text-anchor": "middle", fill: "#374151", "font-size": 11 }, d[g].toFixed(1)));
+        });
+        svg.appendChild(svgEl("text", { x: gx + 56, y: H - 48, "text-anchor": "middle", fill: "#15202b", "font-size": 13, "font-weight": 700 }, labels[g]));
+        dataset.annual.forEach((d, di) => svg.appendChild(svgEl("text", { x: gx + di * 56 + 18, y: H - 28, "text-anchor": "middle", fill: companyMeta[d.company].color, "font-size": 11 }, companyMeta[d.company].short)));
+      });
+    }
+    function drawBridgeChart() {
+      const svg = document.getElementById("chart-bridge");
+      clearSvg(svg);
+      dataset.bridges.forEach((series, idx) => {
+        const top = 20 + idx * 170, baseY = top + 128, rowHeight = 84, scale = rowHeight / series.steps[0].value;
+        let current = series.steps[0].value, x = 120;
+        svg.appendChild(svgEl("text", { x: 20, y: top + 12, fill: companyMeta[series.company].color, "font-size": 15, "font-weight": 700 }, series.company));
+        series.steps.forEach((step) => {
+          const width = 70;
+          let y = baseY, height = 0, fill = companyMeta[series.company].color;
+          if (step.type === "start" || step.type === "total" || step.type === "final") {
+            height = step.value * scale;
+            y = baseY - height;
+            fill = step.type === "final" ? "#111827" : companyMeta[series.company].color;
+          } else {
+            height = Math.abs(step.value) * scale;
+            y = step.value < 0 ? baseY - current * scale : baseY - (current + step.value) * scale;
+            fill = step.value < 0 ? "#f97316" : "#16a34a";
+          }
+          const rect = svgEl("rect", { x, y, width, height, rx: 8, fill, opacity: 0.95 });
+          addTip(rect, `<strong>${series.company}</strong><br>${step.label}: ${step.value > 0 ? "+" : ""}${step.value.toFixed(3)}B`);
+          svg.appendChild(rect);
+          svg.appendChild(svgEl("text", { x: x + width / 2, y: y - 6, "text-anchor": "middle", fill: "#374151", "font-size": 10 }, `${step.value > 0 && !["Revenue","Gross profit","Operating income","Net income"].includes(step.label) ? "+" : ""}${step.value.toFixed(1)}`));
+          const shortLabel = step.label === "Other/tax residual" ? "Residual" : step.label;
+          svg.appendChild(svgEl("text", { x: x + width / 2, y: top + 132, "text-anchor": "middle", fill: "#52606d", "font-size": 10 }, shortLabel));
+          if (step.type === "down" || step.type === "up") current += step.value;
+          if (step.type === "total" || step.type === "start" || step.type === "final") current = step.value;
+          x += 86;
+        });
+        svg.appendChild(svgEl("line", { x1: 110, y1: baseY, x2: 680, y2: baseY, stroke: "#cbd5e1" }));
+      });
+      svg.appendChild(svgEl("text", { x: 20, y: 528, fill: "#52606d", "font-size": 11 }, "單位：US$ bn"));
+    }
+    function drawMixChart() {
+      const svg = document.getElementById("chart-mix");
+      clearSvg(svg);
+      const W = 720, H = 390, m = { top: 30, right: 20, bottom: 42, left: 170 };
+      const usableW = W - m.left - m.right;
+      dataset.mix.forEach((d, i) => {
+        const y = m.top + i * 96;
+        svg.appendChild(svgEl("text", { x: 20, y: y + 24, fill: "#15202b", "font-size": 14, "font-weight": 700 }, d.company));
+        let start = m.left;
+        d.parts.forEach((part) => {
+          const w = usableW * part.value / 100;
+          const rect = svgEl("rect", { x: start, y, width: w, height: 34, rx: 10, fill: part.color });
+          addTip(rect, `<strong>${d.company}</strong><br>${part.label}: ${part.value.toFixed(1)}%`);
+          svg.appendChild(rect);
+          if (w > 64) svg.appendChild(svgEl("text", { x: start + w / 2, y: y + 22, "text-anchor": "middle", fill: w > 90 ? "#fff" : "#0f172a", "font-size": 11, "font-weight": 700 }, `${part.label} ${part.value.toFixed(1)}%`));
+          start += w;
+        });
+      });
+      for (let i = 0; i <= 10; i++) {
+        const v = i * 10, x = m.left + usableW * v / 100;
+        svg.appendChild(svgEl("line", { x1: x, y1: 14, x2: x, y2: H - 44, stroke: "#e5e7eb" }));
+        svg.appendChild(svgEl("text", { x, y: H - 18, "text-anchor": "middle", fill: "#52606d", "font-size": 11 }, `${v}%`));
+      }
+    }
+    function drawBubbleChart() {
+      const svg = document.getElementById("chart-bubble");
+      clearSvg(svg);
+      const W = 720, H = 430, m = { top: 20, right: 22, bottom: 48, left: 66 };
+      const innerW = W - m.left - m.right, innerH = H - m.top - m.bottom;
+      for (let i = 0; i <= 5; i++) {
+        const v = i * 50, x = m.left + innerW * v / 250;
+        svg.appendChild(svgEl("line", { x1: x, y1: m.top, x2: x, y2: H - m.bottom, stroke: "#e5e7eb" }));
+        svg.appendChild(svgEl("text", { x, y: H - 18, "text-anchor": "middle", fill: "#52606d", "font-size": 11 }, `${v}`));
+      }
+      for (let i = 0; i <= 6; i++) {
+        const v = i * 10, y = m.top + innerH - innerH * v / 60;
+        svg.appendChild(svgEl("line", { x1: m.left, y1: y, x2: W - m.right, y2: y, stroke: "#e5e7eb" }));
+        svg.appendChild(svgEl("text", { x: m.left - 8, y: y + 4, "text-anchor": "end", fill: "#52606d", "font-size": 11 }, `${v}%`));
+      }
+      dataset.bubble.forEach((d) => {
+        const x = m.left + innerW * d.revenue / 250, y = m.top + innerH - innerH * d.netMargin / 60, r = 16 + d.proxy * 0.45;
+        const circle = svgEl("circle", { cx: x, cy: y, r, fill: companyMeta[d.company].color, opacity: 0.78, stroke: "#fff", "stroke-width": 2 });
+        addTip(circle, `<strong>${d.company}</strong><br>營收：US$${d.revenue.toFixed(1)}B<br>淨利率：${d.netMargin.toFixed(1)}%<br>Proxy：${d.proxyLabel} ${d.proxy.toFixed(1)}%`);
+        svg.appendChild(circle);
+        svg.appendChild(svgEl("text", { x, y: y + 4, "text-anchor": "middle", fill: "#fff", "font-size": 11, "font-weight": 700 }, companyMeta[d.company].short));
+      });
+      svg.appendChild(svgEl("text", { x: 14, y: 18, fill: "#52606d", "font-size": 11 }, "淨利率"));
+      svg.appendChild(svgEl("text", { x: W - 130, y: H - 18, fill: "#52606d", "font-size": 11 }, "營收（US$ bn）"));
+    }
+    function drawRiskChart() {
+      const svg = document.getElementById("chart-risk");
+      clearSvg(svg);
+      const W = 720, H = 470, cx = 360, cy = 230, R = 150;
+      const axes = dataset.risk.axes;
+      for (let level = 1; level <= 5; level++) {
+        const r = R * level / 5;
+        const points = axes.map((_, i) => {
+          const angle = -Math.PI / 2 + i * (Math.PI * 2 / axes.length);
+          return `${cx + Math.cos(angle) * r},${cy + Math.sin(angle) * r}`;
+        });
+        svg.appendChild(svgEl("polygon", { points: points.join(" "), fill: "none", stroke: "#e5e7eb" }));
+      }
+      axes.forEach((label, i) => {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / axes.length);
+        const x = cx + Math.cos(angle) * (R + 24), y = cy + Math.sin(angle) * (R + 24);
+        svg.appendChild(svgEl("line", { x1: cx, y1: cy, x2: cx + Math.cos(angle) * R, y2: cy + Math.sin(angle) * R, stroke: "#cbd5e1" }));
+        const labelLines = label.includes("/") ? label.split("/") : [label];
+        wrapSvgText(svg, x, y, labelLines, { "text-anchor": "middle", fill: "#15202b", "font-size": 12, "font-weight": 700 });
+      });
+      Object.entries(dataset.risk.values).forEach(([company, values]) => {
+        const pts = values.map((v, i) => {
+          const angle = -Math.PI / 2 + i * (Math.PI * 2 / axes.length);
+          const r = R * v / 5;
+          return `${cx + Math.cos(angle) * r},${cy + Math.sin(angle) * r}`;
+        }).join(" ");
+        const poly = svgEl("polygon", { points: pts, fill: companyMeta[company].color, opacity: 0.18, stroke: companyMeta[company].color, "stroke-width": 2 });
+        addTip(poly, `<strong>${company}</strong><br>${axes.map((a, i) => `${a}: ${values[i]}`).join("<br>")}`);
+        svg.appendChild(poly);
+      });
+    }
+    let currentTrendMetric = "revenue";
+    function drawTrendChart() {
+      const svg = document.getElementById("chart-trend");
+      clearSvg(svg);
+      const W = 720, H = 430, m = { top: 20, right: 22, bottom: 50, left: 62 };
+      const innerW = W - m.left - m.right, innerH = H - m.top - m.bottom;
+      const series = dataset.trends[currentTrendMetric];
+      const max = currentTrendMetric === "revenue" ? 240 : 80;
+      const label = currentTrendMetric === "revenue" ? "US$ bn" : "%";
+      for (let i = 0; i <= 6; i++) {
+        const v = currentTrendMetric === "revenue" ? i * 40 : i * 10, y = m.top + innerH - innerH * v / max;
+        svg.appendChild(svgEl("line", { x1: m.left, y1: y, x2: W - m.right, y2: y, stroke: "#e5e7eb" }));
+        svg.appendChild(svgEl("text", { x: m.left - 8, y: y + 4, "text-anchor": "end", fill: "#52606d", "font-size": 11 }, `${v}${currentTrendMetric === "revenue" ? "" : "%"}`));
+      }
+      const axisLabels = ["最近第 3 年", "最近第 2 年", "最近第 1 年"];
+      axisLabels.forEach((yr, i) => {
+        const x = m.left + innerW * i / (dataset.trends.years.length - 1);
+        svg.appendChild(svgEl("line", { x1: x, y1: m.top, x2: x, y2: H - m.bottom, stroke: "#f1f5f9" }));
+        svg.appendChild(svgEl("text", { x, y: H - 18, "text-anchor": "middle", fill: "#52606d", "font-size": 11 }, yr));
+      });
+      Object.entries(series).forEach(([company, arr]) => {
+        const pts = arr.map((v, i) => [m.left + innerW * i / (arr.length - 1), m.top + innerH - innerH * v / max]);
+        const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ");
+        const line = svgEl("path", { d: path, fill: "none", stroke: companyMeta[company].color, "stroke-width": 3 });
+        addTip(line, `<strong>${company}</strong><br>${arr.map((v, i) => `${dataset.trends.years[i]}: ${v.toFixed(1)}${currentTrendMetric === "revenue" ? "B" : "%"}`).join("<br>")}`);
+        svg.appendChild(line);
+        pts.forEach((p, i) => {
+          const c = svgEl("circle", { cx: p[0], cy: p[1], r: 5, fill: companyMeta[company].color, stroke: "#fff", "stroke-width": 2 });
+          addTip(c, `<strong>${company}</strong><br>${dataset.trends.years[i]}<br>${currentTrendMetric === "revenue" ? "營收" : (currentTrendMetric === "grossMargin" ? "毛利率" : (currentTrendMetric === "opMargin" ? "營益率" : "淨利率"))}：${arr[i].toFixed(1)}${currentTrendMetric === "revenue" ? "B" : "%"}`);
+          svg.appendChild(c);
+        });
+      });
+      svg.appendChild(svgEl("text", { x: 10, y: 18, fill: "#52606d", "font-size": 11 }, label));
+    }
+    function drawQuarterChart() {
+      const svg = document.getElementById("chart-quarter");
+      clearSvg(svg);
+      const W = 720, H = 420, m = { top: 20, right: 18, bottom: 72, left: 62 };
+      const innerW = W - m.left - m.right, innerH = H - m.top - m.bottom, max = 80;
+      for (let i = 0; i <= 8; i++) {
+        const v = i * 10, y = m.top + innerH - innerH * v / max;
+        svg.appendChild(svgEl("line", { x1: m.left, y1: y, x2: W - m.right, y2: y, stroke: "#e5e7eb" }));
+        svg.appendChild(svgEl("text", { x: m.left - 8, y: y + 4, "text-anchor": "end", fill: "#52606d", "font-size": 11 }, `${v}`));
+      }
+      dataset.quarter.forEach((d, i) => {
+        const groupW = innerW / dataset.quarter.length, gx = m.left + groupW * i + groupW / 2;
+        const revH = d.revenue / max * innerH, niH = d.netIncome / max * innerH;
+        const rev = svgEl("rect", { x: gx - 40, y: m.top + innerH - revH, width: 34, height: revH, rx: 8, fill: companyMeta[d.company].color, opacity: 0.9 });
+        const ni = svgEl("rect", { x: gx + 8, y: m.top + innerH - niH, width: 34, height: niH, rx: 8, fill: "#111827" });
+        addTip(rev, `<strong>${d.company}</strong><br>${d.period} 營收：US$${d.revenue.toFixed(1)}B<br>${d.source}`);
+        addTip(ni, `<strong>${d.company}</strong><br>${d.period} 淨利：US$${d.netIncome.toFixed(1)}B<br>${d.source}`);
+        svg.appendChild(rev); svg.appendChild(ni);
+        svg.appendChild(svgEl("text", { x: gx - 23, y: m.top + innerH - revH - 8, "text-anchor": "middle", fill: "#374151", "font-size": 11 }, d.revenue.toFixed(1)));
+        svg.appendChild(svgEl("text", { x: gx + 25, y: m.top + innerH - niH - 8, "text-anchor": "middle", fill: "#111827", "font-size": 11 }, d.netIncome.toFixed(1)));
+        svg.appendChild(svgEl("text", { x: gx, y: H - 28, "text-anchor": "middle", fill: "#15202b", "font-size": 13, "font-weight": 700 }, d.company));
+        svg.appendChild(svgEl("text", { x: gx, y: H - 12, "text-anchor": "middle", fill: "#52606d", "font-size": 11 }, d.period));
+      });
+      svg.appendChild(svgEl("text", { x: 12, y: 18, fill: "#52606d", "font-size": 11 }, "US$ bn"));
+    }
+    function setupFilters() {
+      const buttons = document.querySelectorAll("#chart-filter button");
+      const cards = document.querySelectorAll(".chart-card[data-cat]");
+      buttons.forEach((btn) => btn.addEventListener("click", () => {
+        buttons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const filter = btn.dataset.filter;
+        cards.forEach((card) => {
+          const cats = card.dataset.cat.split(" ");
+          card.classList.toggle("hidden", !(filter === "all" || cats.includes(filter)));
+        });
+      }));
+    }
+    function setupTrendSwitch() {
+      const buttons = document.querySelectorAll("#trend-switch button");
+      buttons.forEach((btn) => btn.addEventListener("click", () => {
+        buttons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentTrendMetric = btn.dataset.metric;
+        drawTrendChart();
+        attachTooltipHandlers();
+      }));
+    }
+    drawScaleChart();
+    drawMarginsChart();
+    drawBridgeChart();
+    drawMixChart();
+    drawBubbleChart();
+    drawRiskChart();
+    drawTrendChart();
+    drawQuarterChart();
+    setupFilters();
+    setupTrendSwitch();
+    attachTooltipHandlers();
+  </script>
+</body>
+</html>

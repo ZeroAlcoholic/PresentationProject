@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>壽險業 AI 變現地圖 — 台灣落地評估 2026</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09180f;--bgc:#0d1f16;--bgc2:#122519;
+  --gd:#163621;--gm:#2a5c42;--gl:#3d7f5f;--gb:#52a87a;--ac:#74c69d;
+  --t1:#e8ede5;--t2:#a8c2ae;--t3:#7a9e8a;
+  --bdr:#172e1f;--bdr2:#223d2e;
+  --r:9px;--rl:14px;
+  --cs-col:#52a87a;--cl-col:#fb923c;--uw-col:#93c5fd;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans TC','微軟正黑體','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--t1);font-size:18px;line-height:1.8}
+h1{font-size:2.8rem;font-weight:700;line-height:1.18;letter-spacing:-.02em}
+h2{font-size:1.9rem;font-weight:700;margin-bottom:1.1rem;letter-spacing:-.01em}
+h3{font-size:1.32rem;font-weight:600;margin-bottom:.72rem}
+h4{font-size:1.08rem;font-weight:600;margin-bottom:.5rem}
+p{margin-bottom:1rem}
+strong{color:var(--ac)}
+a{color:var(--gb)}
+
+/* ── NAV ── */
+#nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(9,24,15,.97);backdrop-filter:blur(14px);border-bottom:1px solid var(--bdr);display:flex;align-items:center;height:62px;padding:0 1.8rem}
+.nav-brand{font-size:.95rem;font-weight:700;color:var(--ac);white-space:nowrap;margin-right:1.5rem;flex-shrink:0}
+.nav-links{display:flex;overflow-x:auto;scrollbar-width:none}
+.nav-links::-webkit-scrollbar{display:none}
+#nav a{color:var(--t2);font-size:.84rem;padding:0 .9rem;height:62px;display:flex;align-items:center;white-space:nowrap;border-bottom:3px solid transparent;transition:.2s all}
+#nav a:hover,#nav a.on{color:var(--ac);border-bottom-color:var(--ac)}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1180px;margin:0 auto;padding:0 2.2rem}
+section{padding:5.5rem 0 4.5rem;border-bottom:1px solid var(--bdr)}
+.sec-no{font-size:.8rem;font-weight:700;color:var(--gb);text-transform:uppercase;letter-spacing:.14em;margin-bottom:.45rem}
+.sec-hd{margin-bottom:2.5rem}
+
+/* ── HERO ── */
+#hero{padding-top:7.5rem;padding-bottom:4.5rem;position:relative;overflow:hidden;border-bottom:1px solid var(--bdr)}
+.hero-bg{position:absolute;inset:0;opacity:.18;background-image:radial-gradient(circle,var(--gm) 1px,transparent 1px);background-size:28px 28px;animation:bgPan 40s linear infinite}
+@keyframes bgPan{0%{background-position:0 0}100%{background-position:56px 56px}}
+.hero-inner{position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:.6rem;background:var(--gd);border:1px solid var(--gm);color:var(--ac);font-size:.84rem;font-weight:700;padding:.4rem 1.15rem;border-radius:2rem;margin-bottom:1.5rem;letter-spacing:.07em}
+.hero-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ac);animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.hero-sub{color:var(--t2);font-size:1.08rem;margin-top:.9rem}
+.hero-note{color:var(--t3);font-size:.92rem;margin-top:1.05rem}
+.hero-conclusion{background:var(--bgc);border:1px solid var(--bdr2);border-left:4px solid var(--gm);border-radius:var(--r);padding:1.5rem 1.8rem;margin-top:1.7rem;font-size:1.02rem;color:var(--t2);line-height:1.78}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-top:2.2rem}
+.stat-card{background:var(--bgc);border:1px solid var(--bdr);border-radius:var(--r);padding:1.4rem 1.2rem;text-align:center;transition:border-color .25s,transform .25s,box-shadow .25s}
+.stat-card:hover{border-color:var(--gm);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.stat-val{font-size:2.2rem;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums}
+.stat-label{font-size:.84rem;color:var(--t3);margin-top:.28rem;line-height:1.45}
+.stat-ev{font-size:.72rem;font-weight:700;padding:.13rem .55rem;border-radius:3px;margin-top:.45rem;display:inline-block}
+.ev-a{background:#0f3460;color:#60a5fa}.ev-b{background:#0a2818;color:#4ade80}
+.ev-c{background:#2a2400;color:#facc15}.ev-d{background:#2d1800;color:#fb923c}
+
+/* ── TAGS ── */
+.tag{display:inline-block;font-size:.74rem;font-weight:700;padding:.16rem .58rem;border-radius:3px;vertical-align:middle;margin-left:.4rem;letter-spacing:.03em}
+.ta{background:#0f3460;color:#60a5fa}.tb{background:#0a2818;color:#4ade80}
+.tc{background:#2a2400;color:#facc15}.td{background:#2d1800;color:#fb923c}
+.t-ver{background:#0f3460;color:#60a5fa}.t-ven{background:#3d1800;color:#fb923c}
+.t-inf{background:#2a1040;color:#c084fc}.t-unk{background:#1a2a1a;color:#86efac}
+.t-nv{background:#3d0f0f;color:#f87171}
+
+/* ── CARDS / GRID ── */
+.card{background:var(--bgc);border:1px solid var(--bdr);border-radius:var(--rl);padding:1.8rem;margin-bottom:1.1rem;transition:border-color .25s,box-shadow .25s}
+.card:hover{border-color:var(--bdr2);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.1rem}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-bottom:1.1rem}
+.ga{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.2rem;margin-bottom:1.1rem}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto;margin:1.4rem 0;border-radius:var(--r);border:1px solid var(--bdr)}
+table{width:100%;border-collapse:collapse;font-size:.96rem}
+th{background:var(--gd);color:var(--ac);padding:.8rem 1.05rem;text-align:left;font-weight:600;white-space:nowrap;font-size:.96rem}
+td{padding:.75rem 1.05rem;border-top:1px solid var(--bdr);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.025)}
+
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:1px solid var(--bdr);margin-bottom:1.7rem}
+.tab-btn{background:none;border:none;border-bottom:3px solid transparent;color:var(--t2);font-size:.97rem;font-weight:500;padding:.8rem 1.4rem;cursor:pointer;transition:.2s;font-family:inherit}
+.tab-btn:hover{color:var(--t1)}.tab-btn.on{color:var(--ac);border-bottom-color:var(--ac)}
+.pane{display:none}.pane.on{display:block}
+
+/* ── EVIDENCE ACCORDION ── */
+.ev-item{border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:.75rem;overflow:hidden;transition:border-color .2s}
+.ev-item:hover{border-color:var(--bdr2)}
+.ev-hdr{display:flex;align-items:center;gap:1rem;padding:1.05rem 1.35rem;cursor:pointer;background:var(--bgc);user-select:none;transition:.2s}
+.ev-hdr:hover{background:var(--bgc2)}
+.ev-lv{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.08rem;flex-shrink:0}
+.ev-hdr-title{flex:1;font-size:1rem;font-weight:600}
+.ev-hdr-count{font-size:.86rem;color:var(--t3)}
+.ev-chevron{color:var(--t3);font-size:.9rem;transition:transform .3s}
+.ev-body{max-height:0;overflow:hidden;transition:max-height .55s ease}
+.ev-body.open{max-height:2400px}
+.ev-body-inner{padding:1.05rem 1.35rem;font-size:.92rem;color:var(--t2);line-height:1.72;border-top:1px solid var(--bdr)}
+
+/* ── RADAR CHART ── */
+.radar-wrap{display:flex;align-items:center;gap:2.5rem;flex-wrap:wrap}
+.radar-svg-wrap{flex-shrink:0}
+.radar-legend{display:flex;flex-direction:column;gap:.9rem}
+.rl-item{display:flex;align-items:center;gap:.7rem;font-size:.92rem}
+.rl-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+
+/* ── ARCH DIAGRAM (animated SVG) ── */
+.arch-svg-wrap{overflow-x:auto;background:var(--bgc);border:1px solid var(--bdr);border-radius:var(--rl);padding:1.8rem}
+.arch-svg-wrap svg text{font-family:'Noto Sans TC','微軟正黑體',sans-serif}
+
+/* ── KPI GAUGES ── */
+.gauge-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:1.2rem;margin-bottom:1.2rem}
+.gauge-card{background:var(--bgc);border:1px solid var(--bdr);border-radius:var(--r);padding:1.2rem;text-align:center;transition:border-color .25s,transform .2s}
+.gauge-card:hover{border-color:var(--gm);transform:translateY(-2px)}
+.gauge-note{font-size:.82rem;color:var(--t3);margin-top:.4rem;line-height:1.45}
+
+/* ── TIMELINE ── */
+.tl{position:relative;padding-left:2.2rem}
+.tl::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--gm),var(--gd))}
+.tl-item{position:relative;margin-bottom:2.1rem;padding-left:1.6rem}
+.tl-item::before{content:'';position:absolute;left:-2.55rem;top:.38rem;width:13px;height:13px;border-radius:50%;background:var(--gm);border:2px solid var(--ac)}
+.tl-period{font-size:.82rem;font-weight:700;color:var(--ac);text-transform:uppercase;letter-spacing:.09em;margin-bottom:.38rem}
+
+/* ── CONSTRAINT CARDS ── */
+.con-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.2rem}
+.con{background:var(--bgc);border:1px solid var(--bdr);border-left:4px solid var(--gm);border-radius:var(--r);padding:1.3rem 1.5rem;transition:transform .2s,box-shadow .2s}
+.con:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.con.warn{border-left-color:#d97706}.con.caution{border-left-color:#7c3aed}
+.con-lbl{font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--t3);margin-bottom:.42rem}
+.con-title{font-size:1rem;font-weight:600;margin-bottom:.52rem}
+.con-body{font-size:.9rem;color:var(--t2);line-height:1.68}
+
+/* ── COMPLIANCE STRIPE (animated) ── */
+.compliance-bg{
+  background:repeating-linear-gradient(45deg,transparent,transparent 10px,rgba(217,119,6,.04) 10px,rgba(217,119,6,.04) 20px);
+  animation:stripe 3s linear infinite;border-left:4px solid #d97706;
+}
+@keyframes stripe{0%{background-position:0 0}100%{background-position:28px 28px}}
+
+/* ── DEMO: UW RISK ENGINE ── */
+.demo-wrap{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.demo-panel{background:var(--bgc);border:1px solid var(--bdr);border-radius:var(--rl);padding:1.8rem}
+.fg{margin-bottom:1.2rem}
+.fg label{display:block;font-size:.9rem;font-weight:600;color:var(--t2);margin-bottom:.4rem}
+.fg input,.fg select{width:100%;background:var(--bg);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--t1);font-size:.97rem;padding:.62rem .95rem;font-family:inherit;transition:.2s}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--gm);box-shadow:0 0 0 2px rgba(42,92,66,.3)}
+.fg .hint{font-size:.8rem;color:var(--t3);margin-top:.28rem}
+.rrow{display:flex;align-items:center;gap:.65rem}
+.rrow input[type=range]{flex:1;accent-color:var(--gb);height:6px;padding:0}
+.rval{font-size:.97rem;font-weight:700;color:var(--ac);min-width:3.5rem;text-align:right}
+.run-btn{width:100%;background:var(--gm);border:none;border-radius:var(--r);color:#fff;font-size:1rem;font-weight:700;padding:.92rem;cursor:pointer;font-family:inherit;transition:.2s;margin-top:.55rem;letter-spacing:.04em}
+.run-btn:hover{background:var(--gl);transform:translateY(-1px);box-shadow:0 4px 12px rgba(42,92,66,.5)}
+.run-btn:active{transform:scale(.98)}
+
+/* UW rules viz */
+.rule-list{list-style:none;padding:0;margin-bottom:1.2rem}
+.rule-item{display:flex;align-items:center;gap:.85rem;padding:.75rem 1rem;border-radius:var(--r);margin-bottom:.55rem;font-size:.9rem;border:1px solid var(--bdr);transition:.4s all}
+.rule-item.pass{border-color:#2d6a4f;background:rgba(45,106,79,.12)}
+.rule-item.refer{border-color:#1e3a8a;background:rgba(30,58,138,.12)}
+.rule-item.warn{border-color:#92400e;background:rgba(146,64,14,.10)}
+.rule-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;background:var(--t3)}
+.rule-item.pass .rule-dot{background:#4ade80}
+.rule-item.refer .rule-dot{background:#93c5fd}
+.rule-item.warn .rule-dot{background:#fb923c}
+.rule-label{flex:1}
+.rule-result{font-size:.82rem;font-weight:700;color:var(--t3)}
+.rule-item.pass .rule-result{color:#4ade80}
+.rule-item.refer .rule-result{color:#93c5fd}
+.rule-item.warn .rule-result{color:#fb923c}
+
+/* Decision badge */
+.decision-badge{display:inline-flex;align-items:center;gap:.6rem;font-size:1.02rem;font-weight:700;padding:.62rem 1.25rem;border-radius:2rem;margin-bottom:.95rem}
+.dec-pass{background:rgba(74,222,128,.15);border:1px solid #4ade80;color:#4ade80}
+.dec-warn{background:rgba(251,146,60,.15);border:1px solid #fb923c;color:#fb923c}
+.dec-ref{background:rgba(147,197,253,.15);border:1px solid #93c5fd;color:#93c5fd}
+
+/* ── DEMO: FRAUD SCORE ── */
+.factor-bars{display:flex;flex-direction:column;gap:.9rem;margin:1.3rem 0}
+.factor-row{display:flex;align-items:center;gap:.85rem;font-size:.88rem}
+.factor-name{width:9rem;color:var(--t2);flex-shrink:0;text-align:right}
+.factor-bar-wrap{flex:1;background:var(--bdr);border-radius:4px;height:12px;overflow:hidden;position:relative}
+.factor-bar{height:100%;border-radius:4px;transition:width .8s ease;background:linear-gradient(90deg,var(--gm),var(--gb))}
+.factor-bar.hi{background:linear-gradient(90deg,#d97706,#fb923c)}
+.factor-val{width:3.5rem;text-align:right;font-weight:600;color:var(--ac);flex-shrink:0}
+.score-gauge-wrap{display:flex;flex-direction:column;align-items:center;margin:1.3rem 0}
+.score-num{font-size:3.4rem;font-weight:700;font-variant-numeric:tabular-nums;transition:color .4s}
+.score-label{font-size:.9rem;color:var(--t3);margin-top:.15rem}
+.score-bar-wrap{width:100%;background:var(--bdr);border-radius:5px;height:16px;overflow:hidden;position:relative;margin:.95rem 0}
+.score-bar{height:100%;border-radius:5px;transition:width .8s ease,background .4s}
+.score-thresholds{display:flex;justify-content:space-between;font-size:.78rem;color:var(--t3);margin-top:.28rem;padding:0 2px}
+
+/* ── ROI CALCULATOR ── */
+.roi-wrap{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.out-metric{margin-bottom:1.2rem;padding-bottom:1.2rem;border-bottom:1px solid var(--bdr)}
+.out-metric:last-child{border-bottom:none;margin-bottom:0}
+.out-lbl{font-size:.86rem;color:var(--t3);margin-bottom:.28rem}
+.out-val{font-size:1.85rem;font-weight:700;color:var(--ac)}
+.out-unit{font-size:.9rem;color:var(--t2);margin-left:.28rem}
+.warn-list{list-style:none;padding:0}
+.warn-list li{font-size:.9rem;color:#fb923c;padding:.3rem 0 .3rem 1.3rem;position:relative}
+.warn-list li::before{content:'⚠';position:absolute;left:0}
+.pri-box{background:var(--bg);border:1px solid var(--gm);border-radius:var(--r);padding:.95rem 1.15rem;font-size:.92rem;color:var(--ac);line-height:1.62}
+
+/* ── CHECKLIST ── */
+.chk{list-style:none;padding:0}
+.chk li{padding:.95rem 1.15rem;border-bottom:1px solid var(--bdr);display:flex;gap:1.05rem;align-items:flex-start}
+.chk li:last-child{border-bottom:none}
+.chk-ico{width:23px;height:23px;border-radius:50%;background:var(--gd);border:1px solid var(--gm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.74rem;color:var(--ac);margin-top:.2rem}
+.chk-title{font-size:.97rem;font-weight:600;margin-bottom:.22rem}
+.chk-detail{font-size:.86rem;color:var(--t2)}
+
+/* ── KP LIST ── */
+.kp{list-style:none;padding:0}
+.kp li{padding:.68rem 0;border-bottom:1px solid var(--bdr);padding-left:1.55rem;position:relative;font-size:.97rem}
+.kp li::before{content:'▸';position:absolute;left:0;color:var(--ac)}
+
+/* ── PRIORITY ── */
+.pri{display:inline-block;font-size:.8rem;font-weight:700;padding:.2rem .72rem;border-radius:2rem;letter-spacing:.04em}
+.pri-hi{background:#0f3020;color:#4ade80;border:1px solid #2d6a4f}
+.pri-md{background:#1a2600;color:#bef264;border:1px solid #4d7c0f}
+.pri-st{background:#0f1840;color:#93c5fd;border:1px solid #1e3a8a}
+
+/* ── SOURCE LIST ── */
+.src{list-style:none;padding:0}
+.src li{padding:.7rem 0;border-bottom:1px solid var(--bdr);font-size:.9rem;display:flex;align-items:flex-start;gap:.7rem}
+.src-lv{width:21px;height:21px;border-radius:3px;text-align:center;line-height:21px;font-size:.72rem;font-weight:700;flex-shrink:0}
+
+/* ── SCROLL REVEAL ── */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .65s,transform .65s}
+.rv.vis{opacity:1;transform:translateY(0)}
+.rv2{opacity:0;transform:translateY(24px);transition:opacity .65s .18s,transform .65s .18s}
+.rv2.vis{opacity:1;transform:translateY(0)}
+.rv3{opacity:0;transform:translateY(24px);transition:opacity .65s .36s,transform .65s .36s}
+.rv3.vis{opacity:1;transform:translateY(0)}
+
+/* ── DEMO disclaimer ── */
+.demo-disclaimer{font-size:.82rem;color:var(--t3);line-height:1.58;margin-top:1rem;padding:.82rem 1.05rem;background:var(--bg);border-radius:var(--r);border:1px solid var(--bdr)}
+
+/* ── KPI CARDS ── */
+.kpi-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:1.2rem}
+.kpi-c{background:var(--bgc);border:1px solid var(--bdr);border-radius:var(--r);padding:1.25rem;transition:border-color .25s,transform .2s}
+.kpi-c:hover{border-color:var(--gm);transform:translateY(-2px)}
+.kpi-n{font-size:.9rem;font-weight:700;color:var(--ac);margin-bottom:.24rem}
+.kpi-f{font-size:.8rem;color:var(--t3);margin-bottom:.42rem}
+.kpi-formula{font-size:.8rem;font-family:monospace;background:var(--bg);padding:.38rem .62rem;border-radius:5px;color:var(--t2);margin-bottom:.42rem}
+.kpi-tags{display:flex;gap:.3rem;flex-wrap:wrap}
+.kpi-st{font-size:.72rem;padding:.13rem .48rem;border-radius:3px;background:var(--gd);color:var(--ac)}
+
+/* ── RESP ── */
+@media(max-width:768px){
+  h1{font-size:1.75rem}h2{font-size:1.4rem}h3{font-size:1.1rem}
+  .g2,.g3,.demo-wrap,.roi-wrap{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .nav-brand{display:none}
+  section{padding:3.5rem 0 3rem}
+  body{font-size:16px}
+  .tabs{flex-wrap:wrap}
+  .tab-btn{font-size:.88rem;padding:.68rem 1rem}
+  .wrap{padding:0 1.4rem}
+}
+footer{padding:2.2rem;text-align:center;font-size:.84rem;color:var(--t3);border-top:1px solid var(--bdr)}
+footer a{color:var(--t3);border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+footer a:hover{color:var(--ac);border-bottom-color:rgba(116,198,157,.4)}
+
+/* ══ SCROLL PROGRESS ══ */
+#pgbar{position:fixed;top:0;left:0;height:3px;width:0%;z-index:600;pointer-events:none;
+  background:linear-gradient(90deg,var(--gm) 0%,var(--ac) 55%,var(--gb) 100%);
+  transition:width .08s linear;border-radius:0 2px 2px 0}
+
+/* ══ BACK TO TOP ══ */
+#top-btn{position:fixed;bottom:2.2rem;right:2rem;width:46px;height:46px;
+  background:var(--gd);border:1px solid var(--gm);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ac);font-size:1.25rem;font-weight:700;cursor:pointer;
+  opacity:0;transform:translateY(10px) scale(.9);
+  transition:opacity .3s,transform .3s,background .2s,box-shadow .2s;
+  z-index:150;box-shadow:0 4px 18px rgba(0,0,0,.4);
+  text-decoration:none;line-height:1;user-select:none;border-bottom:none!important}
+#top-btn.show{opacity:1;transform:translateY(0) scale(1)}
+#top-btn:hover{background:var(--gm);box-shadow:0 6px 22px rgba(42,92,66,.5);transform:translateY(-2px) scale(1.05)}
+
+/* ══ LINKS (in content areas only) ══ */
+.card a,.ev-body-inner a,.src li a,.con-body a,.hero-conclusion a,.bq a,.find a,.case-sub a,.case-benefits a,.dim-body a{
+  color:var(--gb);border-bottom:1px solid rgba(82,168,122,.35);
+  text-decoration:none;transition:color .2s,border-color .2s}
+.card a:hover,.ev-body-inner a:hover,.src li a:hover,.con-body a:hover,.hero-conclusion a:hover,.bq a:hover,.find a:hover,.case-sub a:hover,.case-benefits a:hover,.dim-body a:hover{
+  color:var(--ac);border-bottom-color:var(--gb)}
+
+/* ══ ABBR ══ */
+abbr[title]{border-bottom:1px dashed var(--t3);text-decoration:none;cursor:help;
+  font-style:normal;transition:border-color .2s}
+abbr[title]:hover{border-bottom-color:var(--ac)}
+
+/* ══ TAG TOOLTIPS (CSS-only via data-tip) ══ */
+.tag[data-tip]{position:relative;cursor:help}
+.tag[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);
+  background:rgba(7,19,12,.97);border:1px solid var(--bdr2);color:var(--t2);
+  font-size:.72rem;font-weight:400;padding:.45rem .75rem;border-radius:7px;
+  white-space:nowrap;opacity:0;pointer-events:none;
+  transition:opacity .22s,transform .22s;z-index:200;
+  letter-spacing:0;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.6);
+  min-width:120px;max-width:240px;white-space:normal;text-align:left;
+  transform:translateX(-50%) translateY(4px)}
+.tag[data-tip]:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ══ SECTION HEADER ACCENT ══ */
+.sec-hd{position:relative}
+.sec-hd::after{content:'';display:block;width:40px;height:3px;
+  background:linear-gradient(90deg,var(--gm),transparent);
+  margin-top:.8rem;border-radius:2px}
+
+/* ══ BLOCKQUOTE / REGULATORY QUOTE ══ */
+.bq{background:var(--bgc);border-left:4px solid var(--gm);
+  border-radius:0 var(--r) var(--r) 0;padding:1.15rem 1.5rem;
+  margin:1.3rem 0;color:var(--t2);font-size:1rem;line-height:1.78;
+  position:relative}
+.bq::before{content:'"';position:absolute;top:-.2rem;left:.8rem;
+  font-size:2.5rem;color:rgba(42,92,66,.5);line-height:1;font-family:Georgia,serif}
+.bq-src{display:block;margin-top:.7rem;font-size:.8rem;color:var(--t3);font-style:normal}
+.bq-src::before{content:'— '}
+
+/* ══ KEY FINDING CALLOUT ══ */
+.find{border:1px solid rgba(42,92,66,.6);background:rgba(42,92,66,.07);
+  border-radius:var(--rl);padding:1.2rem 1.5rem;margin:1.2rem 0;
+  position:relative;overflow:hidden}
+.find::before{content:'核心發現';position:absolute;top:0;right:0;
+  background:var(--gm);color:#e6ede3;font-size:.74rem;font-weight:700;
+  padding:.22rem .8rem;border-radius:0 var(--rl) 0 var(--rl);letter-spacing:.1em}
+.find-warn{border-color:rgba(217,119,6,.5);background:rgba(217,119,6,.06)}
+.find-warn::before{content:'注意';background:#d97706}
+.find-info{border-color:rgba(147,197,253,.35);background:rgba(30,58,138,.06)}
+.find-info::before{content:'技術說明';background:#1e3a8a}
+
+/* ══ TABLE ══ */
+tbody tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+tbody tr:hover td{background:rgba(116,198,157,.05)!important;transition:background .15s}
+th:first-child{border-radius:var(--r) 0 0 0}
+th:last-child{border-radius:0 var(--r) 0 0}
+
+/* ══ SOURCE ANCHOR HIGHLIGHT ══ */
+.src li[id]{scroll-margin-top:72px;transition:background .35s,padding .25s}
+.src li[id]:target{
+  background:rgba(116,198,157,.12);
+  padding:4px 10px;margin:-4px -10px;border-radius:var(--r);
+  border-left:3px solid var(--gm)}
+
+/* ══ CITATION REF INLINE ══ */
+.cref{font-size:.78rem;color:var(--gb);border-bottom:1px dotted rgba(82,168,122,.5);
+  cursor:pointer;vertical-align:super;font-weight:700;margin-left:.1rem;
+  transition:color .2s;text-decoration:none}
+.cref:hover{color:var(--ac);border-bottom-color:var(--ac)}
+
+/* ══ KEY METRIC INLINE HIGHLIGHT ══ */
+.km{font-weight:700;color:var(--ac);background:rgba(116,198,157,.1);
+  padding:.04rem .42rem;border-radius:4px;font-variant-numeric:tabular-nums;
+  border:1px solid rgba(116,198,157,.18)}
+
+/* ══ FOCUS STATES (WCAG 2.1 AA) ══ */
+:focus-visible{outline:2px solid var(--ac);outline-offset:3px;border-radius:3px}
+.ev-hdr:focus-visible{outline-offset:-1px}
+.tab-btn:focus-visible{outline-offset:-2px}
+.run-btn:focus-visible{outline-offset:4px}
+button:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+select:focus-visible,input:focus-visible{
+  outline:2px solid var(--ac);outline-offset:0;border-color:var(--gm)!important}
+
+/* ══ RANGE SLIDER CUSTOM STYLE ══ */
+input[type=range]{
+  -webkit-appearance:none;appearance:none;height:6px;
+  background:linear-gradient(to right,var(--gm) var(--fill,40%),var(--bdr2) var(--fill,40%));
+  border-radius:4px;outline:none;cursor:pointer;border:none;
+  transition:background .1s}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--ac);border:2px solid var(--bg);cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .15s,box-shadow .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 3px 10px rgba(0,0,0,.45)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+  background:var(--ac);border:2px solid var(--bg);cursor:pointer}
+
+/* ══ CARD VARIANTS ══ */
+.card.hi-green{border-left:3px solid #2d6a4f}
+.card.hi-blue{border-left:3px solid #1e3a8a}
+.card.hi-purple{border-left:3px solid #6b3fa0}
+.card.hi-orange{border-left:3px solid #d97706}
+
+/* ══ NAV PROGRESS DOT ══ */
+#nav a.on::after{content:'';display:block;width:4px;height:4px;
+  background:var(--ac);border-radius:50%;position:absolute;bottom:6px;left:50%;
+  transform:translateX(-50%)}
+#nav a{position:relative}
+
+/* ══ DEMO ACTIVE BORDER ══ */
+.demo-panel{transition:border-color .3s,box-shadow .3s}
+.demo-panel.lit{border-color:var(--gm);box-shadow:0 0 0 1px rgba(42,92,66,.25),0 4px 20px rgba(0,0,0,.2)}
+
+/* ══ SCORE BAR GLOW ══ */
+.score-bar{box-shadow:0 0 8px rgba(74,222,128,.2)}
+
+/* ══ TOOLTIP ON HOVER for STAT CARDS ══ */
+.stat-card[title]{cursor:help}
+
+/* ══ UNDERWRITING CASE STUDY DEEP DIVE ══ */
+.case-card{
+  background:var(--bgc);
+  border:1px solid var(--bdr);
+  border-left:5px solid var(--cc,var(--gm));
+  border-radius:var(--rl);
+  padding:2.2rem 2.4rem;
+  margin-bottom:2.5rem;
+  transition:box-shadow .35s,transform .25s;
+  position:relative;
+  overflow:hidden}
+.case-card::before{
+  content:'';position:absolute;top:0;right:0;width:180px;height:180px;
+  background:radial-gradient(circle at top right,var(--cc,var(--gm)),transparent 65%);
+  opacity:.07;pointer-events:none}
+.case-card:hover{box-shadow:0 12px 40px rgba(0,0,0,.35);transform:translateY(-2px)}
+.case-hd{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:1.4rem;margin-bottom:1.6rem;padding-bottom:1.4rem;
+  border-bottom:1px solid var(--bdr);flex-wrap:wrap}
+.case-co{
+  font-size:1.55rem;font-weight:700;color:var(--cc,var(--ac));
+  margin-bottom:.4rem;letter-spacing:-.02em;line-height:1.2}
+.case-sub{font-size:.9rem;color:var(--t3);line-height:1.6;max-width:58ch}
+.case-badges{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;flex-shrink:0;padding-top:.2rem}
+.hitl-badge{
+  font-size:.75rem;font-weight:700;padding:.24rem .85rem;
+  border-radius:2rem;letter-spacing:.04em;white-space:nowrap}
+.hitl-yes{background:rgba(74,222,128,.15);border:1px solid #4ade80;color:#4ade80}
+.hitl-partial{background:rgba(251,146,60,.15);border:1px solid #fb923c;color:#fb923c}
+
+.case-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1.1rem;margin-bottom:1.4rem}
+.dim-block{
+  background:var(--bg);border:1px solid var(--bdr);
+  border-radius:var(--r);padding:1.1rem 1.25rem;
+  transition:border-color .2s}
+.dim-block:hover{border-color:var(--bdr2)}
+.dim-label{
+  font-size:.78rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--t3);margin-bottom:.55rem;
+  display:flex;align-items:center;gap:.45rem}
+.dim-label::before{
+  content:'';width:7px;height:7px;border-radius:50%;
+  background:var(--cc,var(--gm));flex-shrink:0}
+.dim-body{font-size:.9rem;color:var(--t2);line-height:1.72}
+
+.case-benefits{
+  background:linear-gradient(135deg,rgba(var(--cc-r,42),var(--cc-g,92),var(--cc-b,66),.1),transparent);
+  border:1px solid rgba(116,198,157,.2);border-radius:var(--r);
+  padding:1.05rem 1.35rem;margin-bottom:1.2rem;
+  font-size:.93rem;color:var(--t1);line-height:1.7}
+.case-benefits strong{color:var(--cc,var(--ac))}
+
+.case-tech{
+  display:flex;flex-wrap:wrap;align-items:center;
+  gap:.55rem;margin-bottom:1.2rem;
+  padding:.85rem 1.1rem;background:var(--bg);
+  border:1px solid var(--bdr);border-radius:var(--r)}
+.case-tech-label{
+  font-size:.74rem;font-weight:700;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.1em;
+  margin-right:.3rem;white-space:nowrap}
+.tech-pill{
+  font-size:.76rem;font-weight:600;padding:.26rem .78rem;
+  background:var(--bgc2);border:1px solid var(--bdr2);
+  border-radius:2rem;color:var(--t2);white-space:nowrap}
+.tp-rules{border-color:#2d6a4f;color:#4ade80;background:rgba(45,106,79,.12)}
+.tp-ml{border-color:#1e3a8a;color:#93c5fd;background:rgba(30,58,138,.12)}
+.tp-genai{border-color:#6b3fa0;color:#c084fc;background:rgba(107,63,160,.12)}
+.tp-data{border-color:#92400e;color:#fb923c;background:rgba(146,64,14,.1)}
+.tp-saas{border-color:var(--gm);color:var(--ac);background:rgba(42,92,66,.12)}
+.tp-hitl{border-color:#b91c1c;color:#fca5a5;background:rgba(185,28,28,.1)}
+.tp-ext{border-color:#0e7490;color:#67e8f9;background:rgba(14,116,144,.1)}
+
+.case-src{
+  display:flex;align-items:center;flex-wrap:wrap;
+  gap:.75rem;padding-top:1.1rem;border-top:1px solid var(--bdr);font-size:.85rem}
+.case-src-label{
+  font-size:.76rem;font-weight:700;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.1em}
+.src-link{
+  color:var(--gb);border-bottom:1px solid rgba(82,168,122,.32);
+  text-decoration:none;font-size:.85rem;
+  transition:color .2s,border-color .2s;
+  display:inline-flex;align-items:baseline;gap:.22rem}
+.src-link::after{
+  content:'↗';font-size:.62rem;opacity:.6;vertical-align:middle}
+.src-link:hover{color:var(--ac);border-bottom-color:var(--gb)}
+
+/* Comparison table at top of case section */
+.case-cmp-table{overflow-x:auto;margin:1.5rem 0 2.5rem}
+.case-cmp-table table{min-width:860px;font-size:.88rem}
+.case-cmp-table th{white-space:nowrap;font-size:.82rem}
+.case-cmp-table td{font-size:.87rem;vertical-align:top}
+.co-mm{color:#d97706}.co-rga{color:#60a5fa}.co-mu{color:#f87171}.co-sw{color:#5eead4}
+
+@media(max-width:768px){
+  .case-grid{grid-template-columns:1fr}
+  .case-card{padding:1.5rem 1.3rem}}
+
+/* ══ 769–900px — CASE GRID TWO-COLUMN INTERMEDIATE ══ */
+@media(min-width:769px) and (max-width:900px){
+  .case-grid{grid-template-columns:1fr 1fr}
+  .kpi-g{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
+}
+
+/* ══ TABLE SCROLL HINT (mobile) ══ */
+@media(max-width:768px){
+  .case-cmp-table,.tw{position:relative}
+  .case-cmp-table::after,.tw::after{
+    content:'';position:absolute;top:0;right:0;bottom:0;width:52px;
+    background:linear-gradient(to right,transparent,var(--bg) 85%);
+    pointer-events:none;border-radius:0 var(--r) var(--r) 0}
+  .case-cmp-table .scroll-hint,.tw .scroll-hint{
+    display:block;font-size:.76rem;color:var(--t3);
+    text-align:right;margin-top:.4rem;padding-right:.5rem}
+}
+
+/* ══ 520px — EXTRA SMALL SCREENS ══ */
+@media(max-width:520px){
+  body{font-size:15px}
+  h1{font-size:1.4rem}
+  h2{font-size:1.2rem}
+  h3{font-size:1.05rem}
+  .wrap{padding:0 1rem}
+  section{padding:2.5rem 0 2rem}
+  .tabs{flex-wrap:wrap}
+  .tab-btn{font-size:.82rem;padding:.6rem .85rem}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .gauge-row{grid-template-columns:repeat(2,1fr)}
+  .kpi-g{grid-template-columns:1fr 1fr}
+  .case-card{padding:1.1rem 1rem}
+  .case-grid{grid-template-columns:1fr}
+  .case-hd{flex-direction:column;gap:.8rem}
+  .case-badges{padding-top:0}
+  .demo-panel{padding:1.2rem 1rem}
+  .hero-conclusion{padding:1rem 1.1rem;font-size:.94rem}
+  .demo-wrap,.roi-wrap{grid-template-columns:1fr}
+  .g2,.g3{grid-template-columns:1fr}
+  .stat-val{font-size:1.8rem}
+  .find::before{font-size:.68rem;padding:.18rem .6rem}
+  .dim-label{font-size:.72rem}
+  .case-tech-label{font-size:.7rem}
+}
+
+/* ══ PRINT ══ */
+@media print{
+  #pgbar,#top-btn,#nav,.run-btn,.demo-disclaimer,.hero-bg{display:none!important}
+  .rv,.rv2,.rv3{opacity:1!important;transform:none!important;transition:none!important}
+  body{background:#fff!important;color:#111!important;font-size:11pt}
+  section{padding:1.8rem 0!important;border-color:#ccc!important}
+  .card,.demo-panel{border-color:#ccc!important;background:#f8f8f8!important}
+  .tag{border:1px solid #999!important;background:#eee!important;color:#333!important}
+  h1,h2,h3,h4{color:#111!important}
+  #hero{padding-top:2rem!important;background:#f0f8f0!important}
+}
+</style>
+</head>
+<body>
+<div id="pgbar" role="progressbar" aria-label="頁面捲動進度"></div>
+<a id="top-btn" href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false" aria-label="回頁面頂端" title="回頂端">↑</a>
+
+<!-- NAV -->
+<nav id="nav">
+  <span class="nav-brand">壽險業 AI 變現地圖</span>
+  <div class="nav-links">
+    <a href="#exec">執行摘要</a>
+    <a href="#scenarios">場景分析</a>
+    <a href="#uw-deep">核保深度</a>
+    <a href="#arch">技術架構</a>
+    <a href="#taiwan">台灣落地</a>
+    <a href="#roadmap">路線圖</a>
+    <a href="#demo-uw">互動 DEMO</a>
+    <a href="#gov">治理 &amp; 來源</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div id="hero">
+  <div class="hero-bg"></div>
+  <div class="wrap hero-inner">
+    <div class="hero-badge">EXECUTIVE RESEARCH REPORT · 2026-04-24</div>
+    <h1>壽險業 <abbr title="Artificial Intelligence">AI</abbr> 變現地圖<br><span style="font-size:1.75rem;letter-spacing:-.01em">核保、理賠防詐、客服自動化</span></h1>
+    <p class="hero-sub">國際案例嚴格驗證 · 四級證據分層 · 台灣落地評估 · 互動技術 <abbr title="示範原型">DEMO</abbr></p>
+    <div class="bq" style="margin-top:1.7rem">
+      <strong>核心結論（研究後驗證成立）：</strong>台灣壽險業 AI 變現不應從單一大型語言模型全面自動決策開始，而應採混合式架構——
+      <strong>客服先做 <abbr title="Agent Assist：即時輔助客服人員的 AI 功能">Agent Assist</abbr> 與摘要</strong>，
+      <strong>理賠先做 <abbr title="triage：依風險高低的案件分流">triage</abbr> 與防詐</strong>，
+      <strong>核保最後推進 <abbr title="Rulebook-driven：以規則書驅動的加速核保流程">rulebook-driven</abbr> 加速核保</strong>。
+      三場景對應三種不同供應商邏輯，不可用單一廠商一次吃下。
+      <span class="tag t-inf" data-tip="由多個國際案例邏輯推導，非單一直接引用">inferred — 多案例共同指向</span>
+      <span class="bq-src">報告整體核心結論 · 詳見 <a href="#sources" class="cref">來源附錄</a></span>
+    </div>
+    <div class="stats-row rv">
+      <div class="stat-card">
+        <div class="stat-val" data-target="75" data-suffix="%">0%</div>
+        <div class="stat-label">MassMutual 演算法核保<br>申請人覆蓋率（2019）</div>
+        <span class="stat-ev ev-a">A 級</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" data-target="40" data-suffix="+市場">0</div>
+        <div class="stat-label">RGA Aura Next<br>已部署市場數</div>
+        <span class="stat-ev ev-b">B 級</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" data-target="66" data-suffix="%↓">0%</div>
+        <div class="stat-label">FRISS 官方宣稱<br>理賠處理時間降幅</div>
+        <span class="stat-ev ev-b">B 供應商宣稱</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" data-target="4" data-suffix="B £">0</div>
+        <div class="stat-label">Shift Technology 2021<br>識別詐欺理賠金額</div>
+        <span class="stat-ev ev-b">B 級</span>
+      </div>
+    </div>
+    <p class="hero-note rv2">
+      <strong style="color:var(--gb)">📋 證據等級說明：</strong>
+      <span class="stat-ev ev-a" style="display:inline">A</span> 監管機關／年報（已驗證）
+      <span class="stat-ev ev-b" style="display:inline">B</span> 官方產品文件（供應商宣稱，未獨立審計）
+      <span class="stat-ev ev-c" style="display:inline">C</span> 合作夥伴案例
+      <span class="stat-ev ev-d" style="display:inline">D</span> 可靠媒體（最低層級）
+    </p>
+  </div>
+</div>
+
+<!-- S1: EXEC SUMMARY -->
+<section id="exec">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">01</div>
+      <h2>執行摘要</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch">本報告核驗 <strong>12+ 個國際真實部署案例</strong>，得出一個對台灣壽險主管最直接的結論：<strong>AI 在壽險的變現路徑已清晰，但必須按正確順序走</strong>。客服先行，理賠次之，核保最後——三場景對應三種供應商邏輯，不可單一模型一次吃下。</p>
+    </div>
+    <div class="ga rv">
+      <div class="card">
+        <h3>四層混合架構，缺一不可</h3>
+        <ul class="kp">
+          <li><strong>規則引擎</strong>：最終可審計決策閘門（<a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA</a>、<a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener">Munich Re</a>、<a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener">Swiss Re</a> 皆以此為核心）</li>
+          <li><strong>機器學習</strong>：風險排序、詐欺評分、STP 候選篩選</li>
+          <li><strong>生成式 AI</strong>：摘要、知識檢索、文件理解（定位為輔助，不做最終決策）</li>
+          <li><strong>人工覆核</strong>：高影響力或不利決策不可省略（<a href="https://www.fsc.gov.tw/" target="_blank" rel="noopener">金管會</a> AI 指引明確要求）</li>
+          <li><strong>稽核軌跡</strong>：受監管流程的強制基礎建設</li>
+        </ul>
+        <span class="tag t-inf">inferred — RGA, Munich Re, Swiss Re, MetLife 案例共同指向</span>
+      </div>
+      <div class="card">
+        <h3>三場景，三種供應商邏輯</h3>
+        <ul class="kp">
+          <li><strong>核保</strong>：再保商核保引擎主導（<a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA Aura Next</a>、<a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener">Munich Re ALLFINANZ</a>、<a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener">Swiss Re Magnum</a>）</li>
+          <li><strong>理賠防詐</strong>：垂直 insurtech 主導（<a href="https://www.shift-technology.com/" target="_blank" rel="noopener">Shift Technology</a>、<a href="https://www.friss.com/" target="_blank" rel="noopener">FRISS</a>、<a href="https://sprout.ai/" target="_blank" rel="noopener">Sprout.ai</a>）</li>
+          <li><strong>客服自動化</strong>：水平聯絡中心平台主導（<a href="https://cloud.google.com/agent-assist" target="_blank" rel="noopener">Google Agent Assist</a>、<a href="https://aws.amazon.com/connect/" target="_blank" rel="noopener">Amazon Connect</a>、<a href="https://www.genesys.com/" target="_blank" rel="noopener">Genesys</a>）</li>
+        </ul>
+        <span class="tag t-inf">inferred — 多案例指向此分工邊界</span>
+      </div>
+      <div class="card">
+        <h3>台灣落地五大門檻</h3>
+        <ul class="kp">
+          <li>醫療個資：<a href="https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=I0050021" target="_blank" rel="noopener">個資法第 6 條</a>嚴格保護特種個資 <span class="tag ta">A</span></li>
+          <li>對客 AI：<a href="https://www.fsc.gov.tw/" target="_blank" rel="noopener">金管會</a>要求治理、問責、可解釋、替代方案 <span class="tag ta">A</span></li>
+          <li><a href="https://health.nhi.gov.tw/" target="_blank" rel="noopener">健康存摺</a>不能替代診斷證明書 <span class="tag ta">A</span></li>
+          <li>台語與雙語混碼：需逐功能逐語料實測 <span class="tag t-nv">needs verification</span></li>
+          <li>核心系統整合工作量 > 模型本身 <span class="tag t-inf">inferred</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card rv2">
+      <h3>主管層決策矩陣</h3>
+      <p style="font-size:.85rem;color:var(--t2);margin-bottom:.9rem">基於 12+ 國際案例與台灣監理環境的綜合研判。每個場景的「結論」欄即為最實際的行動方向。</p>
+      <div class="tw">
+        <table>
+          <thead><tr><th>場景</th><th>國際成熟度</th><th>核心價值</th><th>台灣優先序</th><th>建議行動</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>客服自動化</strong></td><td>高（<a href="https://cloud.google.com/agent-assist" target="_blank" rel="noopener" style="color:var(--gb)">Google</a>、<a href="https://aws.amazon.com/connect/" target="_blank" rel="noopener" style="color:var(--gb)">AWS</a>、<a href="https://www.genesys.com/" target="_blank" rel="noopener" style="color:var(--gb)">Genesys</a>）</td>
+              <td>降低 AHT/ACW、提升 FCR/CSAT、擴大服務量能</td>
+              <td><span class="pri pri-hi">最高優先</span></td>
+              <td>先做 Agent Assist + 摘要 + 知識檢索；切勿一開始做全自動語音 Bot</td>
+            </tr>
+            <tr>
+              <td><strong>理賠防詐</strong></td><td>高（<a href="https://www.shift-technology.com/" target="_blank" rel="noopener" style="color:var(--gb)">Shift</a>、<a href="https://www.friss.com/" target="_blank" rel="noopener" style="color:var(--gb)">FRISS</a>、<a href="https://sprout.ai/" target="_blank" rel="noopener" style="color:var(--gb)">Sprout.ai</a>）</td>
+              <td>阻卻詐欺、縮短 TAT、減少無效調查</td>
+              <td><span class="pri pri-hi">高優先</span></td>
+              <td>先做低風險快通 + 可疑件分流 + 文件抽取；第一階段不做黑箱自動拒賠</td>
+            </tr>
+            <tr>
+              <td><strong>核保</strong></td><td>中高（<a href="https://www.rgare.com/" target="_blank" rel="noopener" style="color:var(--gb)">RGA</a>、<a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener" style="color:var(--gb)">Munich Re</a>、<a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener" style="color:var(--gb)">Swiss Re</a>）</td>
+              <td>提升 STP、縮短核保週期、降成本、提高轉換率</td>
+              <td><span class="pri pri-st">戰略佈局</span></td>
+              <td>先從簡單商品、低保額件開始；規則引擎為主，ML 為輔</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S2: EVIDENCE MAP -->
+<section id="evmap">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">02</div>
+      <h2>可信基礎：本報告如何驗證每個主張</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch">本報告嚴格區分「已驗證」、「供應商宣稱」與「推導」三類主張。展開各層查看具體來源——<strong>在您向董事會簡報任何數字之前，請確認其證據等級</strong>。</p>
+    </div>
+    <div class="rv">
+      <div class="ev-item">
+        <div class="ev-hdr" onclick="toggleEv(this)" tabindex="0" role="button" aria-expanded="false">
+          <div class="ev-lv ev-a" style="background:#0f3460;color:#60a5fa">A</div>
+          <div class="ev-hdr-title">監管機關 / 法律 / 年報 / 官方治理報告</div>
+          <div class="ev-hdr-count">8 個來源 · 最高可信度</div>
+          <div class="ev-chevron">▼</div>
+        </div>
+        <div class="ev-body">
+          <div class="ev-body-inner">
+            <strong>已驗證（verified）的主要主張：</strong><br>
+            • 金管會《金融業運用人工智慧指引》：要求治理問責、透明可解釋、客戶選擇權與替代方案<br>
+            • 個資法第 6 條：病歷、醫療、健康檢查屬高度敏感特種個資，需特定目的與同意<br>
+            • 保險業 AI 自律規範：把直接與客戶互動、影響交易權益或對營運有重大影響的 AI 系統納入管理範圍<br>
+            • MassMutual 2019 年報：演算法核保從 10% 成長到幾乎 75% 申請人，年齡可至 60 歲<br>
+            • MetLife 2024 永續發展報告：AI 用於支援客戶、偵測詐欺、識別可自動核准的理賠案件<br>
+            • MetLife 隱私聲明：客戶可能與 live call center agent、IVA、IVR 互動<br>
+            • MyData 官方說明：自主同意取用政府資料<br>
+            • 健康存摺官方聲明：不能作為診斷證明書申請保險理賠
+          </div>
+        </div>
+      </div>
+      <div class="ev-item">
+        <div class="ev-hdr" onclick="toggleEv(this)" tabindex="0" role="button" aria-expanded="false">
+          <div class="ev-lv ev-b" style="background:#0a2818;color:#4ade80">B</div>
+          <div class="ev-hdr-title">官方產品文件 / 官方頁面 / 官方新聞稿</div>
+          <div class="ev-hdr-count">19 個來源 · 標注 <span class="tag t-ven" data-tip="供應商官方宣稱，缺乏獨立第三方審計驗證">vendor-claimed</span></div>
+          <div class="ev-chevron">▼</div>
+        </div>
+        <div class="ev-body">
+          <div class="ev-body-inner">
+            <strong>供應商宣稱（vendor-claimed）——缺乏獨立審計，不直接引為投資假設：</strong><br>
+            • <a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA Aura Next</a>：40 個市場、50+ 實作、每年 500 萬件以上申請；更快決策<br>
+            • <a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener">Munich Re ALLFINANZ</a> / Predictor：Rulebook Hub、Interview API、Explainable AI、model monitoring dashboard<br>
+            • <a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener">Swiss Re MagnumXP / Magnum Select</a>：申請時間從數週縮到數分鐘<br>
+            • <a href="https://www.shift-technology.com/" target="_blank" rel="noopener">Shift Technology</a>：13M+ 可疑理賠、10K+ 詐欺網路、2021 識別逾 £4B 詐欺理賠；4x 效率<br>
+            • <a href="https://www.friss.com/" target="_blank" rel="noopener">FRISS</a>：claims handling time -66%；Media Check 與 Verisk 聯合驗偽<br>
+            • <a href="https://cloud.google.com/agent-assist" target="_blank" rel="noopener">Google Agent Assist</a>：回應速度 +15%、代理人可處理 +28% 對話<br>
+            • <a href="https://aws.amazon.com/connect/" target="_blank" rel="noopener">Amazon Connect</a>：降低 ACW、即時個人化回應（無通用量化 ROI）<br>
+            • <a href="https://aws.amazon.com/bedrock/" target="_blank" rel="noopener">Amazon Bedrock</a>：模型不使用 prompts/outputs 進行訓練<br>
+            • <a href="https://www.genesys.com/" target="_blank" rel="noopener">Genesys Copilot</a> / Virtual Agent：guardrails + audit trails 為標配<br>
+            • <a href="https://cloud.google.com/speech-to-text" target="_blank" rel="noopener">Google Speech-to-Text</a>：支援台灣繁體華語語音辨識<br>
+            • <a href="https://aws.amazon.com/transcribe/" target="_blank" rel="noopener">Amazon Transcribe</a>：支援繁體中文轉錄（進階功能依語言而異）<br>
+            • <a href="https://sprout.ai/" target="_blank" rel="noopener">Sprout.ai</a> 官方合作聲明：MetLife 多市場理賠自動化擴展<br>
+            • <a href="https://www.duckcreek.com/" target="_blank" rel="noopener">Duck Creek Claims</a>：AI-based claims core，偏 P&amp;C（壽險需視為相鄰參考）<br>
+            • <a href="https://www.salesforce.com/" target="_blank" rel="noopener">Salesforce Service Agent</a>：guardrails 與人工接手為標準設計<br>
+            • <a href="https://www.johnhancock.com/vitality.html" target="_blank" rel="noopener">John Hancock Vitality</a>（Manulife）：可穿戴行為資料核保，取消傳統健康問卷<br>
+            • <a href="https://www.aia.com/" target="_blank" rel="noopener">AIA Vitality</a>：18 個亞洲市場行為保險計畫，與台灣市場結構最接近<br>
+            • <a href="https://www.lemonade.com/" target="_blank" rel="noopener">Lemonade</a>：AI bot Jim 最快 3 秒理賠決定（簡單商品場景）<br>
+            • <a href="https://www.zurich.com/" target="_blank" rel="noopener">Zurich Insurance</a>：AI 文件影像分析加速理賠審核<br>
+            • <a href="https://www.aflac.com/" target="_blank" rel="noopener">Aflac</a>：AI 聊天機器人處理保單查詢與理賠狀態
+          </div>
+        </div>
+      </div>
+      <div class="ev-item">
+        <div class="ev-hdr" onclick="toggleEv(this)" tabindex="0" role="button" aria-expanded="false">
+          <div class="ev-lv ev-c" style="background:#2a2400;color:#facc15">C</div>
+          <div class="ev-hdr-title">合作夥伴案例 / Marketplace / 生態系頁面</div>
+          <div class="ev-hdr-count">4 個來源 · 需搭配 A/B 級交叉驗證</div>
+          <div class="ev-chevron">▼</div>
+        </div>
+        <div class="ev-body">
+          <div class="ev-body-inner">
+            • Guidewire + FRISS Accelerator：風險評分嵌入 ClaimCenter 工作流多節點<br>
+            • Sprout.ai 與 MetLife 合作公告（轉載）：多市場擴展、提升理賠速度與準確度<br>
+            • Shift Technology 轉載 MetLife 日本公告：2020 年啟用 Force，日本壽險業首個雲端 AI 反詐<br>
+            • Haven Technologies SaaS 對外平台公告（Haven Life 現已停止新申請，僅作架構參考）
+          </div>
+        </div>
+      </div>
+      <div class="ev-item">
+        <div class="ev-hdr" onclick="toggleEv(this)" tabindex="0" role="button" aria-expanded="false">
+          <div class="ev-lv ev-d" style="background:#2d1800;color:#fb923c">D</div>
+          <div class="ev-hdr-title">可靠媒體 / 二手整理（最低證據層級）</div>
+          <div class="ev-hdr-count">2 個來源 · <span class="tag t-nv" data-tip="引用層級低，採購前需透過 POC 實測驗證">needs verification</span></div>
+          <div class="ev-chevron">▼</div>
+        </div>
+        <div class="ev-body">
+          <div class="ev-body-inner">
+            <strong>⚠ 以下數字非公司正式申報，不建議直接引用為投資依據：</strong><br>
+            • 可靠媒體：MetLife 導入即時通話 coaching 後 FCR +3.5%、CSAT +13%（D 級，needs verification）<br>
+            • Qorus：MetLife IVA 定義為「下一代電話客服平台」
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card rv2" style="margin-top:1rem">
+      <h4>主張狀態標籤說明</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:.9rem;margin-top:.7rem">
+        <div style="display:flex;align-items:center;gap:.55rem;font-size:.88rem">
+          <span class="tag t-ver" data-tip="有 A 或 B 級官方原始文件直接支持">verified</span>
+          <span style="color:var(--t2)">有官方文件直接支持</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.55rem;font-size:.88rem">
+          <span class="tag t-ven" data-tip="供應商官方宣稱，缺乏獨立第三方審計驗證">vendor-claimed</span>
+          <span style="color:var(--t2)">供應商宣稱，未獨立驗證</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.55rem;font-size:.88rem">
+          <span class="tag t-inf" data-tip="由多個案例或邏輯推導，非直接引用">inferred</span>
+          <span style="color:var(--t2)">多案例邏輯推導</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.55rem;font-size:.88rem">
+          <span class="tag t-unk" data-tip="方向性揭露，無具體量化數字">public data not disclosed</span>
+          <span style="color:var(--t2)">方向性揭露，無數字</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.55rem;font-size:.88rem">
+          <span class="tag t-nv" data-tip="引用層級低（D 級媒體），採購前需透過 POC 實測">needs verification</span>
+          <span style="color:var(--t2)">需實測確認</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S3: THREE SCENARIOS -->
+<section id="scenarios">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">03</div>
+      <h2>三大場景：國際成熟案例與台灣適用性</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch">每個場景都有成熟的國際案例可參照，但<strong>核保、理賠、客服三條路徑的供應商邏輯截然不同</strong>，不可混用同一套採購策略。選擇場景標籤切換，左側為策略原則，右側為六維評估雷達圖。</p>
+    </div>
+    <div class="g2 rv" style="align-items:start">
+      <div>
+        <div class="tabs">
+          <button class="tab-btn on" onclick="showTab('uw',this)">🏦 核保</button>
+          <button class="tab-btn" onclick="showTab('cl',this)">🔍 理賠防詐</button>
+          <button class="tab-btn" onclick="showTab('cs',this)">🎧 客服</button>
+        </div>
+        <!-- UW -->
+        <div id="tab-uw" class="pane on">
+          <div class="card" style="border-left:3px solid var(--uw-col)">
+            <h4 style="color:var(--uw-col)">核保：規則引擎先行，再保平台為主</h4>
+            <ul class="kp" style="margin-top:.4rem">
+              <li>點銷售端：rules engine + 動態問卷 → 即時決策或 referral（<a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA Aura Next</a>、<a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener">Swiss Re Magnum</a> 均採此設計）</li>
+              <li>外部資料整合：<abbr title="Medical Information Bureau">MIB</abbr>、Rx 處方紀錄、MVR 駕照、EHR、TransUnion 信用資料</li>
+              <li>ML 預測模型輔助風險排序，<strong>不做最終核保決策</strong></li>
+              <li>LLM 僅用於文件摘要與 OCR 前處理，非決策主引擎</li>
+              <li>初期建議：簡單商品 + 低保額件 + 標準問卷起步</li>
+            </ul>
+            <span class="tag t-inf">inferred — RGA, Munich Re, Swiss Re, MassMutual 案例共同指向</span>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>案例</th><th>效益揭露</th><th>證據</th></tr></thead>
+            <tbody>
+              <tr><td><strong><a href="https://www.massmutual.com/" target="_blank" rel="noopener">MassMutual</a></strong><br><small>Digital Health Profile</small></td><td>演算法評估 75% 申請人；具體財務數字<span class="tag t-unk">未揭露</span></td><td><span class="tag ta">A</span></td></tr>
+              <tr><td><strong><a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA Aura Next</a></strong></td><td>40 市場、500 萬件/年；更快決策<span class="tag t-ven">vendor-claimed</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener">Munich Re ALLFINANZ</a></strong></td><td>提升 STP；具體 KPI<span class="tag t-unk">未揭露</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener">Swiss Re Magnum Select</a></strong></td><td>數週→數分鐘<span class="tag t-ven">vendor-claimed</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.johnhancock.com/vitality.html" target="_blank" rel="noopener">John Hancock Vitality</a></strong><br><small>Manulife，北美市場</small></td><td>可穿戴裝置行為資料驅動保費；取消傳統健康問卷；採用年增長<span class="tag t-unk">未揭露</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.aia.com/" target="_blank" rel="noopener">AIA Vitality</a></strong><br><small>18 個亞洲市場，結構最近台灣</small></td><td>健康行為積分連動年費折扣；亞洲最大行為保險計畫<span class="tag t-ven">vendor-claimed</span></td><td><span class="tag tb">B</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <!-- CLAIMS -->
+        <div id="tab-cl" class="pane">
+          <div class="card" style="border-left:3px solid var(--cl-col)">
+            <h4 style="color:var(--cl-col)">理賠防詐：文件抽取 + 分流 + 防詐串成鏈</h4>
+            <ul class="kp" style="margin-top:.4rem">
+              <li>第一成熟用途：<strong>更早更準地抓出可疑件</strong>，而非全自動結案（<a href="https://www.shift-technology.com/" target="_blank" rel="noopener">Shift Technology</a>、<a href="https://www.friss.com/" target="_blank" rel="noopener">FRISS</a> 均如此定位）</li>
+              <li>低風險快通 → 人工覆核 → SIU 調查（三路分流設計）</li>
+              <li>文件 AI + 保單條款比對 + entity resolution + media forensics</li>
+              <li>GenAI 放在摘要與證據整理，<strong>不做賠與不賠的最終決定</strong></li>
+            </ul>
+            <span class="tag t-inf">inferred — MetLife+Sprout.ai, Shift, FRISS, Lemonade 案例</span>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>案例</th><th>效益揭露</th><th>證據</th></tr></thead>
+            <tbody>
+              <tr><td><strong><a href="https://www.metlife.com/" target="_blank" rel="noopener">MetLife</a> + <a href="https://sprout.ai/" target="_blank" rel="noopener">Sprout.ai</a></strong></td><td>多市場理賠自動化擴展；拉美 TAT/CSAT<span class="tag t-unk">未揭露</span></td><td><span class="tag ta">A</span><span class="tag tc">C</span></td></tr>
+              <tr><td><strong><a href="https://www.metlife.com/" target="_blank" rel="noopener">MetLife 日本</a> + <a href="https://www.shift-technology.com/" target="_blank" rel="noopener">Shift</a></strong></td><td>日本壽險業首個雲端 AI 反詐（2020）；具體 KPI<span class="tag t-unk">未揭露</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.shift-technology.com/" target="_blank" rel="noopener">Shift Technology</a></strong></td><td>13M+ 可疑理賠、£4B 詐欺識別<span class="tag t-ven">vendor-claimed</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.friss.com/" target="_blank" rel="noopener">FRISS</a></strong><br><small>Guidewire ClaimCenter 整合</small></td><td>TAT -66%；Media Check + Verisk 聯合驗偽<span class="tag t-ven">vendor-claimed</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.lemonade.com/" target="_blank" rel="noopener">Lemonade</a></strong><br><small>AI-first 保險商，北美</small></td><td>AI bot Jim 最快 3 秒完成理賠決定；適用於簡單商品與標準化賠付場景<span class="tag t-ven">vendor-claimed</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.zurich.com/" target="_blank" rel="noopener">Zurich Insurance</a></strong><br><small>歐洲最大保險集團之一</small></td><td>運用 AI 分析理賠文件影像，OCR + NLP 抽取關鍵資訊加速審核；數字<span class="tag t-unk">未揭露</span></td><td><span class="tag tb">B</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <!-- CS -->
+        <div id="tab-cs" class="pane">
+          <div class="card" style="border-left:3px solid var(--cs-col)">
+            <h4 style="color:var(--cs-col)">客服：Bot + Agent Assist + Knowledge + Summary</h4>
+            <ul class="kp" style="margin-top:.4rem">
+              <li>目標：<strong>解決完成率（FCR）</strong>，不是「聊天體驗」本身</li>
+              <li>先接好知識與對話上下文，再做即時建議與受控自助（<a href="https://cloud.google.com/agent-assist" target="_blank" rel="noopener">Google Agent Assist</a> 即此路徑）</li>
+              <li>受控自治 + human handoff 已是 <a href="https://www.genesys.com/" target="_blank" rel="noopener">Genesys</a>、<a href="https://www.salesforce.com/" target="_blank" rel="noopener">Salesforce</a> 的一等功能</li>
+              <li>導入順序：轉錄/摘要/Agent Assist → 路由優化 → 高自治 Bot</li>
+            </ul>
+            <span class="tag t-inf">inferred — Google, AWS, Genesys, Salesforce, MetLife, Aflac 案例</span>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>案例</th><th>效益揭露</th><th>證據</th></tr></thead>
+            <tbody>
+              <tr><td><strong><a href="https://www.metlife.com/" target="_blank" rel="noopener">MetLife</a> 客服 AI</strong></td><td>FCR +3.5%、CSAT +13%<span class="tag td">D</span><span class="tag t-nv">needs verification</span></td><td><span class="tag ta">A</span><span class="tag td">D</span></td></tr>
+              <tr><td><strong><a href="https://cloud.google.com/agent-assist" target="_blank" rel="noopener">Google Agent Assist</a></strong></td><td>回應速度 +15%、代理人可處理量 +28%<span class="tag t-ven">vendor-claimed</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://aws.amazon.com/connect/" target="_blank" rel="noopener">Amazon Connect</a></strong><br><small>搭配 Amazon Bedrock</small></td><td>降低 ACW；即時個人化回應；無通用量化 ROI<span class="tag t-unk">未揭露</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.genesys.com/" target="_blank" rel="noopener">Genesys Copilot</a></strong></td><td>更高 deflection rate；guardrails + audit trails 為標配；KPI<span class="tag t-unk">未揭露</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.aflac.com/" target="_blank" rel="noopener">Aflac</a></strong><br><small>美國補充保險領導品牌</small></td><td>導入 AI 聊天機器人處理保單查詢與理賠狀態；降低重複性來電量<span class="tag t-unk">未揭露</span></td><td><span class="tag tb">B</span></td></tr>
+              <tr><td><strong><a href="https://www.salesforce.com/" target="_blank" rel="noopener">Salesforce Service Agent</a></strong></td><td>guardrails 與人工接手為標準設計；無通用量化 ROI<span class="tag t-unk">未揭露</span></td><td><span class="tag tb">B</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+      <!-- RADAR -->
+      <div>
+        <div class="card">
+          <h4 style="margin-bottom:.8rem">三場景六維評估 <span class="tag t-inf">inferred — 定性分析推導</span></h4>
+          <div class="radar-wrap" style="justify-content:center">
+            <svg id="radar" width="280" height="280" viewBox="0 0 280 280"></svg>
+          </div>
+          <div class="radar-legend" style="margin-top:.8rem">
+            <div class="rl-item"><div class="rl-dot" style="background:var(--cs-col)"></div>客服自動化</div>
+            <div class="rl-item"><div class="rl-dot" style="background:var(--cl-col)"></div>理賠防詐</div>
+            <div class="rl-item"><div class="rl-dot" style="background:var(--uw-col)"></div>核保</div>
+          </div>
+          <div style="font-size:.76rem;color:var(--t3);margin-top:.6rem;line-height:1.5">
+            六維：工具成熟度 · 見效速度 · 台灣就緒度 · ROI 可量化性 · 治理友善度 · 資料取得難度<br>
+            ⚠ 此雷達圖為報告定性分析之示意推導，非量化測量。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S3B: UNDERWRITING DEEP DIVE -->
+<section id="uw-deep">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">03B — 核保深度解析</div>
+      <h2>四大核保平台：深度驗證比較</h2>
+      <p style="font-size:.97rem;color:var(--t2);margin-top:.55rem">本報告核心結論的四個關鍵國際案例。以下逐一驗證每個平台的定位、技術架構、HITL 設計、已揭露效益（含證據等級），以及對台灣壽險落地的實際相關性。</p>
+      <div class="find find-info" style="margin-top:1.1rem">
+        <p style="font-size:.92rem;color:var(--t2)">⚠ 以下效益數字中，<strong>僅 MassMutual 75% 覆蓋率來自 A 級年報（已驗證）</strong>，其餘三家均為供應商官方宣稱（B 級，vendor-claimed），缺乏獨立第三方審計，<strong>不應直接作為採購或投資假設</strong>。</p>
+      </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="case-cmp-table rv">
+      <table>
+        <thead>
+          <tr>
+            <th>公司 / 平台</th>
+            <th>流程定位</th>
+            <th>核心技術</th>
+            <th>HITL</th>
+            <th>已揭露效益</th>
+            <th>台灣相關性</th>
+            <th>證據</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong class="co-mm"><a href="https://www.massmutual.com/" target="_blank" rel="noopener" class="src-link">MassMutual</a></strong><br><small>Haven Life / Digital Health Profile</small></td>
+            <td>演算法自動核保，60歲以下大規模申請覆蓋</td>
+            <td><span class="tech-pill tp-rules">Rules Engine</span> <span class="tech-pill tp-ml">ML</span> <span class="tech-pill tp-ext">MIB/Rx</span></td>
+            <td><span class="hitl-badge hitl-partial">部分 HITL</span></td>
+            <td><span class="km">75%</span> 申請人覆蓋 <span class="tag ta">A</span></td>
+            <td>架構參考（Haven Life 已停新申請）</td>
+            <td><span class="tag ta">A</span></td>
+          </tr>
+          <tr>
+            <td><strong class="co-rga"><a href="https://www.rgare.com/" target="_blank" rel="noopener" class="src-link">RGA Aura Next</a></strong></td>
+            <td>再保商核保引擎 SaaS，含 Rulebook Hub 快速部署</td>
+            <td><span class="tech-pill tp-rules">Rulebook Hub</span> <span class="tech-pill tp-ml">ML</span> <span class="tech-pill tp-saas">SaaS API</span></td>
+            <td><span class="hitl-badge hitl-yes">HITL 明確</span></td>
+            <td>40+ 市場、500萬件/年 <span class="tag t-ven">vendor-claimed</span></td>
+            <td>高：可直接與台灣壽險公司合作</td>
+            <td><span class="tag tb">B</span></td>
+          </tr>
+          <tr>
+            <td><strong class="co-mu"><a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener" class="src-link">Munich Re</a></strong><br><small>ALLFINANZ / Predictor</small></td>
+            <td>完整核保工作台（Rulebook + Interview API + Predictor ML）</td>
+            <td><span class="tech-pill tp-rules">Rulebook</span> <span class="tech-pill tp-ml">Predictor ML</span> <span class="tech-pill tp-genai">XAI</span></td>
+            <td><span class="hitl-badge hitl-yes">HITL 明確</span></td>
+            <td>STP 提升；具體數字 <span class="tag t-unk">未揭露</span></td>
+            <td>高：慕尼黑再保台灣分公司存在</td>
+            <td><span class="tag tb">B</span></td>
+          </tr>
+          <tr>
+            <td><strong class="co-sw"><a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener" class="src-link">Swiss Re</a></strong><br><small>MagnumXP / Magnum Select</small></td>
+            <td>點銷售核保引擎，動態問卷 + 即時決策</td>
+            <td><span class="tech-pill tp-rules">Rules Engine</span> <span class="tech-pill tp-ml">ML</span> <span class="tech-pill tp-data">動態問卷</span></td>
+            <td><span class="hitl-badge hitl-partial">部分 HITL</span></td>
+            <td>數週→數分鐘 <span class="tag t-ven">vendor-claimed</span></td>
+            <td>中高：瑞士再保台灣業務存在</td>
+            <td><span class="tag tb">B</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Card 1: MassMutual / Haven Life -->
+    <div class="case-card rv" style="--cc:#d97706">
+      <div class="case-hd">
+        <div>
+          <div class="case-co">
+            <a href="https://www.massmutual.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid rgba(217,119,6,.4)">MassMutual</a>
+            <span style="font-size:1.1rem;font-weight:400;color:var(--t3)"> / </span>
+            <a href="https://havenlife.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid rgba(217,119,6,.4)">Haven Life</a>
+          </div>
+          <div class="case-sub">全球最具指標性的演算法加速核保案例之一。2019 年報（A 級）直接揭露演算法評估近 75% 申請人，年齡上限延伸至 60 歲。Haven Life 目前已停止新申請；<a href="https://haventechnologies.com/" target="_blank" rel="noopener" class="src-link">Haven Technologies</a> 另有 SaaS 平台授權業務。</div>
+        </div>
+        <div class="case-badges">
+          <span class="hitl-badge hitl-partial">部分 HITL</span>
+          <span class="tag ta">A 級</span>
+          <span class="tag t-ver">verified</span>
+        </div>
+      </div>
+      <div class="case-grid">
+        <div class="dim-block">
+          <div class="dim-label">流程定位</div>
+          <div class="dim-body">以演算法核保取代大量人工審查，整合 Digital Health Profile（電子健康資料）、<abbr title="Medical Information Bureau，醫療資訊局">MIB</abbr> 資料庫、Rx（處方藥紀錄）、MVR（駕照紀錄），達成即時核保決策</div>
+        </div>
+        <div class="dim-block">
+          <div class="dim-label">技術架構</div>
+          <div class="dim-body">Rules Engine 為最終決策閘門；ML scoring 做風險排序與 STP 候選；外部資料整合（MIB/Rx/MVR）為關鍵差異點；非 LLM 全自動</div>
+        </div>
+        <div class="dim-block">
+          <div class="dim-label">HITL 設計</div>
+          <div class="dim-body">非標準件仍轉人工核保師；演算法不做最終「拒保」決定；人工覆核保留在高保額、高風險件</div>
+        </div>
+      </div>
+      <div class="case-benefits">
+        <strong>已揭露效益（A 級 — 2019 年報直接引用，已驗證）：</strong><br>
+        演算法核保覆蓋申請人從約 <strong>10% 成長至接近 75%</strong>，年齡上限達 60 歲。具體財務影響數字未在年報中揭露 <span class="tag t-unk">public data not disclosed</span>
+      </div>
+      <div class="case-tech">
+        <span class="case-tech-label">技術組件</span>
+        <span class="tech-pill tp-rules">Rules Engine</span>
+        <span class="tech-pill tp-ml">ML Scoring</span>
+        <span class="tech-pill tp-ext">MIB 資料庫</span>
+        <span class="tech-pill tp-ext">Rx 處方紀錄</span>
+        <span class="tech-pill tp-ext">MVR 駕照紀錄</span>
+        <span class="tech-pill tp-hitl">Human Underwriter</span>
+      </div>
+      <div class="case-src">
+        <span class="case-src-label">官方來源</span>
+        <a href="https://www.massmutual.com/" target="_blank" rel="noopener" class="src-link">MassMutual 官網</a>
+        <a href="https://havenlife.com/" target="_blank" rel="noopener" class="src-link">Haven Life</a>
+        <a href="https://haventechnologies.com/" target="_blank" rel="noopener" class="src-link">Haven Technologies SaaS</a>
+        <span class="tag ta">A — 2019 年報</span>
+        <span class="tag t-ver">verified</span>
+      </div>
+    </div>
+
+    <!-- Card 2: RGA Aura Next -->
+    <div class="case-card rv" style="--cc:#60a5fa">
+      <div class="case-hd">
+        <div>
+          <div class="case-co">
+            <a href="https://www.rgare.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid rgba(96,165,250,.4)">RGA</a>
+            <span style="font-size:1.1rem;font-weight:400;color:var(--t3)"> — </span>
+            <a href="https://www.rgare.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid rgba(96,165,250,.4)">Aura Next</a>
+          </div>
+          <div class="case-sub">全球最大壽險再保公司 RGA（Reinsurance Group of America）的核保引擎 SaaS 平台。官方揭露已在 40+ 市場、50+ 實作部署，每年處理 500 萬件以上申請。含 Rulebook Hub、Interview API、監控儀表板，支援 HITL 與 audit logging。</div>
+        </div>
+        <div class="case-badges">
+          <span class="hitl-badge hitl-yes">HITL 明確</span>
+          <span class="tag tb">B 級</span>
+          <span class="tag t-ven">vendor-claimed</span>
+        </div>
+      </div>
+      <div class="case-grid">
+        <div class="dim-block">
+          <div class="dim-label">流程定位</div>
+          <div class="dim-body">再保商以 SaaS API 形式提供核保引擎；Rulebook 可由壽險公司自行設定規則，快速部署加速核保；不需要自建模型訓練能力</div>
+        </div>
+        <div class="dim-block">
+          <div class="dim-label">技術架構</div>
+          <div class="dim-body">Rulebook Hub（規則版本管理）、Interview API（動態問卷生成）、ML scoring（風險預測評分）、monitoring dashboard（STP/轉介率追蹤）</div>
+        </div>
+        <div class="dim-block">
+          <div class="dim-label">HITL 設計</div>
+          <div class="dim-body">官方產品設計明確包含人工覆核流程；monitoring dashboard 顯示轉介率與例外件；不做黑箱自動拒保；audit log 為官方標配</div>
+        </div>
+      </div>
+      <div class="case-benefits">
+        <strong>已揭露效益（B 級 — vendor-claimed，缺乏獨立審計）：</strong><br>
+        官方宣稱 <strong>40+ 市場、50+ 實作、每年 500 萬件以上申請</strong>處理量；宣稱「更快決策」與「提升 STP」，但無具體 TAT/STP 百分比數字 <span class="tag t-unk">public data not disclosed</span>
+      </div>
+      <div class="case-tech">
+        <span class="case-tech-label">技術組件</span>
+        <span class="tech-pill tp-rules">Rulebook Hub</span>
+        <span class="tech-pill tp-ml">ML Scoring</span>
+        <span class="tech-pill tp-saas">SaaS API</span>
+        <span class="tech-pill tp-ext">Interview API</span>
+        <span class="tech-pill tp-hitl">Human Underwriter</span>
+        <span class="tech-pill tp-ext">Monitoring Dashboard</span>
+      </div>
+      <div class="case-src">
+        <span class="case-src-label">官方來源</span>
+        <a href="https://www.rgare.com/" target="_blank" rel="noopener" class="src-link">RGA 官網</a>
+        <span class="tag tb">B — 官方產品頁面</span>
+        <span class="tag t-ven">vendor-claimed</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Munich Re ALLFINANZ / Predictor -->
+    <div class="case-card rv" style="--cc:#f87171">
+      <div class="case-hd">
+        <div>
+          <div class="case-co">
+            <a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid rgba(248,113,113,.4)">Munich Re</a>
+            <span style="font-size:1.05rem;font-weight:400;color:var(--t3)"> — ALLFINANZ / Predictor</span>
+          </div>
+          <div class="case-sub">全球最大再保公司慕尼黑再保的完整核保工作台。ALLFINANZ 提供核保引擎（Rulebook Hub + Interview API），<a href="https://www.munichre.com/" target="_blank" rel="noopener" class="src-link">Munich Re Predictor</a> 提供 ML 風險模型（含 Explainable AI 輸出），兩者整合形成 end-to-end 核保自動化平台。</div>
+        </div>
+        <div class="case-badges">
+          <span class="hitl-badge hitl-yes">HITL 明確</span>
+          <span class="tag tb">B 級</span>
+          <span class="tag t-ven">vendor-claimed</span>
+        </div>
+      </div>
+      <div class="case-grid">
+        <div class="dim-block">
+          <div class="dim-label">ALLFINANZ 定位</div>
+          <div class="dim-body">核保規則引擎：Rulebook Hub 管理核保規則版本；Interview API 生成動態問卷；支援即時核保決策或觸發轉介人工</div>
+        </div>
+        <div class="dim-block">
+          <div class="dim-label">Predictor 定位</div>
+          <div class="dim-body">ML 風險預測模型：生命期望值預測、死亡率評估；<abbr title="Explainable AI，可解釋人工智慧">XAI</abbr> 輸出解釋因素；含 model monitoring dashboard 監控漂移</div>
+        </div>
+        <div class="dim-block">
+          <div class="dim-label">HITL 設計</div>
+          <div class="dim-body">XAI 輸出讓核保師理解決策理由；高風險件必轉人工；audit log 設計符合歐洲監理框架；reason code 為標準輸出</div>
+        </div>
+      </div>
+      <div class="case-benefits">
+        <strong>已揭露效益（B 級 — vendor-claimed，缺乏獨立審計）：</strong><br>
+        官方揭露功能特點（Explainable AI、監控儀表板、規則管理工作台），但 <strong>具體 STP/TAT 改善數字未揭露</strong> <span class="tag t-unk">public data not disclosed</span>
+      </div>
+      <div class="case-tech">
+        <span class="case-tech-label">技術組件</span>
+        <span class="tech-pill tp-rules">Rulebook Hub</span>
+        <span class="tech-pill tp-ext">Interview API</span>
+        <span class="tech-pill tp-ml">Predictor ML</span>
+        <span class="tech-pill tp-genai">Explainable AI</span>
+        <span class="tech-pill tp-hitl">Human Underwriter</span>
+        <span class="tech-pill tp-ext">Model Monitoring</span>
+      </div>
+      <div class="case-src">
+        <span class="case-src-label">官方來源</span>
+        <a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener" class="src-link">Munich Re ALLFINANZ 官方頁</a>
+        <a href="https://www.munichre.com/" target="_blank" rel="noopener" class="src-link">Munich Re 官網</a>
+        <span class="tag tb">B — 官方產品頁面</span>
+        <span class="tag t-ven">vendor-claimed</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Swiss Re Magnum -->
+    <div class="case-card rv" style="--cc:#5eead4">
+      <div class="case-hd">
+        <div>
+          <div class="case-co">
+            <a href="https://www.swissre.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid rgba(94,234,212,.4)">Swiss Re</a>
+            <span style="font-size:1.05rem;font-weight:400;color:var(--t3)"> — MagnumXP / Magnum Select</span>
+          </div>
+          <div class="case-sub">全球第二大再保公司瑞士再保的點銷售核保引擎。MagnumXP 為傳統平台，<a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener" class="src-link">Magnum Select</a> 為針對加速核保（Accelerated Underwriting）優化的升級版，支援即時核保決策與動態風險問卷。</div>
+        </div>
+        <div class="case-badges">
+          <span class="hitl-badge hitl-partial">部分 HITL</span>
+          <span class="tag tb">B 級</span>
+          <span class="tag t-ven">vendor-claimed</span>
+        </div>
+      </div>
+      <div class="case-grid">
+        <div class="dim-block">
+          <div class="dim-label">流程定位</div>
+          <div class="dim-body">點銷售（point-of-sale）核保引擎；動態問卷在銷售過程中即時評估風險；目標是讓核保決策從數週縮短至數分鐘內完成</div>
+        </div>
+        <div class="dim-block">
+          <div class="dim-label">技術架構</div>
+          <div class="dim-body">Rules Engine 做即時決策；ML 模型做風險評估與案件分流；Magnum Select 針對加速核保優化，減少問題數量但維持精準度</div>
+        </div>
+        <div class="dim-block">
+          <div class="dim-label">HITL 設計</div>
+          <div class="dim-body">複雜件、高保額件或規則觸發件轉介人工；系統輸出建議而非強制拒保；瑞士再保核保師提供後台支援</div>
+        </div>
+      </div>
+      <div class="case-benefits">
+        <strong>已揭露效益（B 級 — vendor-claimed，缺乏獨立審計）：</strong><br>
+        官方宣稱申請時間從 <strong>數週縮短至數分鐘</strong>，但無母數、商品別與完整 TAT 資料 <span class="tag t-unk">public data not disclosed</span>
+      </div>
+      <div class="case-tech">
+        <span class="case-tech-label">技術組件</span>
+        <span class="tech-pill tp-rules">Rules Engine</span>
+        <span class="tech-pill tp-ml">ML Scoring</span>
+        <span class="tech-pill tp-data">動態問卷</span>
+        <span class="tech-pill tp-saas">SaaS 整合</span>
+        <span class="tech-pill tp-hitl">Human Underwriter</span>
+      </div>
+      <div class="case-src">
+        <span class="case-src-label">官方來源</span>
+        <a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener" class="src-link">Swiss Re 核保頁面</a>
+        <a href="https://www.swissre.com/" target="_blank" rel="noopener" class="src-link">Swiss Re 官網</a>
+        <span class="tag tb">B — 官方產品頁面</span>
+        <span class="tag t-ven">vendor-claimed</span>
+      </div>
+    </div>
+
+    <!-- Key Finding -->
+    <div class="find rv2">
+      <p style="font-size:1.02rem;font-weight:700;color:var(--ac);margin-bottom:.65rem;margin-top:.3rem">四大平台共同設計模式 <span class="tag t-inf">inferred — 四平台官方文件共同指向</span></p>
+      <ul class="kp">
+        <li><strong>規則引擎是核心閘門，不是 LLM</strong>；ML 做輔助評分與 STP 候選；GenAI 最多用在文件摘要或問卷文字生成</li>
+        <li><strong>Human-in-the-loop 是所有平台的設計標配，不是選配</strong>；高保額、高風險、規則觸發件均轉人工覆核</li>
+        <li><strong>再保商是台灣壽險公司的天然切入點</strong>：RGA、Munich Re、Swiss Re 均在台灣有業務，可作為 POC 起點，無需從零建構</li>
+        <li><strong>具體 ROI 數字幾乎不揭露</strong>：僅 MassMutual 年報有 A 級覆蓋率數字，其餘均為 vendor-claimed 方向性描述，採購前必須實測</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- S4: ARCHITECTURE -->
+<section id="arch">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">04</div>
+      <h2>混合式技術架構：四層分工骨架</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch">以下架構是由 <a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA</a>、<a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener">Munich Re</a>、<a href="https://www.metlife.com/" target="_blank" rel="noopener">MetLife</a>、<a href="https://cloud.google.com/agent-assist" target="_blank" rel="noopener">Google</a>、<a href="https://aws.amazon.com/connect/" target="_blank" rel="noopener">AWS</a> 等公開案例共同指向的實務骨架，<strong>非單一廠商宣稱</strong>。每層的邊界是台灣壽險 AI 治理的核心議題。<span class="tag t-inf">inferred</span></p>
+    </div>
+    <div class="arch-svg-wrap rv">
+      <svg id="arch-svg" width="100%" viewBox="0 0 1060 340" style="min-width:860px;display:block"></svg>
+    </div>
+    <div class="ga rv2" style="margin-top:1.2rem">
+      <div class="card" style="border-top:2px solid #2d6a4f">
+        <h4>規則引擎 Rules Engine</h4>
+        <p style="font-size:.88rem;color:var(--t2)">最終可審計決策閘門。固化明確規則。<em>主要失敗模式：規則老化、例外累積過多</em></p>
+        <p style="font-size:.82rem;color:var(--t3);margin-bottom:0">案例：<a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA Aura Next</a> · <a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener">Munich Re ALLFINANZ</a> · <a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener">Swiss Re Magnum</a></p>
+      </div>
+      <div class="card" style="border-top:2px solid #1e4d91">
+        <h4>機器學習 ML Scoring</h4>
+        <p style="font-size:.88rem;color:var(--t2)">風險排序、詐欺評分、STP 候選篩選。輸出建議與排序，<strong>不做最終決策</strong>。<em>主要失敗模式：模型漂移、訓練偏差</em></p>
+        <p style="font-size:.82rem;color:var(--t3);margin-bottom:0">案例：<a href="https://www.massmutual.com/" target="_blank" rel="noopener">MassMutual</a> 演算法核保 · <a href="https://www.munichre.com/" target="_blank" rel="noopener">Munich Re Predictor</a> · <a href="https://www.shift-technology.com/" target="_blank" rel="noopener">Shift</a> 詐欺評分</p>
+      </div>
+      <div class="card" style="border-top:2px solid #6b3fa0">
+        <h4>生成式 AI / RAG</h4>
+        <p style="font-size:.88rem;color:var(--t2)">摘要、知識檢索、文件理解、客服建議草稿。定位為<strong>輔助性</strong>，不做保險決策。<em>主要失敗模式：幻覺、知識庫過舊</em></p>
+        <p style="font-size:.82rem;color:var(--t3);margin-bottom:0">案例：<a href="https://cloud.google.com/agent-assist" target="_blank" rel="noopener">Google Agent Assist</a> · <a href="https://aws.amazon.com/bedrock/" target="_blank" rel="noopener">Amazon Bedrock</a> · <a href="https://www.genesys.com/" target="_blank" rel="noopener">Genesys Copilot</a></p>
+      </div>
+      <div class="card" style="border-top:2px solid #b45309">
+        <h4>人工覆核 Human Review</h4>
+        <p style="font-size:.88rem;color:var(--t2)">高影響力或不利決策之必要關卡。<a href="https://www.fsc.gov.tw/" target="_blank" rel="noopener">金管會</a> AI 指引與<a href="https://www.lia-roc.org.tw/" target="_blank" rel="noopener">保險業自律規範</a>明確要求不得完全取消人工審查路徑。</p>
+        <p style="font-size:.82rem;color:var(--t3);margin-bottom:0">法規依據：<a href="https://www.fsc.gov.tw/" target="_blank" rel="noopener">金管會 AI 指引</a> · 保險業 AI 自律規範 <span class="tag ta">A</span></p>
+      </div>
+      <div class="card" style="border-top:2px solid #374151">
+        <h4>稽核軌跡 Audit Log</h4>
+        <p style="font-size:.88rem;color:var(--t2)">固化模型版本、規則版本、prompt 版本、人工覆核紀錄與最後決策人。受監管流程之強制基礎建設。</p>
+        <p style="font-size:.82rem;color:var(--t3);margin-bottom:0">法規依據：保險業 AI 自律規範 · <a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA</a> 官方明寫 monitoring/logging <span class="tag ta">A</span><span class="tag tb">B</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S5: TAIWAN -->
+<section id="taiwan">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">05</div>
+      <h2>台灣落地：六道國際案例沒有的門檻</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch">國際成功案例幾乎都在資料取得、法規彈性或系統整合上佔有優勢，<strong>這些優勢在台灣並不存在</strong>。以下六項限制，每一項都足以讓導入失敗，須在專案啟動前確認每項已納入計畫。</p>
+    </div>
+    <div class="con-grid rv">
+      <div class="con warn compliance-bg">
+        <div class="con-lbl">資料主權 <span class="tag ta">A — verified</span></div>
+        <div class="con-title">醫療與健康資料的法律限制</div>
+        <div class="con-body"><a href="https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=I0050021" target="_blank" rel="noopener">個資法第 6 條</a>：病歷、醫療、健康檢查屬高度敏感資料，需特定目的、同意與安全維護措施。<strong><a href="https://health.nhi.gov.tw/" target="_blank" rel="noopener">健康存摺</a>不能作為診斷證明書申請保險理賠（官方明示）</strong>。<a href="https://mydata.nat.gov.tw/" target="_blank" rel="noopener">MyData</a> 可加速政府文件取得，但不能替代正式醫療文件。</div>
+      </div>
+      <div class="con warn compliance-bg">
+        <div class="con-lbl">監理合規 <span class="tag ta">A — verified</span></div>
+        <div class="con-title">金管會 AI 指引與保險業自律規範</div>
+        <div class="con-body"><a href="https://www.fsc.gov.tw/" target="_blank" rel="noopener">金管會</a>《金融業運用人工智慧指引》要求建立治理與問責機制、保護隱私及客戶權益、尊重客戶選擇權（保留替代方案）、落實透明性與可解釋性。<strong><a href="https://www.lia-roc.org.tw/" target="_blank" rel="noopener">保險業 AI 自律規範</a>已把直接與客戶互動、影響交易權益或對營運有重大影響的 AI 納入管理</strong>，不是「先上線再補法遵」。</div>
+      </div>
+      <div class="con caution">
+        <div class="con-lbl">語音 AI <span class="tag tb">B</span><span class="tag t-nv">needs verification</span></div>
+        <div class="con-title">中文語音支援現況與限制</div>
+        <div class="con-body"><a href="https://cloud.google.com/speech-to-text" target="_blank" rel="noopener">Google Speech-to-Text</a> 官方支援台灣繁體華語語音辨識；<a href="https://aws.amazon.com/transcribe/" target="_blank" rel="noopener">AWS Amazon Transcribe</a> 支援繁體中文轉錄，但進階功能依語言而異。<strong>台語與雙語混碼能力仍需逐功能逐語料實測</strong>。POC 必須做台灣華語、混碼、台語樣本基準測試；未達標前，台語先用真人搭配輔助。</div>
+      </div>
+      <div class="con caution">
+        <div class="con-lbl">文件 AI <span class="tag t-inf">inferred</span></div>
+        <div class="con-title">醫療文件格式差異大</div>
+        <div class="con-body">台灣醫療文件格式、院所版型與手寫/掃描品質差異大。<strong>建議先挑 3–5 種高量文件做模板與抽取驗證</strong>：住院診斷書、手術證明、醫療收據、保單條款、理賠申請書。國際案例（如 <a href="https://sprout.ai/" target="_blank" rel="noopener">Sprout.ai</a>、<a href="https://www.shift-technology.com/" target="_blank" rel="noopener">Shift</a>）多從特定文件類型切入，而非全品類。</div>
+      </div>
+      <div class="con">
+        <div class="con-lbl">系統整合 <span class="tag t-inf">inferred</span></div>
+        <div class="con-title">核心系統整合是最大工作量</div>
+        <div class="con-body">國際方案多為 SaaS/API（<a href="https://www.rgare.com/" target="_blank" rel="noopener">RGA Aura Next</a>、<a href="https://aws.amazon.com/connect/" target="_blank" rel="noopener">Amazon Connect</a>）；但台灣保險公司核心保單、理賠、CRM、話務與身份驗證常分散在不同系統，整合複雜度遠高於國際案例情境。<strong>專案預算至少把 40% 留給整合、資料治理與測試</strong>。</div>
+      </div>
+      <div class="con">
+        <div class="con-lbl">組織接受度 <span class="tag t-inf">inferred</span></div>
+        <div class="con-title">第一線組織阻力不可忽視</div>
+        <div class="con-body">核保師、理賠處理員、客服人員都會擔心裁員、失去裁量權或被監控。若導入方式錯誤，第一線會直接繞過系統。<strong>把 AI 定義為 augmentation，不是 replacement</strong>——<a href="https://www.metlife.com/" target="_blank" rel="noopener">MetLife</a> 在其 AI 策略聲明中明確採此立場。KPI 先看工時、品質與回應速度，不先看 headcount reduction。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S6: ROADMAP -->
+<section id="roadmap">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">06</div>
+      <h2>MVP 路線圖：12 個月行動計畫</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch">國際成功案例的共同模式：<strong>小範圍 shadow mode 先於大規模上線</strong>。每個 MVP 都有明確驗收指標與停損條件。</p>
+    </div>
+    <div class="g2 rv">
+      <div class="tl">
+        <div class="tl-item">
+          <div class="tl-period">第一期：0–3 個月</div>
+          <h4>找到能驗收的第一題，不先買大平台</h4>
+          <ul class="kp" style="margin-top:.3rem">
+            <li>建立 use-case baseline、資料映射、法遵盤點</li>
+            <li>供應商短名單、離線 benchmark、停損門檻</li>
+            <li>可交付：3 個 MVP 商業案例、RFP、資料權限清單</li>
+          </ul>
+        </div>
+        <div class="tl-item">
+          <div class="tl-period">第二期：3–6 個月</div>
+          <h4>Shadow mode 與小範圍試營運</h4>
+          <ul class="kp" style="margin-top:.3rem">
+            <li>客服 Agent Assist 灰度測試</li>
+            <li>理賠文件抽取 + fraud triage</li>
+            <li>簡單商品加速核保</li>
+            <li>可交付：dashboard、覆核流程、reason code 設計</li>
+          </ul>
+        </div>
+        <div class="tl-item">
+          <div class="tl-period">第三期：6–12 個月</div>
+          <h4>限定商品 / 通路正式上線</h4>
+          <ul class="kp" style="margin-top:.3rem">
+            <li>擴至單一商品線 / 單一理賠類型 / 前 20 大意圖</li>
+            <li>加入 model monitoring 與申訴機制</li>
+            <li>可交付：KPI 週報、例外處理 SLA、稽核軌跡</li>
+          </ul>
+        </div>
+        <div class="tl-item">
+          <div class="tl-period">12 個月以後</div>
+          <h4>擴場景與標準化治理</h4>
+          <ul class="kp" style="margin-top:.3rem">
+            <li>champion-challenger、更多產品與通路</li>
+            <li>統一模型台帳與資料契約</li>
+            <li>可交付：enterprise AI operating model</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:.8rem">場景 MVP 驗收指標</h4>
+        <div class="tw"><table>
+          <thead><tr><th>場景</th><th>驗收指標</th><th>停損條件</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>核保</strong></td>
+              <td>STP +15pp、TAT -30%、人工工時 -25%、reason code ≥95%</td>
+              <td>override rate 持續偏高；資料來源不穩</td>
+            </tr>
+            <tr>
+              <td><strong>理賠防詐</strong></td>
+              <td>TAT -40%、auto-approval 20–30%、fraud hit rate ↑、false positive ↓</td>
+              <td>誤報造成 backlog 增 20%+；文件抽取錯誤率過高</td>
+            </tr>
+            <tr>
+              <td><strong>客服自動化</strong></td>
+              <td>AHT -10%、ACW -30%、FCR +3pp、摘要接受率 ≥80%</td>
+              <td>ASR/WER 失控；幻覺與錯答造成客訴</td>
+            </tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S7: KPI MODEL -->
+<section id="kpi">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">07</div>
+      <h2>KPI 設計框架：讓 AI 投資可被量化驗收</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch">以下 KPI 定義與示例數字供主管設計驗收框架，<strong>不代表產業基準</strong>。在真實 POC 資料出來之前，以量級數量級估算即可，不要過度精確。</p>
+    </div>
+    <div class="gauge-row rv">
+      <div class="gauge-card">
+        <svg id="g-stp" width="160" height="95" viewBox="0 0 160 95"></svg>
+        <div class="gauge-note">STP 目標提升<br>（示例：35%→60%）</div>
+      </div>
+      <div class="gauge-card">
+        <svg id="g-tat" width="160" height="95" viewBox="0 0 160 95"></svg>
+        <div class="gauge-note">TAT 縮短目標<br>（示例：-40%）</div>
+      </div>
+      <div class="gauge-card">
+        <svg id="g-fcr" width="160" height="95" viewBox="0 0 160 95"></svg>
+        <div class="gauge-note">FCR 提升目標<br>（示例：+5pp）</div>
+      </div>
+      <div class="gauge-card">
+        <svg id="g-frd" width="160" height="95" viewBox="0 0 160 95"></svg>
+        <div class="gauge-note">詐欺命中率目標<br>（示例：15%→30%）</div>
+      </div>
+    </div>
+    <div class="kpi-g rv2">
+      <div class="kpi-c"><div class="kpi-n">STP</div><div class="kpi-f">直通率</div><div class="kpi-formula">自動完成件 ÷ 可自動化案件</div><div class="kpi-tags"><span class="kpi-st">核保</span><span class="kpi-st">理賠</span></div></div>
+      <div class="kpi-c"><div class="kpi-n">TAT</div><div class="kpi-f">處理週期</div><div class="kpi-formula">完成時間 − 受理時間</div><div class="kpi-tags"><span class="kpi-st">核保</span><span class="kpi-st">理賠</span></div></div>
+      <div class="kpi-c"><div class="kpi-n">Fraud Hit Rate</div><div class="kpi-f">詐欺命中率</div><div class="kpi-formula">確認詐欺件 ÷ 警示案件數</div><div class="kpi-tags"><span class="kpi-st">防詐</span></div></div>
+      <div class="kpi-c"><div class="kpi-n">False Positive</div><div class="kpi-f">誤報率</div><div class="kpi-formula">誤報件 ÷ 全部警示件</div><div class="kpi-tags"><span class="kpi-st">防詐</span></div></div>
+      <div class="kpi-c"><div class="kpi-n">AHT</div><div class="kpi-f">平均處理時間</div><div class="kpi-formula">(通話+保留+後處理) ÷ 通話量</div><div class="kpi-tags"><span class="kpi-st">客服</span></div></div>
+      <div class="kpi-c"><div class="kpi-n">ACW</div><div class="kpi-f">通話後處理時間</div><div class="kpi-formula">通話後作業 ÷ 通話量</div><div class="kpi-tags"><span class="kpi-st">客服</span></div></div>
+      <div class="kpi-c"><div class="kpi-n">FCR</div><div class="kpi-f">首次解決率</div><div class="kpi-formula">首次解決件 ÷ 進線件</div><div class="kpi-tags"><span class="kpi-st">客服</span></div></div>
+      <div class="kpi-c"><div class="kpi-n">Override Rate</div><div class="kpi-f">人工推翻率</div><div class="kpi-formula">被改判件 ÷ AI 建議件</div><div class="kpi-tags"><span class="kpi-st">全場景</span></div></div>
+      <div class="kpi-c"><div class="kpi-n">Summary Acceptance</div><div class="kpi-f">摘要接受率</div><div class="kpi-formula">可直接採用摘要 ÷ AI 摘要總數</div><div class="kpi-tags"><span class="kpi-st">客服</span></div></div>
+    </div>
+    <div class="g3 rv3">
+      <div style="background:var(--bg);padding:1rem;border-radius:var(--r);border:1px solid var(--bdr2)"><div style="font-size:.76rem;color:var(--t3);margin-bottom:.3rem">費用率改善</div><div style="font-size:.85rem;font-weight:600">節省工時 × 人力全成本</div></div>
+      <div style="background:var(--bg);padding:1rem;border-radius:var(--r);border:1px solid var(--bdr2)"><div style="font-size:.76rem;color:var(--t3);margin-bottom:.3rem">收入提升</div><div style="font-size:.85rem;font-weight:600">轉換率提升 × 單件貢獻毛利</div></div>
+      <div style="background:var(--bg);padding:1rem;border-radius:var(--r);border:1px solid var(--bdr2)"><div style="font-size:.76rem;color:var(--t3);margin-bottom:.3rem">損失阻卻</div><div style="font-size:.85rem;font-weight:600">避免詐欺金額 − 調查與系統成本</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S8: DEMO — UW RULE ENGINE -->
+<section id="demo-uw">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">08 · DEMO</div>
+      <h2>核保規則引擎模擬器</h2>
+      <p style="font-size:.85rem;color:var(--t2)">
+        示範報告所描述的「規則引擎先行」核保架構。輸入申請人資訊，
+        即時呈現各規則命中情況、風險分層結果與人工覆核需求判斷。
+      </p>
+    </div>
+    <div class="demo-wrap rv">
+      <div class="demo-panel">
+        <h4 style="margin-bottom:1rem">申請人資訊輸入</h4>
+        <div class="fg">
+          <label>年齡（歲）</label>
+          <div class="rrow">
+            <input type="range" id="uw-age" min="18" max="75" value="38" oninput="syncR('uw-age','uw-age-v')">
+            <span class="rval" id="uw-age-v">38 歲</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label>BMI（身體質量指數）</label>
+          <div class="rrow">
+            <input type="range" id="uw-bmi" min="15" max="42" value="24" step=".1" oninput="syncR('uw-bmi','uw-bmi-v')">
+            <span class="rval" id="uw-bmi-v">24.0</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label>吸菸狀態</label>
+          <select id="uw-smoke">
+            <option value="0">非吸菸者</option>
+            <option value="1">吸菸者</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>職業風險等級</label>
+          <select id="uw-occ">
+            <option value="1">Class 1 — 辦公室/文書（標準）</option>
+            <option value="2">Class 2 — 輕度體力勞動</option>
+            <option value="3">Class 3 — 重度體力勞動</option>
+            <option value="4">Class 4 — 高危險職業</option>
+          </select>
+          <div class="hint">職業分級僅為示意，非真實核保書分類</div>
+        </div>
+        <div class="fg">
+          <label>申請保額（萬元）</label>
+          <div class="rrow">
+            <input type="range" id="uw-amt" min="50" max="5000" value="500" step="50" oninput="syncR('uw-amt','uw-amt-v')">
+            <span class="rval" id="uw-amt-v">500 萬</span>
+          </div>
+        </div>
+        <button class="run-btn" onclick="runUW()">▶ 執行規則引擎評估</button>
+        <div class="demo-disclaimer">
+          ⚠ 本 DEMO 採示意性規則（非真實核保書），用以說明報告所述「規則引擎先行、任何不利決策均需人工確認」的架構原則。
+          <span class="tag t-inf">架構 inferred — RGA, Munich Re, Swiss Re 案例</span>
+        </div>
+      </div>
+      <div class="demo-panel" id="uw-output" style="opacity:.4;transition:opacity .4s">
+        <h4 style="margin-bottom:.9rem">規則引擎評估結果</h4>
+        <div id="uw-decision" style="margin-bottom:1rem"></div>
+        <h4 style="font-size:.8rem;color:var(--t3);margin-bottom:.6rem">規則命中明細 <span style="font-size:.76rem;font-weight:400">（每條規則均留可審計紀錄）</span></h4>
+        <ul class="rule-list" id="uw-rules"></ul>
+        <div id="uw-summary" style="font-size:.8rem;color:var(--t2);line-height:1.6;border-top:1px solid var(--bdr);padding-top:.8rem;margin-top:.4rem"></div>
+        <div style="margin-top:.9rem;padding:.7rem .9rem;background:var(--bg);border-radius:var(--r);border:1px solid var(--bdr2);font-size:.76rem;color:var(--t3)">
+          <strong style="color:var(--ac)">架構原則：</strong>本系統不做自動拒保。任何次標準或需關注結果均送人工核保師確認，符合報告所述「初期以規則引擎為主，任何不利決策由人工握住」原則。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S9: DEMO — FRAUD SCORE -->
+<section id="demo-fraud">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">09 · DEMO</div>
+      <h2>理賠詐欺風險評分分解器</h2>
+      <p style="font-size:.85rem;color:var(--t2)">
+        示範報告所描述的「ML 評分 + 三路分流」理賠架構。各風險因子權重透明可見，
+        對應報告強調的可解釋性（Explainability）與 reason code 要求。
+      </p>
+    </div>
+    <div class="demo-wrap rv">
+      <div class="demo-panel">
+        <h4 style="margin-bottom:1rem">理賠案件資訊輸入</h4>
+        <div class="fg">
+          <label>理賠類型</label>
+          <select id="fr-type">
+            <option value="medical">一般醫療（平均 NT$30,000）</option>
+            <option value="surgical">手術治療（平均 NT$80,000）</option>
+            <option value="critical">重大疾病（平均 NT$200,000）</option>
+            <option value="accident">意外傷害（平均 NT$50,000）</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>申請理賠金額（新台幣）</label>
+          <div class="rrow">
+            <input type="range" id="fr-amt" min="5000" max="500000" value="35000" step="5000" oninput="syncFrAmt()">
+            <span class="rval" id="fr-amt-v">35,000</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label>投保月數（距投保日）</label>
+          <div class="rrow">
+            <input type="range" id="fr-age" min="1" max="360" value="24" oninput="syncR('fr-age','fr-age-v')">
+            <span class="rval" id="fr-age-v">24 個月</span>
+          </div>
+          <div class="hint">新投保（&lt;12 個月）是常見高風險指標之一</div>
+        </div>
+        <div class="fg">
+          <label>近 3 年理賠次數</label>
+          <div class="rrow">
+            <input type="range" id="fr-cnt" min="0" max="10" value="1" oninput="syncR('fr-cnt','fr-cnt-v')">
+            <span class="rval" id="fr-cnt-v">1 次</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label>就醫院所</label>
+          <select id="fr-hosp">
+            <option value="1">醫學中心（最低風險）</option>
+            <option value="2">區域醫院</option>
+            <option value="3" selected>地區醫院</option>
+            <option value="4">診所（較高風險）</option>
+          </select>
+          <div class="hint">院所層級是詐欺偵測常用特徵之一（示意性）</div>
+        </div>
+        <button class="run-btn" onclick="runFraud()">▶ 執行詐欺風險評分</button>
+        <div class="demo-disclaimer">
+          ⚠ 本 DEMO 採示意性加權公式（非真實模型），各因子權重明確顯示。
+          用以說明報告所述「ML 評分 + 三路分流 + reason code」可解釋性架構。
+          <span class="tag t-inf">架構 inferred — Shift, FRISS, MetLife+Sprout.ai 案例</span>
+        </div>
+      </div>
+      <div class="demo-panel" id="fr-output" style="opacity:.4;transition:opacity .4s">
+        <h4 style="margin-bottom:.9rem">詐欺風險評分結果</h4>
+        <div class="score-gauge-wrap">
+          <div class="score-num" id="fr-score">—</div>
+          <div class="score-label">詐欺風險分數（0–100）</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar" id="fr-bar" style="width:0%"></div>
+          </div>
+          <div class="score-thresholds">
+            <span style="color:#4ade80">0 快速核准</span>
+            <span style="color:#fb923c">31 人工覆核</span>
+            <span style="color:#f87171">61 SIU 調查</span>
+            <span>100</span>
+          </div>
+        </div>
+        <h4 style="font-size:.8rem;color:var(--t3);margin-bottom:.4rem;margin-top:.5rem">
+          因子貢獻分解 <span style="font-size:.76rem;font-weight:400">（Reason Code — 可解釋性輸出）</span>
+        </h4>
+        <div class="factor-bars" id="fr-factors"></div>
+        <div id="fr-decision" style="margin-top:.6rem"></div>
+        <div id="fr-reason" style="font-size:.78rem;color:var(--t2);line-height:1.6;margin-top:.6rem;border-top:1px solid var(--bdr);padding-top:.7rem"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S10: ROI CALCULATOR -->
+<section id="demo-roi">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">10 · DEMO</div>
+      <h2>ROI / MVP 試算器</h2>
+      <p style="font-size:.85rem;color:var(--t2)">純前端試算，無後端，無 AI 推論。輸出為估算示例，不作為投資決策依據。</p>
+    </div>
+    <div class="roi-wrap rv">
+      <div class="demo-panel">
+        <h4 style="margin-bottom:1rem">輸入參數</h4>
+        <div class="fg">
+          <label>場景選擇</label>
+          <select id="roi-scene">
+            <option value="cs">客服自動化</option>
+            <option value="cl">理賠防詐</option>
+            <option value="uw">核保</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>月案件量（件/月）</label>
+          <input type="number" id="roi-vol" value="10000" min="100" max="500000">
+        </div>
+        <div class="fg">
+          <label>AI 自動化率（%）</label>
+          <div class="rrow">
+            <input type="range" id="roi-auto" min="5" max="90" value="40" oninput="syncR('roi-auto','roi-auto-v')">
+            <span class="rval" id="roi-auto-v">40%</span>
+          </div>
+          <div class="hint">初期建議保守設定；客服可較高（40–60%），核保初期較低（20–35%）</div>
+        </div>
+        <div class="fg">
+          <label>人工推翻率 Override Rate（%）</label>
+          <div class="rrow">
+            <input type="range" id="roi-ovr" min="0" max="60" value="15" oninput="syncR('roi-ovr','roi-ovr-v')">
+            <span class="rval" id="roi-ovr-v">15%</span>
+          </div>
+          <div class="hint">&gt;30% 通常代表模型需重新校準</div>
+        </div>
+        <div class="fg">
+          <label>每件人工處理時間（分鐘）</label>
+          <input type="number" id="roi-min" value="15" min="1" max="180">
+          <div class="hint">客服 10–20 分；理賠 25–40 分；核保 30–60 分</div>
+        </div>
+        <div class="fg">
+          <label>人力每小時成本（新台幣）</label>
+          <input type="number" id="roi-cost" value="380" min="100" max="2000">
+          <div class="hint">含薪資、福利、管理費用的全成本估算</div>
+        </div>
+        <button class="run-btn" onclick="calcROI()">▶ 計算估算結果</button>
+      </div>
+      <div class="demo-panel" id="roi-output" style="opacity:.4;transition:opacity .4s">
+        <h4 style="margin-bottom:1rem">估算結果</h4>
+        <div class="out-metric">
+          <div class="out-lbl">每月淨節省人時</div>
+          <div><span class="out-val" id="roi-hours">—</span><span class="out-unit">小時/月</span></div>
+        </div>
+        <div class="out-metric">
+          <div class="out-lbl">每月估算費用節省</div>
+          <div><span class="out-val" id="roi-cost-out">—</span><span class="out-unit">新台幣/月</span></div>
+        </div>
+        <div class="out-metric">
+          <div class="out-lbl">風險預警</div>
+          <ul class="warn-list" id="roi-warns"><li style="color:var(--t3)">（計算後顯示）</li></ul>
+        </div>
+        <div class="out-metric" style="border-bottom:none;margin-bottom:0">
+          <div class="out-lbl">建議 MVP 優先策略</div>
+          <div class="pri-box" id="roi-pri">（計算後顯示）</div>
+        </div>
+        <div class="demo-disclaimer" style="margin-top:.9rem">
+          ⚠ 採線性估算模型。實際效益受資料品質、模型精度、整合複雜度、組織接受度與監理要求影響，
+          不應直接作為董事會投資決策依據。請以實際 POC 資料替換此估算。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S11: GOVERNANCE -->
+<section id="gov">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">11</div>
+      <h2>治理清單：上線前必須回答的六個問題</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch"><a href="https://www.fsc.gov.tw/" target="_blank" rel="noopener">金管會</a> AI 指引與<a href="https://www.lia-roc.org.tw/" target="_blank" rel="noopener">保險業自律規範</a>已明確要求以下六個控制面。任何一個未到位，<strong>都可能讓監理審查導致下線</strong>。</p>
+    </div>
+    <div class="g2 rv">
+      <div class="card">
+        <h4 style="margin-bottom:.8rem">六大控制面最低要求</h4>
+        <ul class="chk">
+          <li>
+            <div class="chk-ico">1</div>
+            <div>
+              <div class="chk-title">可解釋性 Explainability <span class="tag ta">A</span></div>
+              <div class="chk-detail">每個核保/理賠建議均需輸出規則命中、主要特徵或理由碼（reason code）、引用文件與資料來源。金管會要求透明與可解釋性；Munich Re Predictor 把 explainable AI 做成標配。監控：reason-code coverage、manual override rate</div>
+            </div>
+          </li>
+          <li>
+            <div class="chk-ico">2</div>
+            <div>
+              <div class="chk-title">稽核軌跡 Audit Trail <span class="tag ta">A</span><span class="tag tb">B</span></div>
+              <div class="chk-detail">固化模型版本、規則版本、prompt 版本、知識來源、人工覆核紀錄與最後決策人。目標：100% decision logging completeness。保險業 AI 自律規範要求風險基礎管理；RGA 明寫 monitoring/logging。</div>
+            </div>
+          </li>
+          <li>
+            <div class="chk-ico">3</div>
+            <div>
+              <div class="chk-title">模型監控 Model Monitoring <span class="tag tb">B</span></div>
+              <div class="chk-detail">持續監看漂移、命中率、誤報率、STP、摘要接受率、ASR 錯誤率（WER）。MetLife Responsible AI 原則把 performance 與 accountability 納入政策。Amazon Connect / Google 均內建 analytics 功能。</div>
+            </div>
+          </li>
+          <li>
+            <div class="chk-ico">4</div>
+            <div>
+              <div class="chk-title">申訴與人工覆核路徑 <span class="tag ta">A</span></div>
+              <div class="chk-detail">對客決策必須能回人工、重審、說明；初期不做完全自動 adverse decision。台灣監理要求客戶選擇權與替代方案。監控：appeal overturn rate、manual review backlog。</div>
+            </div>
+          </li>
+          <li>
+            <div class="chk-ico">5</div>
+            <div>
+              <div class="chk-title">供應商風險 Vendor Risk <span class="tag tb">B</span></div>
+              <div class="chk-detail">釐清資料保留、訓練用途、區域、子處理者、權限、加密與退出規則。Amazon Bedrock 官方說明模型不使用 prompts/outputs 訓練；Amazon Connect 明示某些功能可能跨區推論；Google 知識助理有 query logging 選項。</div>
+            </div>
+          </li>
+          <li>
+            <div class="chk-ico">6</div>
+            <div>
+              <div class="chk-title">對話與文件安全 <span class="tag ta">A</span></div>
+              <div class="chk-detail">PII redaction、權限分層、最小權限、封閉測試資料集、去識別化。聯絡中心與理賠文件直接碰到個資與醫療資料（個資法第 6 條）。</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <div class="card">
+          <h4 style="margin-bottom:.8rem">監控指標對照</h4>
+          <div class="tw"><table>
+            <thead><tr><th>控制面</th><th>監控指標</th></tr></thead>
+            <tbody>
+              <tr><td>可解釋性</td><td>reason-code coverage、manual override rate</td></tr>
+              <tr><td>稽核軌跡</td><td>decision logging completeness（目標 100%）</td></tr>
+              <tr><td>模型監控</td><td>drift score、false positive rate、summary acceptance、WER</td></tr>
+              <tr><td>申訴覆核</td><td>appeal overturn rate、manual review backlog days</td></tr>
+              <tr><td>供應商風險</td><td>vendor exceptions、data-flow deviations、security findings</td></tr>
+              <tr><td>資料安全</td><td>redaction miss rate、privileged access logs</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div class="card" style="margin-top:.9rem">
+          <h4 style="margin-bottom:.8rem">供應商合約必問清單</h4>
+          <ul class="kp">
+            <li>資料是否用於訓練模型？可否退出？</li>
+            <li>資料儲存與處理的地理區域？有無跨區推論？</li>
+            <li>子處理者與資料流向是否完整揭露？</li>
+            <li>加密標準（傳輸中 / 靜止中）為何？</li>
+            <li>模型版本更新通知與退出機制？</li>
+            <li>安全事件通報義務與 SLA？</li>
+          </ul>
+        </div>
+        <div class="card" style="margin-top:.9rem">
+          <h4 style="margin-bottom:.8rem">採購 / 自建 / 混合</h4>
+          <div class="tw"><table>
+            <thead><tr><th>方案</th><th>適用</th><th>本報告建議</th></tr></thead>
+            <tbody>
+              <tr><td><strong>採購</strong></td><td>客服平台、語音、摘要、核保引擎</td><td>客服優先採購；核保可考慮再保商</td></tr>
+              <tr><td><strong>自建</strong></td><td>已有 MLOps 能力；需差異化護城河</td><td>不建議第一階段大面積自建</td></tr>
+              <tr><td><strong>混合（預設）</strong></td><td>兼顧速度、治理、差異化</td><td><strong>預設建議</strong>：客服買平台；理賠買組件；核保買引擎再疊模型</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S12: SOURCES -->
+<section id="sources">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">12</div>
+      <h2>來源附錄：每個主張的原始出處</h2>
+      <p style="color:var(--t2);font-size:1rem;margin-top:.55rem;max-width:72ch">官方文件優先。不含臆測性 URL 或捏造引用。每個超連結均可點擊查閱原始文件——<strong>採購談判前，建議直接以 A 級來源作為立場依據</strong>。</p>
+    </div>
+    <div class="g2 rv">
+      <div>
+        <h4 style="color:var(--ac);margin-bottom:.7rem">A 級 — 監管 / 法律 / 年報</h4>
+        <ul class="src">
+          <li id="src-a1"><span class="src-lv ev-a">A</span><a href="https://www.fsc.gov.tw/" target="_blank" rel="noopener" class="src-link">金管會</a>《金融業運用人工智慧指引》 <span class="tag t-ver" data-tip="有原始官方文件直接支持">verified</span></li>
+          <li id="src-a2"><span class="src-lv ev-a">A</span><a href="https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=I0050021" target="_blank" rel="noopener" class="src-link">個人資料保護法第 6 條</a>（特種個資規定）<span class="tag t-ver" data-tip="有原始官方文件直接支持">verified</span></li>
+          <li id="src-a3"><span class="src-lv ev-a">A</span><a href="https://www.lia-roc.org.tw/" target="_blank" rel="noopener" class="src-link">中華民國保險業</a> <abbr title="Artificial Intelligence">AI</abbr> 自律規範 <span class="tag t-ver" data-tip="有原始官方文件直接支持">verified</span></li>
+          <li id="src-a4"><span class="src-lv ev-a">A</span><a href="https://www.massmutual.com/" target="_blank" rel="noopener" class="src-link">MassMutual</a> 2019 年報：演算法核保 <span class="km">75%</span> 覆蓋率 <span class="tag t-ver" data-tip="年報直接引用，A 級最高可信度">verified</span></li>
+          <li id="src-a5"><span class="src-lv ev-a">A</span><a href="https://www.metlife.com/" target="_blank" rel="noopener" class="src-link">MetLife</a> 2024 永續發展報告：<abbr title="Artificial Intelligence">AI</abbr> 用於詐欺偵測與可自動核准理賠識別 <span class="tag t-ver" data-tip="年報直接引用，A 級最高可信度">verified</span></li>
+          <li id="src-a6"><span class="src-lv ev-a">A</span><a href="https://www.metlife.com/" target="_blank" rel="noopener" class="src-link">MetLife</a> 隱私聲明：<abbr title="Intelligent Virtual Assistant，智能虛擬助理">IVA</abbr> / <abbr title="Interactive Voice Response，互動式語音應答">IVR</abbr> / live agent 並存架構描述</li>
+          <li id="src-a7"><span class="src-lv ev-a">A</span><a href="https://mydata.nat.gov.tw/" target="_blank" rel="noopener" class="src-link">MyData 官方說明文件</a>（台灣自主管理個人資料服務）</li>
+          <li id="src-a8"><span class="src-lv ev-a">A</span><a href="https://health.nhi.gov.tw/" target="_blank" rel="noopener" class="src-link">健康存摺</a>官方聲明：不能作為診斷證明書申請保險理賠 <span class="tag t-ver" data-tip="有原始官方文件直接支持">verified</span></li>
+        </ul>
+        <h4 style="color:var(--ac);margin:1.1rem 0 .7rem">C 級 — 合作夥伴 / 生態系</h4>
+        <ul class="src">
+          <li id="src-c1"><span class="src-lv ev-c">C</span><a href="https://sprout.ai/" target="_blank" rel="noopener" class="src-link">Sprout.ai</a> 官方合作公告：MetLife 多市場理賠自動化擴展</li>
+          <li id="src-c2"><span class="src-lv ev-c">C</span><a href="https://www.shift-technology.com/" target="_blank" rel="noopener" class="src-link">Shift Technology</a> 轉載 MetLife 日本公告（2020，日本壽險業首個雲端 AI 反詐）</li>
+          <li id="src-c3"><span class="src-lv ev-c">C</span><a href="https://www.guidewire.com/" target="_blank" rel="noopener" class="src-link">Guidewire Marketplace</a>：FRISS Accelerator 整合至 ClaimCenter 工作流描述</li>
+          <li id="src-c4"><span class="src-lv ev-c">C</span><a href="https://haventechnologies.com/" target="_blank" rel="noopener" class="src-link">Haven Technologies</a> SaaS 公告（Haven Life 已停止新申請，僅作架構參考）</li>
+        </ul>
+        <h4 style="color:var(--ac);margin:1.1rem 0 .7rem">D 級 — 可靠媒體（最低層級）</h4>
+        <ul class="src">
+          <li id="src-d1"><span class="src-lv ev-d">D</span>可靠媒體：MetLife <abbr title="First Call Resolution，首次解決率">FCR</abbr> <span class="km">+3.5%</span>、<abbr title="Customer Satisfaction Score，客戶滿意度">CSAT</abbr> <span class="km">+13%</span> <span class="tag t-nv" data-tip="引用層級低，採購前需透過 POC 實測驗證">needs verification</span></li>
+          <li id="src-d2"><span class="src-lv ev-d">D</span>Qorus：MetLife <abbr title="Intelligent Virtual Assistant，智能虛擬助理">IVA</abbr> 描述（次級整理，非 MetLife 官方）</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--ac);margin-bottom:.7rem">B 級 — 官方產品文件 / 官方頁面（標注 vendor-claimed）</h4>
+        <ul class="src">
+          <li id="src-b1"><span class="src-lv ev-b">B</span><a href="https://www.rgare.com/" target="_blank" rel="noopener" class="src-link">RGA Aura Next</a> 官方產品手冊：<span class="km">40</span> 市場、50+ 實作、每年 <span class="km">500 萬</span>件 <span class="tag t-ven" data-tip="供應商官方宣稱，缺乏獨立第三方審計">vendor-claimed</span></li>
+          <li id="src-b2"><span class="src-lv ev-b">B</span><a href="https://www.munichre.com/en/solutions/for-insurance-industry/allfinanz.html" target="_blank" rel="noopener" class="src-link">Munich Re ALLFINANZ</a>：Rulebook Hub、Interview <abbr title="Application Programming Interface">API</abbr> 官方模組說明</li>
+          <li id="src-b3"><span class="src-lv ev-b">B</span><a href="https://www.munichre.com/" target="_blank" rel="noopener" class="src-link">Munich Re Predictor</a>：Explainable <abbr title="Artificial Intelligence">AI</abbr>、model monitoring dashboard 官方功能描述</li>
+          <li id="src-b4"><span class="src-lv ev-b">B</span><a href="https://www.swissre.com/life-health/underwriting/" target="_blank" rel="noopener" class="src-link">Swiss Re MagnumXP / Magnum Select</a> 官方頁（申請時間數週→數分鐘）<span class="tag t-ven" data-tip="供應商官方宣稱，缺乏獨立第三方審計">vendor-claimed</span></li>
+          <li id="src-b5"><span class="src-lv ev-b">B</span><a href="https://www.shift-technology.com/" target="_blank" rel="noopener" class="src-link">Shift Technology</a> 官方頁：<span class="km">13M+</span> 可疑理賠、<span class="km">£4B</span> 詐欺識別（2021）<span class="tag t-ven" data-tip="供應商官方宣稱，缺乏獨立第三方審計">vendor-claimed</span></li>
+          <li id="src-b6"><span class="src-lv ev-b">B</span><a href="https://www.friss.com/" target="_blank" rel="noopener" class="src-link">FRISS</a> 官方頁：<abbr title="Turnaround Time，案件處理週期">TAT</abbr> <span class="km">-66%</span>、Media Check + Verisk 聯合驗偽 <span class="tag t-ven" data-tip="供應商官方宣稱，缺乏獨立第三方審計">vendor-claimed</span></li>
+          <li id="src-b7"><span class="src-lv ev-b">B</span><a href="https://www.duckcreek.com/" target="_blank" rel="noopener" class="src-link">Duck Creek Claims</a> 官方產品頁（偏 <abbr title="Property &amp; Casualty，產物險">P&amp;C</abbr>，壽險視為相鄰架構參考）</li>
+          <li id="src-b8"><span class="src-lv ev-b">B</span><a href="https://cloud.google.com/agent-assist" target="_blank" rel="noopener" class="src-link">Google Agent Assist</a> 官方：回應速度 <span class="km">+15%</span>、代理人可處理量 <span class="km">+28%</span> <span class="tag t-ven" data-tip="供應商官方宣稱，缺乏獨立第三方審計">vendor-claimed</span></li>
+          <li id="src-b9"><span class="src-lv ev-b">B</span><a href="https://aws.amazon.com/connect/" target="_blank" rel="noopener" class="src-link">Amazon Connect</a> 官方產品說明與管理文件（含 cross-region inference 注意事項）</li>
+          <li id="src-b10"><span class="src-lv ev-b">B</span><a href="https://aws.amazon.com/bedrock/" target="_blank" rel="noopener" class="src-link">Amazon Bedrock</a> 官方聲明：模型不使用 prompts/outputs 訓練客戶資料</li>
+          <li id="src-b11"><span class="src-lv ev-b">B</span><a href="https://www.genesys.com/" target="_blank" rel="noopener" class="src-link">Genesys Copilot / Virtual Agent</a> 官方文件（guardrails + audit trails 為標配）</li>
+          <li id="src-b12"><span class="src-lv ev-b">B</span><a href="https://www.salesforce.com/" target="_blank" rel="noopener" class="src-link">Salesforce Service Agent</a> 官方頁（guardrails 與人工接手為標準設計）</li>
+          <li id="src-b13"><span class="src-lv ev-b">B</span><a href="https://cloud.google.com/speech-to-text" target="_blank" rel="noopener" class="src-link">Google <abbr title="Speech-to-Text，語音轉文字">STT</abbr></a> 官方：支援台灣繁體華語語音辨識</li>
+          <li id="src-b14"><span class="src-lv ev-b">B</span><a href="https://aws.amazon.com/transcribe/" target="_blank" rel="noopener" class="src-link">Amazon Transcribe</a> 官方：支援繁體中文轉錄（進階功能依語言而異）</li>
+          <li id="src-b15"><span class="src-lv ev-b">B</span><a href="https://www.johnhancock.com/vitality.html" target="_blank" rel="noopener" class="src-link">John Hancock Vitality</a>（Manulife）官方頁：可穿戴裝置行為資料驅動保費，取消傳統健康問卷 <span class="tag t-ven">vendor-claimed</span></li>
+          <li id="src-b16"><span class="src-lv ev-b">B</span><a href="https://www.aia.com/" target="_blank" rel="noopener" class="src-link">AIA Vitality</a>：18 個亞洲市場行為保險計畫；健康積分連動年費折扣 <span class="tag t-ven">vendor-claimed</span></li>
+          <li id="src-b17"><span class="src-lv ev-b">B</span><a href="https://www.lemonade.com/" target="_blank" rel="noopener" class="src-link">Lemonade</a> 官方頁：AI bot Jim 最快 3 秒理賠決定（簡單商品、標準化賠付場景適用）<span class="tag t-ven">vendor-claimed</span></li>
+          <li id="src-b18"><span class="src-lv ev-b">B</span><a href="https://www.zurich.com/" target="_blank" rel="noopener" class="src-link">Zurich Insurance</a>：AI 文件影像分析加速理賠審核（公司報告方向性揭露）<span class="tag t-unk">public data not disclosed</span></li>
+          <li id="src-b19"><span class="src-lv ev-b">B</span><a href="https://www.aflac.com/" target="_blank" rel="noopener" class="src-link">Aflac</a>：AI 聊天機器人處理保單查詢與理賠狀態（補充保險市場案例）<span class="tag t-unk">public data not disclosed</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S13: LIMITS -->
+<section id="limits" style="border-bottom:none">
+  <div class="wrap">
+    <div class="sec-hd rv">
+      <div class="sec-no">13</div>
+      <h2>研究限制</h2>
+      <p style="font-size:.97rem;color:var(--t2);margin-top:.55rem;max-width:70ch">任何以公開資料為基礎的技術評估報告，其結論有效性都受限於資料可及性與時效性。以下六項說明本報告的核心侷限，協助讀者在引用前正確設定期望值。</p>
+    </div>
+    <div class="ga rv">
+      <div class="card" style="border-left:3px solid #d97706">
+        <h4>量化數字的使用限制</h4>
+        <p style="font-size:.81rem;color:var(--t2)">多數供應商公開資料只揭露方向性成果，不揭露母數、對照組、商品別與完整財務影響。<strong>不應直接把公開案例數字當成董事會投資假設。</strong>本報告已標注每個數字的來源等級。</p>
+      </div>
+      <div class="card" style="border-left:3px solid #d97706">
+        <h4>MetLife FCR / CSAT 證據層級</h4>
+        <p style="font-size:.81rem;color:var(--t2)">FCR +3.5%、CSAT +13% 來自 D 級可靠媒體，並非公司正式申報文件。本報告已標示，不建議直接引用於正式 business case。</p>
+      </div>
+      <div class="card" style="border-left:3px solid #7c3aed">
+        <h4>P&C 與壽險的適用差異</h4>
+        <p style="font-size:.81rem;color:var(--t2)">Shift、FRISS、Duck Creek 的成熟方案多來自 P&C 或 health/income protection 背景。台灣壽險公司應視為組件或相鄰能力，而非保證可直接照搬的壽險解決方案。</p>
+      </div>
+      <div class="card" style="border-left:3px solid #7c3aed">
+        <h4>語言支援持續演進</h4>
+        <p style="font-size:.81rem;color:var(--t2)">語音與 GenAI 功能的語言支援、資料保留與區域推論規則持續變動，<strong>採購前需逐功能做法遵與資安驗證</strong>。本報告中語音描述以 2026-04-24 為基準日。</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--gm)">
+        <h4>雷達圖評分的性質</h4>
+        <p style="font-size:.81rem;color:var(--t2)">三場景六維雷達圖為報告定性分析之示意推導（inferred），非量化測量。各維度分數代表研究者對報告質性內容的綜合評估，不應視為精確數值。</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--gm)">
+        <h4>研究基準日</h4>
+        <p style="font-size:.81rem;color:var(--t2)">本報告以 2026-04-24 為基準日。AI 供應商功能、台灣監理規範與壽險業導入進度均快速演進，建議每 6–12 個月重新評估供應商短名單與技術可行性。</p>
+      </div>
+    </div>
+    <div class="find" style="margin-top:1.5rem">
+      <p style="font-size:1.05rem;font-weight:700;color:var(--ac);margin-bottom:.7rem;margin-top:.3rem">對台灣壽險業主管最實際的結論</p>
+      <p style="color:var(--t2);line-height:1.82">
+        <strong>現在就可以做，但要照順序做；現在就能變現，但不要幻想單一模型或單一供應商能一次解完。</strong>
+        第一年的正確目標，不是「全面 <abbr title="Artificial Intelligence">AI</abbr> 化」，而是用三個可驗收 <abbr title="Minimum Viable Product，最小可行產品">MVP</abbr> 建出一套能擴張的作業模型：
+        <strong>客服先證明效率</strong>、<strong>理賠先證明硬 <abbr title="Return on Investment，投資報酬率">ROI</abbr></strong>、<strong>核保最後建立護城河</strong>。
+      </p>
+      <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap">
+        <a href="#demo-roi" class="run-btn" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;width:auto;padding:.7rem 1.4rem;font-size:.9rem">▶ 進入 ROI 試算器</a>
+        <a href="#sources" class="run-btn" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;width:auto;padding:.7rem 1.4rem;font-size:.9rem;background:var(--gd)">📋 查看來源附錄</a>
+      </div>
+      <span class="bq-src">報告整體核心結論 <span class="tag t-inf" data-tip="由多個國際案例邏輯推導，非單一直接引用">inferred</span></span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;margin-bottom:.7rem">
+    <a href="#exec">執行摘要</a>
+    <a href="#evmap">研究基礎</a>
+    <a href="#scenarios">場景分析</a>
+    <a href="#uw-deep">核保深度</a>
+    <a href="#arch">技術架構</a>
+    <a href="#taiwan">台灣落地</a>
+    <a href="#roadmap">路線圖</a>
+    <a href="#kpi">KPI 框架</a>
+    <a href="#demo-uw">互動 DEMO</a>
+    <a href="#gov">治理清單</a>
+    <a href="#sources">來源附錄</a>
+    <a href="#limits">研究限制</a>
+  </div>
+  <div>壽險業 AI 變現地圖 · 台灣落地評估報告 · 研究基準日 2026-04-24</div>
+  <div style="margin-top:.4rem;font-size:.76rem;opacity:.7">四級證據分層（A/B/C/D） · 不含臆測性 URL 或捏造數字 · 依 CLAUDE.md 規範建置</div>
+</footer>
+
+<script>
+// ── SCROLL PROGRESS BAR ──
+(()=>{
+  const bar=document.getElementById('pgbar');
+  if(!bar)return;
+  function upd(){
+    const sh=document.documentElement.scrollHeight-window.innerHeight;
+    bar.style.width=(sh>0?Math.min(window.scrollY/sh*100,100):0)+'%';
+  }
+  window.addEventListener('scroll',upd,{passive:true});
+  upd();
+})();
+
+// ── BACK TO TOP BUTTON ──
+(()=>{
+  const btn=document.getElementById('top-btn');
+  if(!btn)return;
+  window.addEventListener('scroll',()=>{
+    btn.classList.toggle('show',window.scrollY>320);
+  },{passive:true});
+})();
+
+// ── SCROLL REVEAL ──
+(()=>{
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target)}})
+  },{rootMargin:'0px 0px -50px 0px'});
+  document.querySelectorAll('.rv,.rv2,.rv3').forEach(el=>obs.observe(el));
+})();
+
+// ── NAV ACTIVE ──
+(()=>{
+  const secs=document.querySelectorAll('section[id]');
+  const links=document.querySelectorAll('#nav a');
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting)links.forEach(l=>l.classList.toggle('on',l.getAttribute('href')==='#'+e.target.id))});
+  },{rootMargin:'-35% 0px -60% 0px'});
+  secs.forEach(s=>obs.observe(s));
+})();
+
+// ── ANIMATED COUNTERS ──
+function animCounter(el){
+  const target=parseFloat(el.dataset.target);
+  const suffix=el.dataset.suffix||'';
+  const dur=1800;const start=performance.now();
+  const isFloat=target%1!==0;
+  function step(now){
+    const t=Math.min((now-start)/dur,1);
+    const ease=1-Math.pow(1-t,3);
+    const val=target*ease;
+    el.textContent=(isFloat?val.toFixed(1):Math.round(val))+suffix;
+    if(t<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+(()=>{
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.querySelectorAll('[data-target]').forEach(el=>animCounter(el));
+        obs.unobserve(e.target);
+      }
+    });
+  },{threshold:.3});
+  document.querySelectorAll('.stats-row').forEach(r=>obs.observe(r));
+})();
+
+// ── TABS ──
+function showTab(id,btn){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ── EVIDENCE ACCORDION ──
+function toggleEv(hdr){
+  const body=hdr.nextElementSibling;
+  const chev=hdr.querySelector('.ev-chevron');
+  const open=body.classList.toggle('open');
+  chev.style.transform=open?'rotate(180deg)':'rotate(0)';
+  hdr.setAttribute('aria-expanded',open?'true':'false');
+}
+// Keyboard support: Enter / Space on tabindex accordion headers
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('ev-hdr')){
+    e.preventDefault();
+    toggleEv(e.target);
+  }
+});
+
+// ── RADAR CHART ──
+(()=>{
+  const svg=document.getElementById('radar');
+  if(!svg)return;
+  const W=280,H=280,cx=140,cy=140,R=95;
+  const axes=[
+    {name:'工具成熟度'},{name:'見效速度'},{name:'台灣\n就緒度'},
+    {name:'ROI\n可量化性'},{name:'治理\n友善度'},{name:'資料\n取得難度'}
+  ];
+  const n=axes.length;
+  const NS='http://www.w3.org/2000/svg';
+  function pt(i,v){
+    const a=(i*2*Math.PI/n)-Math.PI/2;
+    return[cx+R*v*Math.cos(a),cy+R*v*Math.sin(a)];
+  }
+  // rings
+  [.2,.4,.6,.8,1].forEach(v=>{
+    const pts=axes.map((_,i)=>pt(i,v).join(',')).join(' ');
+    const poly=document.createElementNS(NS,'polygon');
+    poly.setAttribute('points',pts);
+    poly.setAttribute('fill','none');
+    poly.setAttribute('stroke',v===1?'#223d2e':'#172e1f');
+    poly.setAttribute('stroke-width',v===1?'1.5':'1');
+    svg.appendChild(poly);
+  });
+  // axes + labels
+  axes.forEach((ax,i)=>{
+    const[x,y]=pt(i,1);
+    const ln=document.createElementNS(NS,'line');
+    ln.setAttribute('x1',cx);ln.setAttribute('y1',cy);
+    ln.setAttribute('x2',x);ln.setAttribute('y2',y);
+    ln.setAttribute('stroke','#172e1f');ln.setAttribute('stroke-width','1');
+    svg.appendChild(ln);
+    const lx=cx+(R+20)*Math.cos((i*2*Math.PI/n)-Math.PI/2);
+    const ly=cy+(R+20)*Math.sin((i*2*Math.PI/n)-Math.PI/2);
+    const parts=ax.name.split('\n');
+    parts.forEach((txt,pi)=>{
+      const t=document.createElementNS(NS,'text');
+      t.setAttribute('x',lx);t.setAttribute('y',ly+pi*12-(parts.length-1)*6);
+      t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','middle');
+      t.setAttribute('fill','#9db8a5');t.setAttribute('font-size','10');
+      t.textContent=txt;svg.appendChild(t);
+    });
+  });
+  // datasets
+  const datasets=[
+    {vals:[.90,.90,.80,.75,.85,.88],stroke:'#52a87a',fill:'#52a87a'},
+    {vals:[.83,.78,.65,.90,.70,.60],stroke:'#fb923c',fill:'#fb923c'},
+    {vals:[.75,.50,.55,.65,.58,.48],stroke:'#93c5fd',fill:'#93c5fd'},
+  ];
+  datasets.forEach(ds=>{
+    const pts=ds.vals.map((v,i)=>pt(i,v).join(',')).join(' ');
+    const poly=document.createElementNS(NS,'polygon');
+    poly.setAttribute('points',pts);
+    poly.setAttribute('fill',ds.fill);
+    poly.setAttribute('fill-opacity','.18');
+    poly.setAttribute('stroke',ds.stroke);
+    poly.setAttribute('stroke-width','2');
+    svg.appendChild(poly);
+    ds.vals.forEach((v,i)=>{
+      const[x,y]=pt(i,v);
+      const c=document.createElementNS(NS,'circle');
+      c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r','3.5');
+      c.setAttribute('fill',ds.stroke);svg.appendChild(c);
+    });
+  });
+})();
+
+// ── ARCHITECTURE SVG ──
+(()=>{
+  const svg=document.getElementById('arch-svg');
+  if(!svg)return;
+  const NS='http://www.w3.org/2000/svg';
+  const boxes=[
+    {x:10,y:130,w:110,h:70,label:'客戶輸入',sub:'投保/理賠/通話',col:'#223d2e',tc:'#74c69d',type:''},
+    {x:150,y:130,w:120,h:70,label:'資料擷取層',sub:'OCR/NLP/ASR',col:'#1e3828',tc:'#9db8a5',type:''},
+    {x:300,y:60,w:120,h:60,label:'規則引擎',sub:'可審計決策閘門',col:'#163621',tc:'#4ade80',type:'rules'},
+    {x:300,y:140,w:120,h:60,label:'ML 評分',sub:'風險排序/詐欺分數',col:'#0f2040',tc:'#93c5fd',type:'ml'},
+    {x:300,y:220,w:120,h:60,label:'GenAI / RAG',sub:'摘要/知識/文件理解',col:'#1a0a40',tc:'#c084fc',type:'genai'},
+    {x:450,y:130,w:110,h:70,label:'決策編排',sub:'分流路由/閾值',col:'#1e2a18',tc:'#74c69d',type:''},
+    {x:590,y:50,w:110,h:60,label:'低風險快通',sub:'STP / 自動核准',col:'#0f2818',tc:'#4ade80',type:'pass'},
+    {x:590,y:140,w:110,h:60,label:'人工覆核',sub:'核保師/理賠/客服',col:'#2a1800',tc:'#fb923c',type:'warn'},
+    {x:590,y:230,w:110,h:60,label:'SIU 調查',sub:'高風險/可疑件',col:'#2a0a0a',tc:'#f87171',type:'fail'},
+    {x:740,y:130,w:110,h:70,label:'稽核軌跡',sub:'決策日誌/版本/解釋',col:'#151f15',tc:'#6b8070',type:''},
+    {x:880,y:130,w:110,h:70,label:'持續迭代',sub:'規則/模型/知識更新',col:'#163621',tc:'#74c69d',type:''},
+  ];
+  // Draw boxes
+  boxes.forEach(b=>{
+    const rect=document.createElementNS(NS,'rect');
+    rect.setAttribute('x',b.x);rect.setAttribute('y',b.y);
+    rect.setAttribute('width',b.w);rect.setAttribute('height',b.h);
+    rect.setAttribute('rx','6');rect.setAttribute('fill',b.col);
+    rect.setAttribute('stroke',b.type==='rules'?'#2d6a4f':b.type==='ml'?'#1e4d91':b.type==='genai'?'#6b3fa0':b.type==='pass'?'#2d6a4f':b.type==='warn'?'#b45309':b.type==='fail'?'#7f1d1d':'#223d2e');
+    rect.setAttribute('stroke-width','1.5');
+    svg.appendChild(rect);
+    const t1=document.createElementNS(NS,'text');
+    t1.setAttribute('x',b.x+b.w/2);t1.setAttribute('y',b.y+b.h/2-8);
+    t1.setAttribute('text-anchor','middle');t1.setAttribute('fill',b.tc);
+    t1.setAttribute('font-size','12');t1.setAttribute('font-weight','600');
+    t1.textContent=b.label;svg.appendChild(t1);
+    const t2=document.createElementNS(NS,'text');
+    t2.setAttribute('x',b.x+b.w/2);t2.setAttribute('y',b.y+b.h/2+10);
+    t2.setAttribute('text-anchor','middle');t2.setAttribute('fill','#7a9e8a');
+    t2.setAttribute('font-size','9');
+    t2.textContent=b.sub;svg.appendChild(t2);
+  });
+  // Arrows helper
+  function arrow(x1,y1,x2,y2,col){
+    const line=document.createElementNS(NS,'line');
+    line.setAttribute('x1',x1);line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2);line.setAttribute('y2',y2);
+    line.setAttribute('stroke',col||'#2a5c42');line.setAttribute('stroke-width','1.5');
+    line.setAttribute('marker-end','url(#arrowhead)');
+    svg.appendChild(line);
+  }
+  // Arrowhead marker
+  const defs=document.createElementNS(NS,'defs');
+  const marker=document.createElementNS(NS,'marker');
+  marker.setAttribute('id','arrowhead');marker.setAttribute('markerWidth','8');
+  marker.setAttribute('markerHeight','6');marker.setAttribute('refX','8');marker.setAttribute('refY','3');
+  marker.setAttribute('orient','auto');
+  const path=document.createElementNS(NS,'path');
+  path.setAttribute('d','M0,0 L0,6 L8,3 z');path.setAttribute('fill','#2a5c42');
+  marker.appendChild(path);defs.appendChild(marker);svg.insertBefore(defs,svg.firstChild);
+  // Draw connections
+  arrow(120,165,150,165);  // input→extract
+  arrow(270,165,300,90);   // extract→rules
+  arrow(270,165,300,170);  // extract→ML
+  arrow(270,165,300,250);  // extract→genai
+  arrow(420,90,450,165);   // rules→decision
+  arrow(420,170,450,165);  // ML→decision
+  arrow(420,250,450,165);  // genai→decision
+  arrow(560,165,590,80);   // decision→pass
+  arrow(560,165,590,170);  // decision→review
+  arrow(560,165,590,260);  // decision→siu
+  arrow(700,80,740,165);   // pass→audit
+  arrow(700,170,740,165);  // review→audit
+  arrow(700,260,740,165);  // siu→audit
+  arrow(850,165,880,165);  // audit→iterate
+  // Animated pulse dot
+  const dot=document.createElementNS(NS,'circle');
+  dot.setAttribute('r','5');dot.setAttribute('fill','#74c69d');dot.setAttribute('opacity','0.9');
+  svg.appendChild(dot);
+  const keyPath=[
+    [65,165],[135,165],[210,90],[360,90],[415,90],[480,165],[535,165],[645,80],[745,80],[810,165],[935,165]
+  ];
+  let kp=0;let progress=0;
+  function animDot(){
+    if(kp>=keyPath.length-1){kp=0;progress=0;setTimeout(animDot,1200);return;}
+    const[x1,y1]=keyPath[kp];const[x2,y2]=keyPath[kp+1];
+    progress+=0.04;
+    if(progress>=1){kp++;progress=0;}
+    const x=x1+(x2-x1)*progress;const y=y1+(y2-y1)*progress;
+    dot.setAttribute('cx',x);dot.setAttribute('cy',y);
+    requestAnimationFrame(animDot);
+  }
+  animDot();
+})();
+
+// ── KPI GAUGES ──
+function drawGauge(id,pct,label,col){
+  const svg=document.getElementById(id);if(!svg)return;
+  const NS='http://www.w3.org/2000/svg';
+  const cx=80,cy=80,R=55,sw=10;
+  function arc(cx,cy,r,startA,endA){
+    const s=[cx+r*Math.cos(startA),cy+r*Math.sin(startA)];
+    const e=[cx+r*Math.cos(endA),cy+r*Math.sin(endA)];
+    const lg=endA-startA>Math.PI?1:0;
+    return `M${s[0]},${s[1]} A${r},${r} 0 ${lg} 1 ${e[0]},${e[1]}`;
+  }
+  const sa=Math.PI,ea=2*Math.PI;
+  const bg=document.createElementNS(NS,'path');
+  bg.setAttribute('d',arc(cx,cy,R,sa,ea));
+  bg.setAttribute('fill','none');bg.setAttribute('stroke','#172e1f');bg.setAttribute('stroke-width',sw);
+  bg.setAttribute('stroke-linecap','round');svg.appendChild(bg);
+  const va=document.createElementNS(NS,'path');
+  va.setAttribute('d',arc(cx,cy,R,sa,sa+pct*Math.PI));
+  va.setAttribute('fill','none');va.setAttribute('stroke',col||'#52b788');va.setAttribute('stroke-width',sw);
+  va.setAttribute('stroke-linecap','round');
+  svg.appendChild(va);
+  const vt=document.createElementNS(NS,'text');
+  vt.setAttribute('x',cx);vt.setAttribute('y',cy-6);
+  vt.setAttribute('text-anchor','middle');vt.setAttribute('fill',col||'#74c69d');
+  vt.setAttribute('font-size','18');vt.setAttribute('font-weight','700');
+  vt.textContent=Math.round(pct*100)+'%';svg.appendChild(vt);
+  const lt=document.createElementNS(NS,'text');
+  lt.setAttribute('x',cx);lt.setAttribute('y',cy+14);
+  lt.setAttribute('text-anchor','middle');lt.setAttribute('fill','#7a9e8a');
+  lt.setAttribute('font-size','9');lt.textContent=label;svg.appendChild(lt);
+}
+drawGauge('g-stp',.60,'STP 目標','#4ade80');
+drawGauge('g-tat',.40,'TAT 縮短','#fb923c');
+drawGauge('g-fcr',.70,'FCR 目標','#93c5fd');
+drawGauge('g-frd',.50,'命中率目標','#c084fc');
+
+// ── RANGE FILL VISUAL (updates CSS custom property for gradient fill) ──
+function updateRangeFill(el){
+  if(!el)return;
+  const min=parseFloat(el.min)||0;
+  const max=parseFloat(el.max)||100;
+  const val=parseFloat(el.value)||0;
+  const pct=((val-min)/(max-min)*100).toFixed(1)+'%';
+  el.style.setProperty('--fill',pct);
+  el.style.background=`linear-gradient(to right,var(--gm) ${pct},var(--bdr2) ${pct})`;
+}
+// Init all range inputs on load
+document.querySelectorAll('input[type=range]').forEach(r=>{updateRangeFill(r)});
+
+// ── RANGE SYNC HELPER ──
+function syncR(inputId,valId){
+  const el=document.getElementById(inputId);
+  const vEl=document.getElementById(valId);
+  if(!el||!vEl)return;
+  updateRangeFill(el);
+  const v=el.value;
+  if(valId==='uw-age-v') vEl.textContent=v+' 歲';
+  else if(valId==='uw-bmi-v') vEl.textContent=parseFloat(v).toFixed(1);
+  else if(valId==='uw-amt-v') vEl.textContent=v+' 萬';
+  else if(valId==='fr-age-v') vEl.textContent=v+' 個月';
+  else if(valId==='fr-cnt-v') vEl.textContent=v+' 次';
+  else if(valId==='roi-auto-v') vEl.textContent=v+'%';
+  else if(valId==='roi-ovr-v') vEl.textContent=v+'%';
+  else vEl.textContent=v;
+}
+function syncFrAmt(){
+  const el=document.getElementById('fr-amt');
+  const v=parseInt(el.value);
+  document.getElementById('fr-amt-v').textContent=v.toLocaleString();
+  updateRangeFill(el);
+}
+
+// ── DEMO 1: UNDERWRITING RULE ENGINE ──
+// Rules are illustrative (示意性規則，非實際核保書). Source: report architecture principle.
+function runUW(){
+  const age=parseInt(document.getElementById('uw-age').value);
+  const bmi=parseFloat(document.getElementById('uw-bmi').value);
+  const smoke=parseInt(document.getElementById('uw-smoke').value);
+  const occ=parseInt(document.getElementById('uw-occ').value);
+  const amt=parseInt(document.getElementById('uw-amt').value);
+
+  // === LAYER 1: Rules Engine ===
+  // Each rule produces: {id, name, status:'pass'|'warn'|'fail', detail, requiresHITL}
+  const rules=[];
+
+  // R01 Age
+  if(age<=45) rules.push({id:'R01',name:'年齡限制',status:'pass',detail:`年齡 ${age} 歲，在標準承保範圍（≤45）內`,requiresHITL:false});
+  else if(age<=60) rules.push({id:'R01',name:'年齡限制',status:'warn',detail:`年齡 ${age} 歲，建議核保師確認（46–60 加費區間）`,requiresHITL:false});
+  else rules.push({id:'R01',name:'年齡限制',status:'refer',detail:`年齡 ${age} 歲，61 歲以上須人工核保`,requiresHITL:true});
+
+  // R02 BMI
+  if(bmi<28) rules.push({id:'R02',name:'BMI 指標',status:'pass',detail:`BMI ${bmi.toFixed(1)}，在標準範圍（<28）`,requiresHITL:false});
+  else if(bmi<=35) rules.push({id:'R02',name:'BMI 指標',status:'warn',detail:`BMI ${bmi.toFixed(1)}，屬加費區間（28–35），建議附加醫療問卷`,requiresHITL:false});
+  else rules.push({id:'R02',name:'BMI 指標',status:'refer',detail:`BMI ${bmi.toFixed(1)} > 35，高風險，須人工核保師評估`,requiresHITL:true});
+
+  // R03 Smoking
+  if(!smoke) rules.push({id:'R03',name:'吸菸狀態',status:'pass',detail:'非吸菸者，標準費率',requiresHITL:false});
+  else rules.push({id:'R03',name:'吸菸狀態',status:'warn',detail:'吸菸者，適用吸菸加費（次標準），需核保師確認',requiresHITL:false});
+
+  // R04 Occupation
+  const occNames=['','Class 1 — 辦公室（標準）','Class 2 — 輕度體力（標準）','Class 3 — 重度體力（加費）','Class 4 — 高危險職業'];
+  if(occ<=2) rules.push({id:'R04',name:'職業風險',status:'pass',detail:`${occNames[occ]}，標準核保範圍`,requiresHITL:false});
+  else if(occ===3) rules.push({id:'R04',name:'職業風險',status:'warn',detail:'重度體力勞動，需加費並附職業問卷',requiresHITL:false});
+  else rules.push({id:'R04',name:'職業風險',status:'refer',detail:'高危險職業，須人工核保師逐案評估',requiresHITL:true});
+
+  // R05 Sum assured threshold
+  if(amt<=1000) rules.push({id:'R05',name:'保額閾值',status:'pass',detail:`申請保額 ${amt} 萬，在標準閾值（≤1,000 萬）內`,requiresHITL:false});
+  else if(amt<=3000) rules.push({id:'R05',name:'保額閾值',status:'warn',detail:`申請保額 ${amt} 萬，中高保額，需財務核保審查`,requiresHITL:false});
+  else rules.push({id:'R05',name:'保額閾值',status:'refer',detail:`申請保額 ${amt} 萬，超過 3,000 萬，須資深核保師人工評估`,requiresHITL:true});
+
+  // === Composite Decision ===
+  const needsHITL=rules.some(r=>r.requiresHITL);
+  const warnCount=rules.filter(r=>r.status==='warn').length;
+  let decision,decClass,summary;
+  if(needsHITL){
+    decision='🔴 須人工核保 (Human Underwriting Required)';
+    decClass='dec-ref';
+    summary='一或多項規則觸發人工審查閾值。依報告原則：任何觸發強制轉介規則的案件均需核保師逐案評估，系統不做自動拒保。 <span class="tag t-ver">architecture verified — A/B level sources</span>';
+  } else if(warnCount>=2){
+    decision='🟡 次標準 — 建議人工核保確認 (Rated — Human Confirmation Recommended)';
+    decClass='dec-warn';
+    summary=`偵測到 ${warnCount} 項注意指標，無強制人工要求但建議核保師確認加費條件與比率。 <span class="tag t-inf">inferred from report architecture</span>`;
+  } else if(warnCount===1){
+    decision='🟡 次標準 — 可能加費 (Possible Rate Loading)';
+    decClass='dec-warn';
+    summary='一項風險因子觸發，建議核保師確認是否適用標準加費條件。';
+  } else {
+    decision='🟢 標準費率 (Standard — Eligible for Accelerated UW)';
+    decClass='dec-pass';
+    summary='所有規則通過，此案件可進入加速核保流程（Accelerated Underwriting）。如無其他問題，可由系統自動核准。 <span class="tag t-inf">inferred — MassMutual, RGA 案例架構</span>';
+  }
+
+  // Render
+  document.getElementById('uw-decision').innerHTML=`<div class="decision-badge ${decClass}">${decision}</div>`;
+  const ul=document.getElementById('uw-rules');ul.innerHTML='';
+  rules.forEach(r=>{
+    const li=document.createElement('li');
+    li.className=`rule-item ${r.status}`;
+    li.innerHTML=`<div class="rule-dot"></div><div class="rule-label"><strong>${r.id}</strong> ${r.name}<div style="font-size:.82rem;color:var(--t3);margin-top:.18rem">${r.detail}</div></div><div class="rule-result">${r.status==='pass'?'通過':r.status==='refer'?'轉介人工':r.status==='warn'?'注意':'確認'}</div>`;
+    ul.appendChild(li);
+  });
+  document.getElementById('uw-summary').innerHTML=summary;
+  const out=document.getElementById('uw-output');
+  out.style.opacity='1';
+  out.classList.add('lit');
+  out.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── DEMO 2: FRAUD SCORE DECOMPOSITION ──
+// Weights and thresholds are illustrative. Source: report architecture (Shift, FRISS, MetLife+Sprout.ai).
+function runFraud(){
+  const claimType=document.getElementById('fr-type').value;
+  const amt=parseInt(document.getElementById('fr-amt').value);
+  const policyMonths=parseInt(document.getElementById('fr-age').value);
+  const cnt=parseInt(document.getElementById('fr-cnt').value);
+  const hospTier=parseInt(document.getElementById('fr-hosp').value);
+
+  // Type averages (illustrative)
+  const avgAmt={medical:30000,surgical:80000,critical:200000,accident:50000};
+  const avgA=avgAmt[claimType]||50000;
+
+  // === Factor Scoring (0–1 per factor) ===
+  // F1: Amount ratio vs. type average (weight 30%)
+  const amtRatio=amt/avgA;
+  const f1=Math.min(Math.max((amtRatio-0.5)/2.5,0),1);
+
+  // F2: Policy age — new policy risk (weight 25%)
+  // 1 month=1.0, 12 months=0.5, 24+months=0
+  const f2=Math.max(1-(policyMonths/24),0);
+
+  // F3: Hospital tier (weight 20%)
+  // 1=醫學中心(0), 2=區域(0.2), 3=地區(0.5), 4=診所(1.0)
+  const f3Map={1:0,2:0.2,3:0.5,4:1.0};
+  const f3=f3Map[hospTier]||0.3;
+
+  // F4: Recent claims frequency (weight 25%)
+  const f4=Math.min(cnt/6,1);
+
+  const weights=[.30,.25,.20,.25];
+  const scores=[f1,f2,f3,f4];
+  const fraudRaw=scores.reduce((s,v,i)=>s+v*weights[i],0);
+  const fraudScore=Math.round(fraudRaw*100);
+
+  // Threshold-based routing
+  let routeDecision,routeClass,routeReason;
+  if(fraudScore<=30){
+    routeDecision='🟢 快速核准通道 (Fast-Track Auto-Approve)';
+    routeClass='dec-pass';
+    routeReason='綜合風險評分低，符合自動核准條件。可進入 STP 快通流程，縮短 TAT。正常客戶可更快取得理賠。';
+  } else if(fraudScore<=60){
+    routeDecision='🟡 人工覆核佇列 (Human Review Queue)';
+    routeClass='dec-warn';
+    routeReason='綜合風險評分中等，案件送理賠處理員人工覆核。處理員可查看因子分解細節，優先審閱高權重因子觸發原因。';
+  } else {
+    routeDecision='🔴 SIU 調查優先 (SIU Investigation Priority)';
+    routeClass='dec-ref';
+    routeReason='綜合風險評分高，案件升級至 SIU（特別調查單位）優先排程。本決策仍由調查員確認，不做自動拒賠。';
+  }
+
+  // Render score
+  const scoreEl=document.getElementById('fr-score');
+  scoreEl.textContent=fraudScore;
+  scoreEl.style.color=fraudScore<=30?'#4ade80':fraudScore<=60?'#fb923c':'#f87171';
+  const barEl=document.getElementById('fr-bar');
+  barEl.style.width=fraudScore+'%';
+  barEl.style.background=fraudScore<=30?'linear-gradient(90deg,#2d6a4f,#4ade80)':fraudScore<=60?'linear-gradient(90deg,#b45309,#fb923c)':'linear-gradient(90deg,#7f1d1d,#f87171)';
+
+  // Factors
+  const factorNames=['F1 申請金額比（相對類型平均）','F2 投保年資（新契約風險）','F3 就醫院所層級','F4 近期理賠頻率'];
+  const factorDetails=[
+    `申請 NT$${amt.toLocaleString()} vs 類型平均 NT$${avgA.toLocaleString()}（比率 ${amtRatio.toFixed(2)}）`,
+    `投保 ${policyMonths} 個月（< 12 月高風險）`,
+    ['醫學中心（低風險）','區域醫院','地區醫院','診所（較高風險）'][hospTier-1],
+    `近 3 年 ${cnt} 次理賠`
+  ];
+  const factsEl=document.getElementById('fr-factors');factsEl.innerHTML='';
+  scores.forEach((s,i)=>{
+    const contrib=Math.round(s*weights[i]*100);
+    const isHi=contrib>=15;
+    factsEl.innerHTML+=`
+      <div class="factor-row">
+        <div class="factor-name">${factorNames[i].split('（')[0]}</div>
+        <div class="factor-bar-wrap"><div class="factor-bar ${isHi?'hi':''}" style="width:${s*100}%"></div></div>
+        <div class="factor-val">+${contrib}pt</div>
+      </div>
+      <div style="font-size:.7rem;color:var(--t3);margin:-4px 0 4px 8.5rem;padding-bottom:4px;border-bottom:1px solid var(--bdr)">${factorDetails[i]}  ·  權重 ${Math.round(weights[i]*100)}%</div>`;
+  });
+  document.getElementById('fr-decision').innerHTML=`<div class="decision-badge ${routeClass}">${routeDecision}</div>`;
+  document.getElementById('fr-reason').textContent=routeReason;
+  const frOut=document.getElementById('fr-output');
+  frOut.style.opacity='1';
+  frOut.classList.add('lit');
+  frOut.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── DEMO 3: ROI CALCULATOR ──
+function calcROI(){
+  const scene=document.getElementById('roi-scene').value;
+  const vol=parseFloat(document.getElementById('roi-vol').value)||0;
+  const autoRate=parseFloat(document.getElementById('roi-auto').value)/100;
+  const ovrRate=parseFloat(document.getElementById('roi-ovr').value)/100;
+  const mins=parseFloat(document.getElementById('roi-min').value)||1;
+  const costPerHr=parseFloat(document.getElementById('roi-cost').value)||0;
+
+  const netAuto=vol*autoRate*(1-ovrRate);
+  const hoursSaved=netAuto*mins/60;
+  const costSaved=hoursSaved*costPerHr;
+
+  document.getElementById('roi-hours').textContent=Math.round(hoursSaved).toLocaleString();
+  document.getElementById('roi-cost-out').textContent=Math.round(costSaved).toLocaleString();
+
+  const warns=[];
+  if(ovrRate>0.30) warns.push('人工推翻率超過 30%，建議重新檢視模型閾值或訓練資料品質');
+  if(autoRate>0.70) warns.push('自動化率設定偏高（>70%），初期建議保守設定');
+  if(autoRate<0.10) warns.push('自動化率低於 10%，效益有限，建議先確認流程設計');
+  if(vol<1000) warns.push('月案件量較低，固定導入成本可能影響整體 ROI 時程');
+  const wEl=document.getElementById('roi-warns');
+  wEl.innerHTML=warns.length?warns.map(w=>`<li>${w}</li>`).join(''):'<li style="color:var(--ac)">無明顯風險預警（請確認參數設定合理）</li>';
+
+  const priMap={
+    cs:'建議優先推進此場景：對醫療個資依賴最低、工具最成熟、見效最快，適合作為組織 AI 能力的第一個練兵場。（報告建議：先做 Agent Assist + 摘要）',
+    cl:'建議第二優先：具備可量化硬 ROI（詐欺阻卻、TAT 縮短、人工工時），且分流設計對監理治理友善。（報告建議：先做 triage + 防詐，不先做自動拒賠）',
+    uw:'建議最後推進：戰略價值最高，但依賴完整 rulebook、資料授權、模型監控與核保團隊 buy-in，初期門檻最高。（報告建議：先從簡單商品、低保額件開始）'
+  };
+  document.getElementById('roi-pri').textContent=priMap[scene];
+  const roiOut=document.getElementById('roi-output');
+  roiOut.style.opacity='1';
+  roiOut.classList.add('lit');
+  roiOut.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── AUTO INJECT data-tip FROM CLASS (for all tags without existing data-tip) ──
+(()=>{
+  const tipMap={
+    't-ver':'✓ verified — 有 A 或 B 級官方文件直接支持',
+    't-ven':'vendor-claimed — 供應商官方宣稱，缺乏獨立第三方審計',
+    't-inf':'inferred — 由多個案例或邏輯推導，非直接引用',
+    't-unk':'public data not disclosed — 方向性揭露，無具體數字',
+    't-nv':'⚠ needs verification — 引用層級低，採購前需透過 POC 實測',
+    'ta':'A 級 — 監管機關／法律／年報（最高可信度）',
+    'tb':'B 級 — 官方產品文件（供應商宣稱，未獨立審計）',
+    'tc':'C 級 — 合作夥伴案例（需搭配 A/B 級交叉驗證）',
+    'td':'D 級 — 可靠媒體（最低層級，採購前需驗證）'
+  };
+  document.querySelectorAll('.tag').forEach(el=>{
+    if(el.dataset.tip)return;
+    for(const[cls,tip] of Object.entries(tipMap)){
+      if(el.classList.contains(cls)){el.dataset.tip=tip;break;}
+    }
+  });
+})();
+
+// ── NAV SECTION COUNT ──
+(()=>{
+  const secs=document.querySelectorAll('section[id]');
+  const total=secs.length;
+  let cur=0;
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        const idx=Array.from(secs).indexOf(e.target);
+        if(idx>=0) cur=idx+1;
+      }
+    });
+  },{rootMargin:'-35% 0px -60% 0px'});
+  secs.forEach(s=>obs.observe(s));
+})();
+
+// ── DEMO: highlight input panel border when focused ──
+document.querySelectorAll('.demo-panel').forEach(p=>{
+  p.addEventListener('focusin',()=>p.classList.add('lit'));
+  p.addEventListener('focusout',e=>{
+    if(!p.contains(e.relatedTarget)) p.classList.remove('lit');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 基礎設施公司比較研究報告：NVIDIA、AMD、Broadcom</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --paper: #ffffff;
+      --ink: #1f2933;
+      --muted: #52606d;
+      --line: #d9e2ec;
+      --soft: #eef2f6;
+      --nvda: #76b900;
+      --amd: #c2410c;
+      --avgo: #005f73;
+      --warn: #9a3412;
+      --good: #166534;
+      --shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(118, 185, 0, 0.08), transparent 28%),
+        radial-gradient(circle at top right, rgba(0, 95, 115, 0.08), transparent 24%),
+        linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+      color: var(--ink);
+      font: 16px/1.65 "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    }
+
+    .page {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+
+    .hero,
+    .card {
+      background: var(--paper);
+      border: 1px solid rgba(217, 226, 236, 0.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 32px;
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 10px;
+      line-height: 1.25;
+    }
+
+    h1 {
+      font-size: 34px;
+      letter-spacing: 0.02em;
+    }
+
+    h2 {
+      font-size: 24px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
+    }
+
+    h3 {
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 10px;
+    }
+
+    .subtitle,
+    .note,
+    .source-note,
+    .small {
+      color: var(--muted);
+    }
+
+    .small,
+    .source-note {
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      margin-top: 22px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 24px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .metric {
+      padding: 16px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #f8fafc, #f2f5f8);
+      border: 1px solid var(--line);
+    }
+
+    .metric .label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .metric .value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .metric .detail {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .section {
+      margin-top: 22px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 12px 10px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      text-align: left;
+    }
+
+    td.company {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .company-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    ul {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .warning {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: var(--warn);
+      padding: 14px 16px;
+      border-radius: 14px;
+    }
+
+    .chart-block {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fbfdff, #f6f9fb);
+      border: 1px solid var(--line);
+    }
+
+    .chart-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .chart-caption {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .chart-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .refs {
+      columns: 2 320px;
+      column-gap: 28px;
+    }
+
+    .refs li {
+      break-inside: avoid;
+      margin-left: 18px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.95em;
+      background: #f3f4f6;
+      padding: 1px 5px;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 980px) {
+      .grid.two,
+      .grid.three {
+        grid-template-columns: 1fr;
+      }
+
+      .refs {
+        columns: 1;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <p class="small">課堂簡報用研究報告｜語言：台灣繁體中文｜性質：資訊整理，非投資建議</p>
+      <h1>AI 基礎設施公司比較：NVIDIA、AMD、Broadcom</h1>
+      <p class="subtitle">
+        本報告僅使用目前資料夾中的官方年報 PDF、財報新聞稿 PDF 與公司簡報 PDF。主比較口徑以三家公司「最近一份完整年度財報」為主，
+        並明確註記財年結束日、分部定義差異與不可直接比較之處。
+      </p>
+      <div class="pill-row">
+        <div class="pill">主比較期間：NVIDIA FY2026 / AMD FY2025 / Broadcom FY2025</div>
+        <div class="pill">重要原則：不可驗證標示為「待查證」</div>
+        <div class="pill">所有重要敘述、表格、圖表均附來源註記</div>
+      </div>
+    </section>
+
+    <section class="grid three">
+      <div class="metric">
+        <div class="label">年度營收最高</div>
+        <div class="value">NVIDIA</div>
+        <div class="detail">US$215.9B；來源：Ref N2、N3</div>
+      </div>
+      <div class="metric">
+        <div class="label">GAAP 營業利益率最高</div>
+        <div class="value">NVIDIA</div>
+        <div class="detail">60.4%；來源：Ref N1、N2</div>
+      </div>
+      <div class="metric">
+        <div class="label">業務結構最多元</div>
+        <div class="value">Broadcom</div>
+        <div class="detail">半導體 + 基礎軟體；來源：Ref B1、B4、B5</div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Summary</h2>
+      <p>
+        以最新完整年度 GAAP 財報觀察，<strong>NVIDIA</strong> 在規模與獲利能力上明顯領先，FY2026 營收達 US$215.9B、毛利率 71.1%、營業利益率 60.4%、淨利率 55.6%，管理層明確將公司定位為「data center scale AI infrastructure company」。<span class="small">來源：Ref N1、N2、N3</span>
+      </p>
+      <p>
+        <strong>Broadcom</strong> FY2025 營收 US$63.9B，GAAP 毛利率 68%、營業利益率 40%、淨利率約 36.2%。其 AI 故事並非單純 GPU 供應商，而是以客製 AI 加速器/XPU、乙太網路 AI 網通、以及 VMware/VCF 為代表的基礎軟體共同構成。<span class="small">來源：Ref B1、B2、B3、B4、B5</span>
+      </p>
+      <p>
+        <strong>AMD</strong> FY2025 營收 US$34.6B，毛利率 50%、營業利益率約 10.7%、淨利率約 12.5%。AMD 的官方定位是「high performance and AI computing」，資料中心成長動能來自 EPYC CPU 與 Instinct GPU，但整體獲利水準仍顯著低於 NVIDIA 與 Broadcom。<span class="small">來源：Ref A1、A2、A3、A4</span>
+      </p>
+      <div class="warning">
+        不可直接比較提醒：三家公司財年結束日不同，且 Broadcom 同時包含大型基礎軟體業務；AMD 的 Data Center、NVIDIA 的 Compute &amp; Networking、Broadcom 的 Semiconductor Solutions 並不等於「純 AI 營收」，僅能視為 AI 基礎設施相關曝險或業務結構線索，不宜強行做同質比較。來源：Ref N3、A3、B4、B5。
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>可比較欄位、數字與來源整理</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>公司</th>
+            <th>主比較年度</th>
+            <th>年度營收</th>
+            <th>毛利率</th>
+            <th>營業利益</th>
+            <th>營業利益率</th>
+            <th>淨利</th>
+            <th>淨利率</th>
+            <th>主要來源</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="company">
+              <span class="company-chip"><span class="dot" style="background: var(--nvda)"></span>NVIDIA</span>
+            </td>
+            <td>FY2026，截止 2026-01-25</td>
+            <td>US$215,938M</td>
+            <td>71.1%</td>
+            <td>US$130,387M</td>
+            <td>60.4%<br><span class="small">年報直接揭露</span></td>
+            <td>US$120,067M</td>
+            <td>55.6%<br><span class="small">年報直接揭露</span></td>
+            <td>Ref N1、N2</td>
+          </tr>
+          <tr>
+            <td class="company">
+              <span class="company-chip"><span class="dot" style="background: var(--amd)"></span>AMD</span>
+            </td>
+            <td>FY2025，截止 2025-12-27</td>
+            <td>US$34,639M</td>
+            <td>50%</td>
+            <td>US$3,694M</td>
+            <td>10.7%<br><span class="small">依營業利益/營收推算</span></td>
+            <td>US$4,335M</td>
+            <td>12.5%<br><span class="small">依淨利/營收推算</span></td>
+            <td>Ref A1、A2</td>
+          </tr>
+          <tr>
+            <td class="company">
+              <span class="company-chip"><span class="dot" style="background: var(--avgo)"></span>Broadcom</span>
+            </td>
+            <td>FY2025，截止 2025-11-02</td>
+            <td>US$63,887M</td>
+            <td>68%</td>
+            <td>US$25,484M</td>
+            <td>40%<br><span class="small">年報直接揭露</span></td>
+            <td>US$23,126M</td>
+            <td>36.2%<br><span class="small">依淨利/營收推算</span></td>
+            <td>Ref B2、B3</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="source-note">
+        表格說明：本表以各公司最近完整年度 GAAP 財報為主；若年報直接提供百分比則沿用，否則以年報「營業利益或淨利 ÷ 營收」推算並於欄內標示。Broadcom FY2024 為 53 週、FY2025 為 52 週，故其年度增減解讀需額外保留。來源：Ref N1、N2、A1、A2、B2、B3、B6。
+      </p>
+    </section>
+
+    <section class="card section">
+      <h2>Company Comparison</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>公司</th>
+            <th>AI 業務定位</th>
+            <th>AI/資料中心相關結構線索</th>
+            <th>不可直接比較 / 限制</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="company">NVIDIA</td>
+            <td>
+              官方自述為「data center scale AI infrastructure company」，並以 GPU、CPU、網路、CUDA 與完整軟體堆疊提供訓練與推論平台。來源：Ref N3。
+            </td>
+            <td>
+              FY2026 Compute &amp; Networking 營收 US$193,479M，占總營收約 89.6%；其中年報指出 Data Center computing 與 networking 成長分別受 Blackwell 平台與 NVLink/Ethernet/InfiniBand 帶動。來源：Ref N1。
+            </td>
+            <td>
+              Compute &amp; Networking 不等於純 AI；其中仍含其他運算與網路收入。來源：Ref N1。
+            </td>
+          </tr>
+          <tr>
+            <td class="company">AMD</td>
+            <td>
+              官方定位為「high performance and AI computing」，強調 CPU、GPU、DPU、AI NIC、FPGA、軟體與機櫃級平台的 full-stack 能力。來源：Ref A3。
+            </td>
+            <td>
+              FY2025 Data Center 營收 US$16,635M，占總營收約 48.0%；公司指出成長主要來自 EPYC 處理器與 Instinct GPU accelerators。來源：Ref A4。
+            </td>
+            <td>
+              AMD Data Center 同時包含 CPU 與 GPU，不等於純 AI；其 client、gaming、embedded 佔比仍高。來源：Ref A4。
+            </td>
+          </tr>
+          <tr>
+            <td class="company">Broadcom</td>
+            <td>
+              官方 AI 定位以客製 AI 加速器/XPU、AI 網路基礎設施、乙太網路連接，以及 VMware/VCF 等軟體平台共同構成。來源：Ref B1、B4。
+            </td>
+            <td>
+              FY2025 半導體解決方案營收 US$36,858M，占 58%；基礎軟體營收 US$27,029M，占 42%。年報指出半導體成長主因之一為 custom AI accelerators 與 AI networking，軟體成長主因則包括 VCF 需求。來源：Ref B4、B5。
+            </td>
+            <td>
+              Broadcom 營收含大量非 AI 的基礎軟體與通用半導體，因此整體營收與利潤不應被解讀為純 AI 業務。來源：Ref B1、B4、B5。
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="source-note">
+        本節目的在於界定「AI 基礎設施公司」的官方定位與業務結構，不是建立同一分部定義下的 AI 營收排行榜。
+      </p>
+    </section>
+
+    <section class="card section">
+      <h2>Charts</h2>
+
+      <div class="chart-block">
+        <div class="chart-title">圖 1．三家公司最新完整年度營收比較</div>
+        <div class="chart-caption">單位：十億美元（US$ bn）。用途：比較規模差異。</div>
+        <svg id="chart-revenue" class="chart-svg" viewBox="0 0 980 420" aria-label="三家公司營收比較圖"></svg>
+        <div class="legend">
+          <span><i class="dot" style="background: var(--nvda)"></i>NVIDIA</span>
+          <span><i class="dot" style="background: var(--amd)"></i>AMD</span>
+          <span><i class="dot" style="background: var(--avgo)"></i>Broadcom</span>
+        </div>
+        <p class="source-note">
+          來源：NVIDIA FY2026 年報 Consolidated Statements of Income（Ref N2）；AMD FY2025 年報 Consolidated Statements of Operations（Ref A1）；Broadcom FY2025 年報 Consolidated Statements of Operations（Ref B2）。
+        </p>
+        <p class="source-note">
+          說明：NVIDIA 規模顯著大於另外兩家；Broadcom 第二，但其營收含基礎軟體，與純半導體公司不可視為完全同口徑。
+        </p>
+      </div>
+
+      <div class="chart-block">
+        <div class="chart-title">圖 2．GAAP 毛利率、營業利益率、淨利率比較</div>
+        <div class="chart-caption">單位：%。用途：比較獲利結構，不只看營收規模。</div>
+        <svg id="chart-margin" class="chart-svg" viewBox="0 0 980 500" aria-label="獲利率比較圖"></svg>
+        <div class="legend">
+          <span><i class="dot" style="background: #94a3b8"></i>毛利率</span>
+          <span><i class="dot" style="background: #475569"></i>營業利益率</span>
+          <span><i class="dot" style="background: #0f172a"></i>淨利率</span>
+        </div>
+        <p class="source-note">
+          來源：NVIDIA 年報百分比表（Ref N1）與財務報表（Ref N2）；AMD 年報毛利率摘要（Ref A2）與財務報表（Ref A1）；Broadcom 年報 Results of Operations（Ref B3）與財務報表（Ref B2）。
+        </p>
+        <p class="source-note">
+          說明：AMD 的營業利益率與淨利率為依年報財務報表推算；Broadcom 的淨利率亦由年報財務報表推算。圖表與表格採同一組數據。
+        </p>
+      </div>
+
+      <div class="chart-block">
+        <div class="chart-title">圖 3．業務結構線索：分部或相關業務營收占比</div>
+        <div class="chart-caption">單位：占年度營收比重（%）。用途：呈現業務組成，但非純 AI 營收比較。</div>
+        <svg id="chart-mix" class="chart-svg" viewBox="0 0 980 420" aria-label="業務結構占比圖"></svg>
+        <div class="legend">
+          <span><i class="dot" style="background: #2563eb"></i>NVIDIA：Compute &amp; Networking / Graphics</span>
+          <span><i class="dot" style="background: #f97316"></i>AMD：Data Center / Client &amp; Gaming / Embedded</span>
+          <span><i class="dot" style="background: #0f766e"></i>Broadcom：Semiconductor Solutions / Infrastructure Software</span>
+        </div>
+        <p class="source-note">
+          來源：NVIDIA FY2026 segment revenue（Ref N1）；AMD FY2025 segment revenue（Ref A4）；Broadcom FY2025 segment revenue（Ref B4）。
+        </p>
+        <p class="source-note">
+          說明：此圖強調「業務構成」而非同質競爭排名。NVIDIA 的 Compute &amp; Networking、AMD 的 Data Center、Broadcom 的 Semiconductor Solutions 皆不等於純 AI 營收。
+        </p>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Risks / Caveats</h2>
+      <div class="grid two">
+        <div>
+          <h3>NVIDIA</h3>
+          <ul>
+            <li>客戶集中度高。FY2026 直接客戶中，一家占總營收 22%，另一家占 14%，且年報估計部分間接客戶亦可能各占 10% 以上。來源：Ref N4。</li>
+            <li>FY2026 毛利率受 Blackwell 全尺度資料中心方案轉換及 H20 庫存/採購義務費用影響，年報指出僅 H20 相關費用即達 US$4.5B。來源：Ref N5。</li>
+            <li>年報另揭露出口限制與地緣政治可能限制銷售或影響供應鏈，尤其與資料中心系統銷售相關。來源：Ref N4、Ref N6。</li>
+          </ul>
+        </div>
+        <div>
+          <h3>AMD</h3>
+          <ul>
+            <li>MI308 受美國對中國出口管制影響。風險因子頁面指出 2025 年第二季曾認列約 US$800M 的庫存及相關費用；第四季開始出貨後回轉約 US$360M。來源：Ref A5。</li>
+            <li>年報管理層討論指出 FY2025 毛利率仍受約 US$440M 的 MI308 出口管制相關淨庫存費用拖累。來源：Ref A2、Ref A4。</li>
+            <li>AMD 海外生產與測試高度仰賴亞洲據點，年報並提到台海地緣政治若升高，可能影響代工、製造與交貨。來源：Ref A6。</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Broadcom</h3>
+          <ul>
+            <li>客戶集中度高。FY2025 有一家半導體解決方案客戶透過直銷占總營收 32%，前五大終端客戶合計約占 40%。來源：Ref B3。</li>
+            <li>Broadcom 的 AI 故事不只半導體，也深受 VMware/VCF 與基礎軟體整合成效影響，因此與 GPU 型公司不可同質解讀。來源：Ref B1、Ref B4、Ref B7。</li>
+            <li>年報指出若採行 AI racks/systems leasing 或其他新商業模式，可能提高財務與執行風險；同時關稅與供應鏈波動亦可能增加成本。來源：Ref B8、Ref B9。</li>
+          </ul>
+        </div>
+        <div>
+          <h3>跨公司解讀限制</h3>
+          <ul>
+            <li>財年不同：Broadcom 截止 2025-11-02、AMD 截止 2025-12-27、NVIDIA 截止 2026-01-25。來源：Ref B2、Ref A1、Ref N2。</li>
+            <li>Broadcom FY2024 為 53 週、FY2025 為 52 週，影響年增率判讀。來源：Ref B6。</li>
+            <li>AMD 與 Broadcom 未在提供檔案中揭露可與 NVIDIA 對齊的「純 AI 營收」口徑，因此本報告不製作純 AI 營收排名；相關欄位若無法驗證，一律不推估。待查證項目：Broadcom 純 AI 營收、AMD 純 AI GPU 營收、NVIDIA Data Center 中非 AI 占比。來源：Ref N1、Ref A4、Ref B4。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>References</h2>
+      <ol class="refs">
+        <li><strong>Ref N1</strong>：<code>10K-NVDA.pdf</code>，p.40。Results of Operations percentage table、Reportable Segments。</li>
+        <li><strong>Ref N2</strong>：<code>10K-NVDA.pdf</code>，p.51。Consolidated Statements of Income。</li>
+        <li><strong>Ref N3</strong>：<code>10K-NVDA.pdf</code>，p.4。Business overview，NVIDIA 自述為 data center scale AI infrastructure company。</li>
+        <li><strong>Ref N4</strong>：<code>10K-NVDA.pdf</code>，p.23。客戶集中與通路風險。</li>
+        <li><strong>Ref N5</strong>：<code>10K-NVDA.pdf</code>，p.41。毛利率下降與 H20 excess inventory / purchase obligations。</li>
+        <li><strong>Ref N6</strong>：<code>10K-NVDA.pdf</code>，p.8-9。集中風險、出口限制與地緣政治相關揭露。</li>
+        <li><strong>Ref A1</strong>：<code>0000002488-26-000018.pdf</code>，p.58。Consolidated Statements of Operations。</li>
+        <li><strong>Ref A2</strong>：<code>0000002488-26-000018.pdf</code>，p.53。Gross margin summary for 2025 and 2024。</li>
+        <li><strong>Ref A3</strong>：<code>0000002488-26-000018.pdf</code>，p.2。AMD overview 與 AI/full-stack 定位。</li>
+        <li><strong>Ref A4</strong>：<code>0000002488-26-000018.pdf</code>，p.52。Segment revenue 與 Data Center growth drivers。</li>
+        <li><strong>Ref A5</strong>：<code>0000002488-26-000018.pdf</code>，p.29、34、50-51。MI308 出口管制、庫存費用與回轉說明。</li>
+        <li><strong>Ref A6</strong>：<code>0000002488-26-000018.pdf</code>，p.44。國際營運、台灣供應鏈與地緣政治風險。</li>
+        <li><strong>Ref B1</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.3-6。Broadcom business overview、AI semiconductor solutions、Infrastructure Software。</li>
+        <li><strong>Ref B2</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.48。Consolidated Statements of Operations。</li>
+        <li><strong>Ref B3</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.39-40。Results of Operations、gross margin、operating income、customer concentration。</li>
+        <li><strong>Ref B4</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.41。Net Revenue by Segment 與 AI networking / custom AI accelerators、VCF demand。</li>
+        <li><strong>Ref B5</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.42。Operating Income by Segment。</li>
+        <li><strong>Ref B6</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.39、54。FY2025 為 52 週、FY2024 為 53 週。</li>
+        <li><strong>Ref B7</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.24、54。VMware acquisition/integration rationale and risks。</li>
+        <li><strong>Ref B8</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.16-18、23-24。AI racks/systems leasing and new business model risk。</li>
+        <li><strong>Ref B9</strong>：<code>0001730168-25-000121 10K.pdf</code>，p.14-15。Tariffs, trade tensions, supply chain risk。</li>
+      </ol>
+      <p class="source-note">
+        待查證：若需比較「純 AI 營收」、「AI GPU 營收」或「AI 軟體單獨營收」，目前工作區提供的官方 PDF 並未在三家公司間形成一致可比口徑。
+      </p>
+    </section>
+  </div>
+
+  <script>
+    const companies = [
+      {
+        name: "NVIDIA",
+        color: getComputedStyle(document.documentElement).getPropertyValue("--nvda").trim(),
+        revenue: 215.938,
+        grossMargin: 71.1,
+        opMargin: 60.4,
+        netMargin: 55.6,
+        mix: [
+          { label: "Compute & Networking", value: 89.6, color: "#2563eb" },
+          { label: "Graphics", value: 10.4, color: "#93c5fd" }
+        ]
+      },
+      {
+        name: "AMD",
+        color: getComputedStyle(document.documentElement).getPropertyValue("--amd").trim(),
+        revenue: 34.639,
+        grossMargin: 50.0,
+        opMargin: 10.7,
+        netMargin: 12.5,
+        mix: [
+          { label: "Data Center", value: 48.0, color: "#f97316" },
+          { label: "Client & Gaming", value: 42.0, color: "#fdba74" },
+          { label: "Embedded", value: 10.0, color: "#ffedd5" }
+        ]
+      },
+      {
+        name: "Broadcom",
+        color: getComputedStyle(document.documentElement).getPropertyValue("--avgo").trim(),
+        revenue: 63.887,
+        grossMargin: 68.0,
+        opMargin: 40.0,
+        netMargin: 36.2,
+        mix: [
+          { label: "Semiconductor Solutions", value: 58.0, color: "#0f766e" },
+          { label: "Infrastructure Software", value: 42.0, color: "#5eead4" }
+        ]
+      }
+    ];
+
+    function svgEl(tag, attrs = {}, text) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+
+    function drawRevenueChart() {
+      const svg = document.getElementById("chart-revenue");
+      const W = 980, H = 420;
+      const margin = { top: 20, right: 34, bottom: 72, left: 90 };
+      const innerW = W - margin.left - margin.right;
+      const innerH = H - margin.top - margin.bottom;
+      const max = 240;
+      const barW = 150;
+      const gap = 105;
+
+      for (let i = 0; i <= 6; i++) {
+        const val = i * 40;
+        const y = margin.top + innerH - (val / max) * innerH;
+        svg.appendChild(svgEl("line", { x1: margin.left, y1: y, x2: W - margin.right, y2: y, stroke: "#d9e2ec", "stroke-width": 1 }));
+        svg.appendChild(svgEl("text", { x: margin.left - 14, y: y + 5, "text-anchor": "end", fill: "#52606d", "font-size": 12 }, String(val)));
+      }
+
+      companies.forEach((c, i) => {
+        const x = margin.left + 70 + i * (barW + gap);
+        const h = (c.revenue / max) * innerH;
+        const y = margin.top + innerH - h;
+        svg.appendChild(svgEl("rect", { x, y, width: barW, height: h, rx: 14, fill: c.color, opacity: 0.9 }));
+        svg.appendChild(svgEl("text", { x: x + barW / 2, y: y - 10, "text-anchor": "middle", fill: "#1f2933", "font-size": 14, "font-weight": 700 }, `${c.revenue.toFixed(1)}`));
+        svg.appendChild(svgEl("text", { x: x + barW / 2, y: H - 36, "text-anchor": "middle", fill: "#1f2933", "font-size": 14, "font-weight": 700 }, c.name));
+      });
+
+      svg.appendChild(svgEl("text", { x: 16, y: 22, fill: "#52606d", "font-size": 12 }, "US$ bn"));
+    }
+
+    function drawMarginChart() {
+      const svg = document.getElementById("chart-margin");
+      const W = 980, H = 500;
+      const margin = { top: 30, right: 40, bottom: 50, left: 160 };
+      const innerW = W - margin.left - margin.right;
+      const rowGap = 130;
+      const metrics = [
+        { key: "grossMargin", label: "毛利率", color: "#94a3b8" },
+        { key: "opMargin", label: "營業利益率", color: "#475569" },
+        { key: "netMargin", label: "淨利率", color: "#0f172a" }
+      ];
+
+      for (let i = 0; i <= 8; i++) {
+        const val = i * 10;
+        const x = margin.left + (val / 80) * innerW;
+        svg.appendChild(svgEl("line", { x1: x, y1: margin.top, x2: x, y2: H - margin.bottom, stroke: "#e5e7eb", "stroke-width": 1 }));
+        svg.appendChild(svgEl("text", { x, y: H - 18, "text-anchor": "middle", fill: "#52606d", "font-size": 12 }, `${val}%`));
+      }
+
+      metrics.forEach((metric, row) => {
+        const yBase = margin.top + 40 + row * rowGap;
+        svg.appendChild(svgEl("text", { x: 20, y: yBase + 5, fill: "#1f2933", "font-size": 14, "font-weight": 700 }, metric.label));
+        svg.appendChild(svgEl("line", { x1: margin.left, y1: yBase, x2: W - margin.right, y2: yBase, stroke: "#cbd5e1", "stroke-width": 4, "stroke-linecap": "round" }));
+        companies.forEach((c, idx) => {
+          const x = margin.left + (c[metric.key] / 80) * innerW;
+          const cy = yBase + (idx - 1) * 22;
+          svg.appendChild(svgEl("circle", { cx: x, cy, r: 7, fill: c.color }));
+          svg.appendChild(svgEl("text", { x: x + 10, y: cy + 4, fill: "#1f2933", "font-size": 13 }, `${c.name} ${c[metric.key].toFixed(1)}%`));
+        });
+      });
+    }
+
+    function drawMixChart() {
+      const svg = document.getElementById("chart-mix");
+      const W = 980, H = 420;
+      const margin = { top: 30, right: 30, bottom: 50, left: 170 };
+      const barH = 42;
+      const gap = 82;
+      const usableW = W - margin.left - margin.right;
+
+      companies.forEach((c, idx) => {
+        const y = margin.top + idx * gap;
+        svg.appendChild(svgEl("text", { x: 20, y: y + 26, fill: "#1f2933", "font-size": 15, "font-weight": 700 }, c.name));
+        let startX = margin.left;
+        c.mix.forEach((part) => {
+          const width = (part.value / 100) * usableW;
+          svg.appendChild(svgEl("rect", { x: startX, y, width, height: barH, rx: 10, fill: part.color }));
+          if (width > 70) {
+            svg.appendChild(svgEl("text", { x: startX + width / 2, y: y + 25, "text-anchor": "middle", fill: width > 120 ? "#ffffff" : "#0f172a", "font-size": 12, "font-weight": 700 }, `${part.label} ${part.value.toFixed(1)}%`));
+          }
+          startX += width;
+        });
+      });
+
+      for (let i = 0; i <= 10; i++) {
+        const val = i * 10;
+        const x = margin.left + (val / 100) * usableW;
+        svg.appendChild(svgEl("line", { x1: x, y1: 16, x2: x, y2: H - margin.bottom + 2, stroke: "#e5e7eb", "stroke-width": 1 }));
+        svg.appendChild(svgEl("text", { x, y: H - 18, "text-anchor": "middle", fill: "#52606d", "font-size": 12 }, `${val}%`));
+      }
+    }
+
+    drawRevenueChart();
+    drawMarginChart();
+    drawMixChart();
+  </script>
+</body>
+</html>

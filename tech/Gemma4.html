@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemma 4 企業導入戰略評估 | 專業資訊海報</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    colors: {
+                        bcg: {
+                            dark: '#0a322b',    // Deep green
+                            light: '#f3f4f6',   // Soft gray background
+                            accent: '#1e8f77',  // Teal accent
+                            gold: '#d4af37'     // Gold accent
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #d1d5db; } /* Darker background to highlight the poster */
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex justify-center items-start py-0 sm:py-8">
+
+    <!-- A1 Poster Wrapper (Constrained width to simulate vertical poster) -->
+    <main class="w-full max-w-[794px] bg-[#f8f9fa] sm:shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:border border-gray-300 flex flex-col relative overflow-hidden">
+
+        <!-- Header / Hero Section -->
+        <header class="bg-bcg-dark text-white pt-14 pb-16 px-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 opacity-10 pointer-events-none">
+                <i data-lucide="cpu" class="w-80 h-80 -mt-16 -mr-16"></i>
+            </div>
+            <div class="relative z-10">
+                <p class="text-bcg-accent font-bold tracking-widest uppercase text-xs mb-3">Technical Assessment Report • Apr 2026</p>
+                <h1 class="text-4xl sm:text-5xl font-black leading-tight mb-5">
+                    Google Gemma 4<br>
+                    <span class="text-bcg-gold">代理運算基礎設施的戰略轉型</span>
+                </h1>
+                <p class="text-base text-gray-300 font-light leading-relaxed mb-6 max-w-2xl">
+                    本次架構升級標誌著開源模型由單一「文字生成」邁向「具備物理感知之代理人（Agentic AI）」的底層重構。透過 Apache 2.0 授權，企業可實現 100% 的數位主權與極致的部署彈性。
+                </p>
+                <div class="flex flex-wrap gap-3 text-xs font-medium">
+                    <span class="bg-white/10 px-3 py-1.5 rounded-full border border-white/20 flex items-center"><i data-lucide="scale" class="w-3.5 h-3.5 mr-1.5"></i> Apache 2.0 授權</span>
+                    <span class="bg-white/10 px-3 py-1.5 rounded-full border border-white/20 flex items-center"><i data-lucide="brain-circuit" class="w-3.5 h-3.5 mr-1.5"></i> 原生多模態感知</span>
+                    <span class="bg-white/10 px-3 py-1.5 rounded-full border border-white/20 flex items-center"><i data-lucide="zap" class="w-3.5 h-3.5 mr-1.5"></i> 推理成本極小化</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Model Matrix Section (Adjusted to 2x2 grid for poster width) -->
+        <section class="px-8 -mt-8 relative z-20 w-full mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                
+                <!-- E2B -->
+                <div class="glass-panel rounded-xl p-5 shadow-lg border-t-4 border-bcg-accent flex flex-col h-full">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-bcg-dark">Gemma 4 E2B</h3>
+                            <p class="text-xs text-gray-500 font-medium">2B 有效化模型</p>
+                        </div>
+                        <div class="bg-bcg-light p-2 rounded-lg text-bcg-accent"><i data-lucide="watch" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-xs text-gray-600 mb-2"><strong class="text-gray-900">定位：</strong>IoT、穿戴裝置的極致邊緣運算。</p>
+                        <div class="space-y-1.5">
+                            <div class="flex items-start"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-green-600 mt-0.5 mr-1.5 flex-shrink-0"></i><p class="text-xs"><strong class="text-gray-800">強項：</strong>原生端側即時語音處理 (<300ms)，無雲端延遲，體積縮減 77%。</p></div>
+                            <div class="flex items-start"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-500 mt-0.5 mr-1.5 flex-shrink-0"></i><p class="text-xs"><strong class="text-gray-800">限制：</strong>複雜邏輯與長程規劃能力受限，適用於單一特定任務。</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- E4B -->
+                <div class="glass-panel rounded-xl p-5 shadow-lg border-t-4 border-bcg-accent flex flex-col h-full">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-bcg-dark">Gemma 4 E4B</h3>
+                            <p class="text-xs text-gray-500 font-medium">4B 行動端優化</p>
+                        </div>
+                        <div class="bg-bcg-light p-2 rounded-lg text-bcg-accent"><i data-lucide="smartphone" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-xs text-gray-600 mb-2"><strong class="text-gray-900">定位：</strong>智慧型手機、終端 PC 原生整合。</p>
+                        <div class="space-y-1.5">
+                            <div class="flex items-start"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-green-600 mt-0.5 mr-1.5 flex-shrink-0"></i><p class="text-xs"><strong class="text-gray-800">強項：</strong>深度整合 NPU。支援裝置端相機即時視覺辨識，推理加速 40%。</p></div>
+                            <div class="flex items-start"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-500 mt-0.5 mr-1.5 flex-shrink-0"></i><p class="text-xs"><strong class="text-gray-800">限制：</strong>高度依賴終端設備硬體規格，無 NPU 設備之體驗易受限。</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 26B MoE -->
+                <div class="glass-panel rounded-xl p-5 shadow-lg border-t-4 border-bcg-gold flex flex-col h-full relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-bcg-gold text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">企業首選</div>
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-bcg-dark">Gemma 4 26B</h3>
+                            <p class="text-xs text-gray-500 font-medium">混合專家 (MoE) 架構</p>
+                        </div>
+                        <div class="bg-bcg-light p-2 rounded-lg text-bcg-gold"><i data-lucide="server" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-xs text-gray-600 mb-2"><strong class="text-gray-900">定位：</strong>企業私有雲、高並發代理人應用中樞。</p>
+                        <div class="space-y-1.5">
+                            <div class="flex items-start"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-green-600 mt-0.5 mr-1.5 flex-shrink-0"></i><p class="text-xs"><strong class="text-gray-800">強項：</strong>極致 ROI。具備 20B+ 邏輯力，每次推論僅啟動 4B 參數，單卡 RTX 4090 即可部署。</p></div>
+                            <div class="flex items-start"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-500 mt-0.5 mr-1.5 flex-shrink-0"></i><p class="text-xs"><strong class="text-gray-800">限制：</strong>MoE 路由架構複雜，針對冷門垂直領域的精細微調 (Fine-tuning) 門檻較高。</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 31B Dense -->
+                <div class="glass-panel rounded-xl p-5 shadow-lg border-t-4 border-bcg-dark flex flex-col h-full">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-bcg-dark">Gemma 4 31B</h3>
+                            <p class="text-xs text-gray-500 font-medium">Dense 密集架構</p>
+                        </div>
+                        <div class="bg-bcg-light p-2 rounded-lg text-bcg-dark"><i data-lucide="database" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-xs text-gray-600 mb-2"><strong class="text-gray-900">定位：</strong>旗艦伺服器、高階複雜推理與科研任務。</p>
+                        <div class="space-y-1.5">
+                            <div class="flex items-start"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-green-600 mt-0.5 mr-1.5 flex-shrink-0"></i><p class="text-xs"><strong class="text-gray-800">強項：</strong>空間理解與編程力指標頂尖 (SWE-bench 54.2%)。可精準解析醫療影像與連續影格。</p></div>
+                            <div class="flex items-start"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-500 mt-0.5 mr-1.5 flex-shrink-0"></i><p class="text-xs"><strong class="text-gray-800">限制：</strong>VRAM (顯存) 消耗極大，單節點基礎設施之建置與維運成本高昂。</p></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Core Capabilities Section -->
+        <section class="px-8 mb-14 w-full">
+            <div class="mb-8 border-b border-gray-200 pb-3">
+                <h2 class="text-2xl font-black text-bcg-dark">技術戰略支柱：重塑代理人工作流</h2>
+                <p class="text-gray-600 text-sm mt-1">突破過往開源模型於企業落地時之高延遲、幻覺與短視角技術瓶頸。</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Feature 1 -->
+                <div class="bg-white rounded-lg p-5 shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="bg-emerald-50 p-3 rounded-full text-bcg-accent shrink-0">
+                        <i data-lucide="ear" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900 mb-1.5">原生多模態與端側即時語音</h4>
+                        <p class="text-gray-600 text-xs leading-relaxed">
+                            <strong class="text-bcg-accent">取代瀑布流架構。</strong>模型直接解析音訊波形與影像影格，完整保留語氣、情緒與環境特徵。高階模型更支援複雜工業圖紙與時間序列解析，賦予 AI 真實物理感知力。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="bg-white rounded-lg p-5 shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="bg-emerald-50 p-3 rounded-full text-bcg-accent shrink-0">
+                        <i data-lucide="git-merge" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900 mb-1.5">代理人原生 (Agent-Ready) 介面</h4>
+                        <p class="text-gray-600 text-xs leading-relaxed">
+                            <strong class="text-bcg-accent">專為自動化設計。</strong>原生支援高可靠度之 Function-calling 與嚴格 JSON 結構化輸出。精準辨識工具調用時機，無縫接入 MCP 協議，有效收斂自動化流程中的幻覺率。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="bg-white rounded-lg p-5 shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="bg-emerald-50 p-3 rounded-full text-bcg-accent shrink-0">
+                        <i data-lucide="brain" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900 mb-1.5">內建思考模式 (Native Reasoning)</h4>
+                        <p class="text-gray-600 text-xs leading-relaxed">
+                            <strong class="text-bcg-accent">降低 Prompt 工程依賴。</strong>底層整合隱式思維鏈 (CoT) 機制。系統於決策前自主進行邏輯推演與驗證，顯著提升財務邏輯與程式碼生成準確度，並簡化開發調用架構。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="bg-white rounded-lg p-5 shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="bg-emerald-50 p-3 rounded-full text-bcg-accent shrink-0">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900 mb-1.5">256K 超長語境實用化</h4>
+                        <p class="text-gray-600 text-xs leading-relaxed">
+                            <strong class="text-bcg-accent">全域資料視野。</strong>具備高達 256,000 Tokens 之輸入視窗，結合優化之 KV Cache 記憶體管理。可一次性載入大量財報或長時段影音紀錄，降低對複雜 RAG 檢索系統之依賴。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Strategic Recommendation / Footer -->
+        <footer class="bg-gray-900 text-white mt-auto">
+            <div class="px-8 py-10">
+                <div class="border-b border-gray-800 pb-6 mb-6">
+                    <h3 class="text-lg font-bold text-bcg-gold mb-3">核心技術與商業價值 (Strategic Value & Impact)</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        Gemma 4 的技術效益在於實現**「推理成本的極致解耦」**與**「真實物理空間的感知下放」**。對於重視資料隱私、嚴格遵循合規要求，且亟需構建次世代自主 AI 工作流的企業組織，26B MoE 架構提供了運算效能與基礎設施建置成本的最佳平衡點。
+                    </p>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-between items-center text-[10px] text-gray-500">
+                    <p>&copy; 2026 AI Solution Center. For Internal & Strategic Planning Only.</p>
+                    <div class="flex space-x-4 mt-3 sm:mt-0">
+                        <span class="flex items-center"><i data-lucide="shield-check" class="w-3 h-3 mr-1"></i> Data Sovereignty</span>
+                        <span class="flex items-center"><i data-lucide="cpu" class="w-3 h-3 mr-1"></i> Edge-First Architecture</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
