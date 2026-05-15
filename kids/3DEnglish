@@ -1,0 +1,3296 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Word Quest 3D Recall Runner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: "Fredoka", "Microsoft JhengHei", system-ui, sans-serif;
+            background-color: #87CEEB;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+
+        /* 拼字條 */
+        #spelling-bar {
+            margin-top: 15px;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(22px) saturate(180%);
+            -webkit-backdrop-filter: blur(22px) saturate(180%);
+            padding: 14px 36px 16px;
+            border-radius: 24px;
+            box-shadow:
+                0 10px 0 rgba(0,0,0,0.10),
+                0 20px 40px rgba(0,0,0,0.12),
+                inset 0 1px 0 rgba(255,255,255,0.95);
+            border: 1.5px solid rgba(255,255,255,0.92);
+            text-align: center;
+            transition: transform 0.2s cubic-bezier(0.22,1,0.36,1);
+            position: relative;
+        }
+        #spelling-bar::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 24px 24px 0 0;
+            background: linear-gradient(90deg, #ff7a59, #ffcf5b, #7fd0ff, #65b66a);
+        }
+
+        #chinese-hint {
+            font-size: 2.2rem;
+            color: #1a2640;
+            font-weight: 900;
+            margin-bottom: 10px;
+            font-family: "Baloo 2", "Microsoft JhengHei", sans-serif;
+            text-shadow: 0 2px 0 rgba(255,255,255,0.9);
+            letter-spacing: -0.01em;
+        }
+
+        #word-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .letter-slot {
+            width: 50px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #2c3e50;
+            font-family: "Baloo 2", "Fredoka", monospace;
+            background: rgba(255,255,255,0.72);
+            border-radius: 12px;
+            border: 2px solid rgba(180,190,210,0.5);
+            border-bottom: 4px solid rgba(150,165,190,0.6);
+            box-shadow: 0 3px 0 rgba(0,0,0,0.08);
+            transition:
+                transform 0.2s cubic-bezier(0.34,1.56,0.64,1),
+                border-color 0.18s ease,
+                background 0.18s ease,
+                color 0.18s ease,
+                box-shadow 0.18s ease;
+        }
+
+        .letter-slot.filled {
+            border-color: #2ecc71;
+            border-bottom-color: #27ae60;
+            color: #1e8449;
+            background: linear-gradient(180deg, rgba(232,255,240,0.98), rgba(212,255,228,0.95));
+            transform: scale(1.1);
+            box-shadow: 0 4px 0 #1e8449, 0 6px 16px rgba(46,204,113,0.2);
+        }
+
+        .letter-slot.hint {
+            border-color: #f1c40f;
+            border-bottom-color: #d4ac0d;
+            background: rgba(255,249,200,0.9);
+            color: #856404;
+        }
+
+        .letter-slot.current {
+            border-color: #3498db;
+            border-bottom-color: #2471a3;
+            background: linear-gradient(180deg, rgba(230,244,255,0.98), rgba(210,235,255,0.95));
+            animation: blink 0.7s infinite;
+            transform: scale(1.15);
+            box-shadow: 0 4px 0 #2471a3, 0 0 0 4px rgba(52,152,219,0.18);
+        }
+
+        #spell-instruction {
+            font-size: 0.88rem;
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        #spell-instruction .next-letter {
+            color: #3498db;
+            font-size: 1.1rem;
+        }
+        
+        /* 自動完成的 DAY 區塊 */
+        .suffix-slot {
+            width: 100px;
+            height: 60px;
+            border: 3px solid #ccc;
+            background: rgba(0,0,0,0.1);
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 900;
+            border-radius: 10px;
+            margin-left: 10px;
+            transition: all 0.5s;
+        }
+        .suffix-slot.active {
+            border-color: #f1c40f;
+            background: #f1c40f;
+            color: white;
+            box-shadow: 0 0 20px #f1c40f;
+            transform: scale(1.1);
+        }
+
+        #progress-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+        }
+        
+        #score-board {
+            font-family: "Baloo 2", "Fredoka", sans-serif;
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+            background: linear-gradient(135deg, #ff7a59, #e9542f);
+            padding: 10px 22px;
+            border-radius: 20px;
+            box-shadow: 0 6px 0 rgba(180,50,20,0.5), 0 10px 24px rgba(255,100,70,0.3);
+            letter-spacing: 0.04em;
+        }
+
+        #level-indicator {
+            margin-top: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            background: rgba(15,25,50,0.45);
+            backdrop-filter: blur(8px);
+            padding: 5px 16px;
+            border-radius: 999px;
+            display: inline-block;
+            border: 1px solid rgba(255,255,255,0.18);
+            letter-spacing: 0.06em;
+        }
+
+        #learning-panel {
+            position: absolute;
+            top: 105px;
+            right: 16px;
+            width: min(300px, 32vw);
+            background: rgba(10, 16, 38, 0.78);
+            color: rgba(200,220,255,0.85);
+            border-radius: 16px;
+            padding: 12px 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.28), 0 0 0 1px rgba(80,120,220,0.18);
+            font-family: "Fredoka", "Microsoft JhengHei", sans-serif;
+            text-align: left;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(80,120,220,0.15);
+        }
+
+        #learning-panel div {
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+
+        #learning-panel strong {
+            color: #ffd56b;
+        }
+
+        #feedback-overlay {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: "Baloo 2", "Fredoka", sans-serif;
+            font-size: clamp(3.5rem, 7vw, 5rem);
+            font-weight: 800;
+            text-shadow: 0 4px 0 rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+            z-index: 10;
+            letter-spacing: -0.01em;
+        }
+
+        /* 畫面樣式 */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(255,100,60,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 30%, rgba(80,140,255,0.14) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(46,214,178,0.08) 0%, transparent 50%),
+                linear-gradient(160deg, rgba(8,12,32,0.98) 0%, rgba(12,22,54,0.98) 45%, rgba(8,30,62,0.97) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        /* 遊戲結束畫面改為底部浮層，讓主角露出來 */
+        #game-over-screen {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 35%; /* 只佔據底部 */
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 50px;
+            pointer-events: none; /* 讓點擊穿透 */
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        
+        #game-over-content {
+            text-align: center;
+            pointer-events: auto; /* 按鈕要可以點 */
+            animation: floatUp 1s ease-out;
+        }
+
+        #start-screen h1 {
+            font-family: "Baloo 2", "Fredoka", sans-serif;
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 800;
+            line-height: 0.9;
+            text-align: center;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #fff 10%, #ffd56b 45%, #ff9e79 75%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 4px 24px rgba(255,200,100,0.35));
+        }
+        #end-title {
+            font-family: "Baloo 2", "Fredoka", sans-serif;
+            color: #ffd56b;
+            font-size: clamp(2.2rem, 5vw, 3rem);
+            text-shadow: 0 3px 0 rgba(180,110,0,0.45), 0 6px 20px rgba(255,200,80,0.3);
+            text-align: center;
+            letter-spacing: -0.01em;
+        }
+
+        .start-sub {
+            font-family: "Fredoka", sans-serif;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: rgba(180,200,255,0.7);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .intro-box {
+            background: rgba(255,255,255,0.07);
+            padding: 20px 44px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.16);
+            text-align: center;
+            max-width: 500px;
+            backdrop-filter: blur(8px);
+        }
+
+        p { color: rgba(220,230,255,0.92); font-size: 1.4rem; line-height: 1.7; margin: 0; }
+        .highlight { color: #ffd56b; font-weight: 700; }
+
+        .btn {
+            font-family: "Fredoka", sans-serif;
+            margin-top: 20px;
+            padding: 15px 80px;
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1dd1a1, #10ac84);
+            color: white;
+            border: none;
+            border-radius: 18px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 rgba(10,120,90,0.6), 0 12px 28px rgba(29,209,161,0.3);
+            transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+            letter-spacing: 0.02em;
+        }
+        .btn:hover  { transform: translateY(-3px); filter: brightness(1.08); box-shadow: 0 11px 0 rgba(10,120,90,0.6), 0 16px 32px rgba(29,209,161,0.35); }
+        .btn:active { transform: translateY(4px);  box-shadow: 0 4px 0 rgba(10,120,90,0.6); filter: brightness(0.95); }
+        .mode-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        .mode-buttons .btn {
+            margin-top: 0;
+            padding: 12px 26px;
+            font-size: 1.3rem;
+            border-radius: 14px;
+        }
+        .mode-buttons .btn:nth-child(1) {
+            background: linear-gradient(135deg, #2ed6b2, #10ac84);
+            box-shadow: 0 6px 0 rgba(10,120,90,0.55), 0 10px 20px rgba(46,214,178,0.28);
+        }
+        .mode-buttons .btn:nth-child(2) {
+            background: linear-gradient(135deg, #74b9ff, #3498db);
+            box-shadow: 0 6px 0 rgba(30,80,150,0.5), 0 10px 20px rgba(52,152,219,0.28);
+        }
+        .mode-buttons .btn:nth-child(3) {
+            background: linear-gradient(135deg, #ffd56b, #f1a127);
+            box-shadow: 0 6px 0 rgba(160,100,10,0.5), 0 10px 20px rgba(241,161,39,0.28);
+            color: #2c1a00;
+        }
+        .mode-buttons .btn:nth-child(4) {
+            background: linear-gradient(135deg, #7f8cff, #5c67e5);
+            box-shadow: 0 6px 0 rgba(50,55,160,0.5), 0 10px 20px rgba(127,140,255,0.28);
+        }
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
+        
+        /* 提示互動的文字 */
+        .interact-hint {
+            color: #f1c40f;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes blink { 0% {opacity: 0.3;} 50% {opacity: 0.8;} 100% {opacity: 0.3;} }
+        @keyframes floatUp { from {transform: translateY(50px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+        @keyframes pulse { 0% {opacity: 0.6;} 50% {opacity: 1;} 100% {opacity: 0.6;} }
+
+        /* 暫停按鈕 */
+        #pause-btn {
+            position: absolute;
+            top: 14px;
+            left: 16px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255,255,255,0.22);
+            border: 2px solid rgba(255,255,255,0.55);
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: #fff;
+            z-index: 25;
+            transition: background 0.15s, transform 0.1s;
+            backdrop-filter: blur(6px);
+        }
+        #pause-btn:hover { background: rgba(255,255,255,0.38); transform: scale(1.08); }
+        #pause-btn.visible { display: flex; }
+
+        /* 暫停覆蓋層 */
+        #pause-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10,10,30,0.72);
+            backdrop-filter: blur(10px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 22px;
+            pointer-events: auto;
+            z-index: 30;
+        }
+        #pause-overlay.visible { display: flex; }
+        #pause-overlay h2 {
+            font-family: "Baloo 2", "Fredoka", sans-serif;
+            color: #ffd56b;
+            font-size: 2.8rem;
+            margin: 0 0 10px;
+            text-shadow: 0 3px 12px rgba(255,213,107,0.4);
+            letter-spacing: -0.01em;
+        }
+        .pause-btn {
+            padding: 13px 60px;
+            font-size: 1.7rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.1s;
+        }
+        .pause-btn:hover  { transform: translateY(-3px); filter: brightness(1.1); }
+        .pause-btn:active { transform: translateY(4px);  filter: brightness(0.93); }
+        .pause-btn {
+            font-family: "Fredoka", sans-serif;
+            border-radius: 14px;
+        }
+        .pause-btn.resume { background: linear-gradient(135deg, #1dd1a1, #10ac84); color: #fff; box-shadow: 0 6px 0 rgba(10,120,90,0.55); }
+        .pause-btn.title  { background: linear-gradient(135deg, #4a90d9, #2471a3); color: #fff; box-shadow: 0 6px 0 rgba(25,80,140,0.55); }
+        .pause-hint { color: rgba(180,200,255,0.5); font-size: 0.95rem; margin-top: 4px; letter-spacing: 0.06em; }
+
+        /* 危險提示光暈 */
+        #danger-vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(255,40,40,0) 100%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 6;
+        }
+        #danger-vignette.active {
+            background: radial-gradient(ellipse at center, transparent 55%, rgba(255,40,40,0.55) 100%);
+        }
+
+        /* 開始畫面進度 */
+        .start-stats {
+            color: rgba(255,255,255,0.65);
+            font-size: 0.85rem;
+            margin-top: 10px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            background: rgba(0,0,0,0.2);
+            padding: 6px 18px;
+            border-radius: 20px;
+        }
+        .start-stats strong { color: #feca57; }
+
+        /* 結果畫面按鈕列 */
+        .result-btns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .result-btns .btn { margin-top: 0; padding: 12px 28px; font-size: 1.35rem; border-radius: 14px; }
+
+        /* 鎖定動物解鎖提示 */
+        .animal-card-hint {
+            font-size: 0.38rem;
+            color: rgba(255,255,255,0.38);
+            line-height: 1.25;
+            margin-top: 2px;
+            word-break: break-all;
+        }
+
+        @media (max-width: 820px) {
+            #spelling-bar {
+                width: calc(100% - 32px);
+                padding: 10px 12px;
+            }
+            #chinese-hint { font-size: 1.55rem; }
+            .letter-slot {
+                width: clamp(25px, 8vw, 42px);
+                height: 48px;
+                font-size: 1.65rem;
+            }
+            #word-container { gap: 4px; }
+            #learning-panel {
+                left: 12px;
+                right: auto;
+                top: auto;
+                bottom: 12px;
+                width: calc(100% - 52px);
+            }
+            #progress-info {
+                top: 88px;
+                right: 12px;
+            }
+            h1 { font-size: 2.2rem; }
+            p { font-size: 1.2rem; }
+            .mode-buttons .btn { font-size: 1.15rem; padding: 11px 18px; }
+        }
+
+        /* 單字匯入對話框 */
+        #import-dialog {
+            position: absolute; inset: 0; display: grid; place-items: center;
+            background: rgba(0,0,0,0.7); z-index: 25; pointer-events: auto;
+        }
+        #import-dialog.hidden { display: none; }
+        .import-panel {
+            width: min(520px, calc(100% - 32px));
+            padding: 24px;
+            border-radius: 20px;
+            background: rgba(15,22,48,0.96);
+            color: rgba(220,235,255,0.92);
+            box-shadow: 0 32px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
+            border: 1px solid rgba(80,120,220,0.22);
+            backdrop-filter: blur(20px);
+        }
+        .import-panel h2 {
+            margin: 0 0 10px;
+            font-family: "Baloo 2", "Fredoka", sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffd56b;
+        }
+        .import-panel p { margin: 0 0 10px; font-size: 0.85rem; color: rgba(180,200,255,0.65); line-height: 1.55; }
+        .import-panel textarea {
+            width: 100%; height: 140px;
+            border: 1px solid rgba(80,120,220,0.35);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            font-family: Consolas, monospace;
+            resize: vertical;
+            box-sizing: border-box;
+            background: rgba(255,255,255,0.06);
+            color: rgba(220,235,255,0.92);
+        }
+        .import-panel textarea:focus { border-color: #4f8bff; outline: none; box-shadow: 0 0 0 3px rgba(79,139,255,0.18); }
+        .import-panel textarea::placeholder { color: rgba(150,170,220,0.4); }
+        .import-actions { display: flex; gap: 10px; margin-top: 12px; }
+        .import-actions button {
+            flex: 1; padding: 10px; border: none; border-radius: 10px;
+            font-family: "Fredoka", sans-serif;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            transition: transform 0.1s ease, filter 0.1s ease;
+        }
+        .import-actions button:hover  { transform: translateY(-2px); filter: brightness(1.08); }
+        .import-actions button:active { transform: translateY(1px); filter: brightness(0.95); }
+        .import-actions .btn-save { background: linear-gradient(135deg, #1dd1a1, #10ac84); color: #fff; box-shadow: 0 4px 0 rgba(10,120,90,0.5); }
+        .import-actions .btn-cancel { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(200,215,255,0.8); }
+        .import-actions .btn-clear { background: linear-gradient(135deg, #ff6b6b, #e74c3c); color: #fff; box-shadow: 0 4px 0 rgba(180,30,30,0.5); }
+        .import-actions .btn-save:disabled { background: rgba(255,255,255,0.12); box-shadow: none; color: rgba(200,215,255,0.4); cursor: not-allowed; }
+        #import-status { margin-top: 8px; font-size: 0.82rem; color: #2ed6b2; min-height: 1.2em; }
+        .drop-zone {
+            border: 1.5px dashed rgba(79,139,255,0.45);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .22s ease;
+            color: rgba(150,175,230,0.7);
+            font-size: .85rem;
+            margin-bottom: 10px;
+            background: rgba(79,139,255,0.06);
+        }
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #2ed6b2;
+            background: rgba(46,214,178,0.08);
+            color: #2ed6b2;
+        }
+        .drop-zone-icon { font-size:1.8rem; display:block; margin-bottom:2px; }
+        .file-pick-btn { display:inline-block; margin-top:6px; background:#3498db; color:#fff;
+            border:none; padding:5px 14px; border-radius:6px; cursor:pointer; font-size:.8rem; font-weight:700; }
+        #import-preview {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4f8bff;
+            padding: 8px 12px;
+            font-size: .82rem;
+            max-height: 130px;
+            overflow-y: auto;
+            margin: 8px 0;
+            display: none;
+        }
+        .preview-stats { display: flex; gap: 12px; margin-bottom: 5px; font-weight: 700; }
+        .preview-ok { color: #2ed6b2; }
+        .preview-err-count { color: #ff6b6b; }
+        .preview-words { color: rgba(200,220,255,0.8); line-height: 1.7; }
+        .preview-errors { color: #ff6b6b; font-size: .78rem; margin-top: 4px; }
+        .import-fmt-hint { color: rgba(150,170,220,0.5); font-size: .73rem; margin: 3px 0 6px; }
+        .import-actions .btn-save:disabled { background:#b2bec3; cursor:not-allowed; box-shadow:none; }
+
+        /* 動物選擇器 */
+        #animal-selector { margin-top: 16px; text-align: center; }
+        .selector-label { color: rgba(255,255,255,0.65); font-size: 0.85rem; font-weight: 700; margin: 0 0 8px; }
+        .animal-row {
+            display: flex; gap: 5px; flex-wrap: wrap; justify-content: center;
+            max-height: 110px; overflow-y: auto; padding: 2px 0;
+        }
+        .animal-card {
+            width: 46px; padding: 5px 3px 3px; border-radius: 10px;
+            background: rgba(255,255,255,0.1); border: 2px solid transparent;
+            cursor: pointer; text-align: center; transition: all 0.15s;
+        }
+        .animal-card:hover:not(.locked) { background: rgba(255,255,255,0.2); }
+        .animal-card.sel { border-color: #feca57; background: rgba(254,202,87,0.2); }
+        .animal-card.locked { opacity: 0.3; cursor: default; filter: grayscale(1); }
+        .animal-dot {
+            width: 26px; height: 26px; border-radius: 50%; margin: 0 auto 2px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 900; color: #fff; border: 2px solid rgba(255,255,255,0.3);
+        }
+        .animal-card-name { font-size: 0.55rem; color: rgba(255,255,255,0.7); font-weight: 700; line-height: 1.1; }
+
+        /* 解鎖通知 */
+        #unlock-toast {
+            position: absolute; top: 42%; left: 50%; transform: translate(-50%,-50%);
+            background: rgba(15,15,35,0.93); padding: 18px 28px; border-radius: 16px;
+            border: 3px solid #feca57; text-align: center; z-index: 30;
+            animation: floatUp 0.6s ease-out; pointer-events: none;
+        }
+        #unlock-toast.hidden { display: none; }
+        .toast-title { font-size: 1.3rem; color: #feca57; font-weight: 900; margin-bottom: 6px; }
+        .toast-name { font-size: 2rem; color: #fff; font-weight: 900; }
+
+        /* 計時條 */
+        #timer-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(0,0,0,0.10);
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        #timer-fill {
+            height: 100%;
+            width: 100%;
+            background: #2ecc71;
+            border-radius: 4px;
+            transition: background 0.4s;
+            transform-origin: left center;
+        }
+
+        /* Combo 計數器 */
+        #combo-display {
+            position: absolute;
+            left: 22px;
+            top: 36%;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.7) translateY(10px);
+            transition: opacity 0.18s, transform 0.15s;
+            text-align: left;
+            line-height: 1.15;
+        }
+        #combo-display.active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        #combo-display .combo-count {
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: rgba(255,255,255,0.85);
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+        }
+        #combo-display .combo-mult {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #f1c40f;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.45);
+            display: block;
+            transition: text-shadow 0.3s, color 0.3s;
+        }
+        #combo-display.glow-2 .combo-mult {
+            color: #ffd32a;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.45), 0 0 20px rgba(255,211,42,0.8), 0 0 40px rgba(255,211,42,0.4);
+        }
+        #combo-display.glow-3 .combo-mult {
+            color: #ff9f43;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.45), 0 0 25px rgba(255,159,67,0.9), 0 0 50px rgba(255,159,67,0.6);
+            animation: comboPulse3 0.8s ease-in-out infinite;
+        }
+        @keyframes comboPulse3 { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+        /* 計時條緊迫脈動 */
+        @keyframes timerPulse { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.6);box-shadow:0 0 10px rgba(255,71,87,0.8)} }
+        #timer-fill.urgent { animation: timerPulse 0.5s ease-in-out infinite; }
+
+        /* 錯誤預算心型 */
+        #error-budget { display:flex; gap:6px; justify-content:center; margin-top:6px; }
+        .err-heart { font-size:1.4rem; line-height:1; transition:transform .25s cubic-bezier(.34,1.56,.64,1), opacity .25s; filter:drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
+        .err-heart.lost { transform:scale(.55); opacity:.2; filter:grayscale(1); }
+        .err-heart.warning { animation:heartbeat .5s ease-in-out; }
+        @keyframes heartbeat { 0%{transform:scale(1)} 30%{transform:scale(1.4)} 60%{transform:scale(.9)} 100%{transform:scale(1)} }
+
+        /* 提示字母淡入 */
+        @keyframes hintReveal { from{transform:translateY(-8px) scale(.8);opacity:0} to{transform:translateY(0) scale(1);opacity:1} }
+        .letter-slot.hint-revealed { animation:hintReveal .35s cubic-bezier(.34,1.56,.64,1) forwards; }
+
+        /* 字母格微動畫 */
+        @keyframes slotPop   { 0%{transform:scale(1)} 40%{transform:scale(1.4)} 70%{transform:scale(.95)} 100%{transform:scale(1.1)} }
+        @keyframes slotShake { 0%,100%{transform:translateX(0) scale(1.15)} 25%{transform:translateX(-6px) scale(1.15)} 75%{transform:translateX(6px) scale(1.15)} }
+        .letter-slot.pop-anim   { animation:slotPop   .3s cubic-bezier(.34,1.56,.64,1) forwards; }
+        .letter-slot.shake-anim { animation:slotShake .35s ease-in-out forwards; }
+
+        /* 結果星星 */
+        #star-rating { display:flex; gap:8px; justify-content:center; margin:8px 0 4px; font-size:2.8rem; line-height:1; filter:drop-shadow(0 2px 6px rgba(255,200,0,.6)); }
+        .star-on  { color:#feca57; animation:starPop .4s cubic-bezier(.34,1.56,.64,1) both; }
+        .star-off { color:rgba(255,255,255,0.2); }
+        @keyframes starPop { from{transform:scale(0) rotate(-30deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+        .star-on:nth-child(2) { animation-delay:.12s; }
+        .star-on:nth-child(3) { animation-delay:.24s; }
+        #result-pills { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:6px 0 14px; }
+        .result-pill { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:20px; padding:4px 14px; font-size:.95rem; color:#fff; font-weight:700; }
+        .result-pill.highlight { background:rgba(254,202,87,.22); border-color:#feca57; color:#feca57; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="ui-container">
+        <div id="spelling-bar">
+            <div id="chinese-hint">準備中...</div>
+            <div id="word-container"></div>
+            <div id="error-budget">
+                <span class="err-heart" id="heart-0">❤️</span>
+                <span class="err-heart" id="heart-1">❤️</span>
+                <span class="err-heart" id="heart-2">❤️</span>
+            </div>
+            <div id="spell-instruction"></div>
+            <div id="timer-track"><div id="timer-fill"></div></div>
+        </div>
+        <div id="progress-info">
+            <div id="score-board">⭐ 0</div>
+            <div id="level-indicator">Level 1 / 7</div>
+        </div>
+        <div id="learning-panel">
+            <div id="mode-indicator"><strong>Mode</strong> Adventure</div>
+            <div id="stage-rule"><strong>Recall</strong> recognition</div>
+            <div id="word-source"><strong>Queue</strong> new + weak + due</div>
+            <div id="review-stats"><strong>Memory</strong> weak 0 | due 0</div>
+        </div>
+        <div id="feedback-overlay">Good!</div>
+        <div id="combo-display">
+            <span class="combo-count">COMBO 0</span>
+            <span class="combo-mult">x1</span>
+        </div>
+        <!-- 暫停按鈕 (遊戲中顯示) -->
+        <button id="pause-btn" title="暫停 (ESC)" onclick="pauseGame()">⏸</button>
+    </div>
+
+    <!-- 暫停覆蓋層 -->
+    <div id="pause-overlay">
+        <h2>⏸ 暫停</h2>
+        <button class="pause-btn resume" onclick="resumeGame()">繼續遊戲</button>
+        <button class="pause-btn title"  onclick="returnToTitle()">回主選單</button>
+        <p class="pause-hint">按 ESC 繼續</p>
+    </div>
+
+    <div id="danger-vignette"></div>
+
+    <!-- 初始畫面 -->
+    <div id="start-screen">
+        <h1>Word Quest 3D</h1>
+        <p class="start-sub">Recall Runner · 字母跑道</p>
+        <div class="intro-box">
+            <p>1. 看中文提示，<span class="highlight">依序撞擊字母</span>拼出完整單字</p>
+            <p>2. 左右滑動控制角色，撞對得分、撞錯扣 combo</p>
+        </div>
+        <div class="mode-buttons">
+            <button class="btn" onclick="startGame('adventure')">冒險</button>
+            <button class="btn" onclick="startGame('review')">弱字複習</button>
+            <button class="btn" onclick="startGame('typing')">低遮罩練習</button>
+            <button class="btn" style="background:#3498db;box-shadow:0 8px 0 #2471a3" onclick="openImportDialog()">匯入單字</button>
+        </div>
+        <div id="start-stats" class="start-stats">Stage 1</div>
+        <div id="animal-selector">
+            <p class="selector-label">選擇角色</p>
+            <div id="animal-row" class="animal-row"></div>
+        </div>
+    </div>
+
+    <!-- 單字匯入對話框 -->
+    <div id="import-dialog" class="hidden">
+        <div class="import-panel">
+            <h2>匯入單字</h2>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                <button onclick="loadVocabPreset('unit3')"   style="flex:1;padding:6px 0;border:1px solid #3498db;border-radius:6px;background:#ebf5fb;color:#2980b9;cursor:pointer;font-size:0.85rem;font-weight:600;">Unit 3</button>
+                <button onclick="loadVocabPreset('unit4')"   style="flex:1;padding:6px 0;border:1px solid #27ae60;border-radius:6px;background:#eafaf1;color:#1e8449;cursor:pointer;font-size:0.85rem;font-weight:600;">Unit 4</button>
+                <button onclick="loadVocabPreset('unit3+4')" style="flex:1;padding:6px 0;border:1px solid #8e44ad;border-radius:6px;background:#f5eef8;color:#7d3c98;cursor:pointer;font-size:0.85rem;font-weight:600;">Unit 3+4</button>
+            </div>
+            <div class="drop-zone" id="drop-zone"
+                 ondragover="event.preventDefault();this.classList.add('drag-over')"
+                 ondragleave="this.classList.remove('drag-over')"
+                 ondrop="handleDropFile(event)"
+                 onclick="document.getElementById('file-input').click()">
+                <span class="drop-zone-icon">📂</span>
+                拖曳 CSV / TXT 到此，或點此選擇檔案
+                <input type="file" id="file-input" accept=".csv,.txt,.tsv" style="display:none"
+                       onchange="handleFileSelect(event)">
+            </div>
+            <p class="import-fmt-hint">或直接貼上文字 — 支援格式：逗號、Tab（Excel貼上）、等號分隔；# 開頭為註解</p>
+            <textarea id="import-text"
+                      placeholder="apple,蘋果&#10;school,學校,school&#10;friend,朋友"
+                      oninput="onImportTextChange()"></textarea>
+            <div id="import-preview"></div>
+            <div id="import-status"></div>
+            <div class="import-actions">
+                <button class="btn-cancel" onclick="closeImportDialog()">取消</button>
+                <button class="btn-clear" onclick="clearImportedWords()">清除已匯入</button>
+                <button class="btn-save" id="import-confirm-btn" onclick="confirmImport()" disabled>確認匯入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 解鎖通知 -->
+    <div id="unlock-toast" class="hidden">
+        <div class="toast-title">NEW!</div>
+        <div class="toast-name" id="unlock-animal-name"></div>
+    </div>
+
+    <!-- 結束畫面 (Showcase 模式 UI) -->
+    <div id="game-over-screen" class="hidden">
+        <div id="game-over-content">
+            <h1 style="margin-bottom:6px;" id="end-title">任務完成！</h1>
+            <div id="star-rating">
+                <span id="star-0" class="star-off">★</span>
+                <span id="star-1" class="star-off">★</span>
+                <span id="star-2" class="star-off">★</span>
+            </div>
+            <div id="result-pills">
+                <span class="result-pill" id="pill-accuracy">正確率 --%</span>
+                <span class="result-pill" id="pill-perfects">完美 0</span>
+                <span class="result-pill" id="pill-words">單字 0</span>
+            </div>
+            <p class="interact-hint" id="run-summary">左右滑動螢幕，看看新裝備。</p>
+            <div class="result-btns">
+                <button class="btn" onclick="startGame(gameState.mode, gameState.stageNumber)">再玩一次</button>
+                <button class="btn" id="next-stage-btn" style="background:#e17055;box-shadow:0 8px 0 #c0392b;display:none" onclick="startGame('adventure')">下一關 ▶</button>
+                <button class="btn" style="background:#74b9ff;box-shadow:0 8px 0 #4a90d9;" onclick="returnToTitle()">主選單</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. 資料結構 / 記憶模型 ---
+        const STORAGE_KEY = "word-quest-3d-recall-v1";
+        const WORLD_NAMES = ["Starter Meadow", "River Trail", "Sky Castle"];
+
+        const VOCAB_PRESETS = {
+            unit3: [
+                { word: "dress",     zh: "洋裝" },     { word: "skirt",     zh: "裙子" },
+                { word: "sweater",   zh: "毛衣" },     { word: "T-shirt",   zh: "短袖上衣" },
+                { word: "pants",     zh: "長褲" },     { word: "shorts",    zh: "短褲" },
+                { word: "sneakers",  zh: "運動鞋" },   { word: "socks",     zh: "襪子" },
+                { word: "dollar",    zh: "元" },       { word: "train",     zh: "火車" },
+                { word: "tree",      zh: "樹" },       { word: "truck",     zh: "卡車" },
+                { word: "dragonfly", zh: "蜻蜓" },     { word: "draw",      zh: "畫圖" },
+                { word: "drum",      zh: "鼓" },
+            ],
+            unit4: [
+                { word: "jacket",    zh: "夾克" },     { word: "smartphone", zh: "智慧型手機" },
+                { word: "umbrella",  zh: "雨傘" },     { word: "watch",     zh: "手錶" },
+                { word: "key",       zh: "鑰匙" },     { word: "glasses",   zh: "眼鏡" },
+                { word: "whose",     zh: "誰的" },     { word: "spoon",     zh: "湯匙" },
+                { word: "spy",       zh: "間諜" },     { word: "star",      zh: "星星" },
+                { word: "storm",     zh: "暴風雨" },   { word: "ski",       zh: "滑雪" },
+                { word: "sky",       zh: "天空" },     { word: "reduce",    zh: "減少" },
+                { word: "reuse",     zh: "重複使用" }, { word: "recycle",   zh: "回收" },
+                { word: "Earth",     zh: "地球" },
+            ],
+        };
+        VOCAB_PRESETS["unit3+4"] = [...VOCAB_PRESETS.unit3, ...VOCAB_PRESETS.unit4];
+
+        function buildVocabArray(items) {
+            return items.map((item, index) => ({
+                ...item,
+                category: "imported",
+                id: item.word.toLowerCase().replace(/[\s\-]+/g, "-") + "-" + index,
+                target: item.word.replace(/-/g, "").toUpperCase(),
+            }));
+        }
+
+        let vocabulary = buildVocabArray(VOCAB_PRESETS["unit3+4"]);
+
+        // --- 語言學斷詞表（音節/詞根/前後綴/phonics 為依據）---
+        const WORD_CHUNKS = {
+            'apple':     ['A','P','P','L','E'],
+            'banana':    ['B','A','NA','NA'],
+            'orange':    ['OR','A','N','GE'],
+            'water':     ['W','A','T','ER'],
+            'morning':   ['MOR','N','ING'],
+            'window':    ['WIN','D','OW'],
+            'chair':     ['CH','A','I','R'],
+            'school':    ['SCH','OO','L'],
+            'teacher':   ['TEACH','ER'],
+            'student':   ['STU','D','ENT'],
+            'pencil':    ['PEN','C','IL'],
+            'library':   ['LI','BRA','RY'],
+            'computer':  ['COM','PU','TER'],
+            'animal':    ['A','NI','MAL'],
+            'garden':    ['GAR','D','EN'],
+            'planet':    ['PLA','N','ET'],
+            'rocket':    ['ROCK','ET'],
+            'yellow':    ['Y','EL','L','OW'],
+            'happy':     ['H','A','P','P','Y'],
+            'important': ['IM','POR','TANT'],
+            'because':   ['BE','CAUSE'],
+            'beautiful': ['BEAU','TI','FUL'],
+            'different': ['DIF','FER','ENT'],
+            'remember':  ['RE','MEM','BER'],
+            'practice':  ['PRAC','T','ICE'],
+            'chicken':   ['CH','ICK','EN'],
+            'kitchen':   ['K','ITCH','EN'],
+            'brother':   ['BRO','THER'],
+            'sister':    ['SIS','TER'],
+            'friend':    ['FR','I','END'],
+            'mountain':  ['MOUN','TAIN'],
+            'river':     ['R','I','V','ER'],
+            'weather':   ['WEA','THER'],
+            'doctor':    ['DOC','TOR'],
+            'elephant':  ['E','LE','PHANT'],
+            'butterfly': ['BUT','TER','FLY'],
+            'rainbow':   ['RAIN','BOW'],
+            'umbrella':  ['UM','BREL','LA'],
+            'together':  ['TO','GE','THER'],
+            'question':  ['QUES','TION'],
+            'exercise':  ['EX','ER','CISE'],
+            'favorite':  ['FA','VOR','ITE'],
+            'birthday':  ['BIRTH','DAY'],
+            'surprise':  ['SUR','PRISE'],
+            'sandwich':  ['SAND','WICH'],
+            'dinosaur':  ['DI','NO','SAUR'],
+            'treasure':  ['TREA','SURE'],
+            'princess':  ['PRIN','CESS'],
+            'chocolate': ['CHO','CO','LATE'],
+            'vegetable': ['VE','GE','TA','BLE']
+        };
+
+        const STAGE_LEARNING_CURVE = {
+            1: { roundCount: 5, mix: { fresh: 0.75, weak: 0.15, due: 0.10 }, label: "recognition" },
+            2: { roundCount: 5, mix: { fresh: 0.60, weak: 0.25, due: 0.15 }, label: "recognition+" },
+            3: { roundCount: 6, mix: { fresh: 0.45, weak: 0.35, due: 0.20 }, label: "partial recall" },
+            4: { roundCount: 6, mix: { fresh: 0.35, weak: 0.40, due: 0.25 }, label: "partial recall+" },
+            5: { roundCount: 5, mix: { fresh: 0.10, weak: 0.55, due: 0.35 }, label: "boss recall" },
+            6: { roundCount: 7, mix: { fresh: 0.30, weak: 0.42, due: 0.28 }, label: "sparse anchors" },
+            7: { roundCount: 7, mix: { fresh: 0.22, weak: 0.48, due: 0.30 }, label: "sparse anchors+" },
+            8: { roundCount: 8, mix: { fresh: 0.18, weak: 0.50, due: 0.32 }, label: "near recall" },
+            9: { roundCount: 8, mix: { fresh: 0.10, weak: 0.55, due: 0.35 }, label: "near recall+" },
+            10: { roundCount: 6, mix: { fresh: 0.00, weak: 0.62, due: 0.38 }, label: "final recall" }
+        };
+
+        const HINT_LEVELS = [
+            { level: 0, hidePercent: 0.15, label: "full support" },
+            { level: 1, hidePercent: 0.42, label: "recognition" },
+            { level: 2, hidePercent: 0.60, label: "partial recall" },
+            { level: 3, hidePercent: 0.78, label: "sparse anchors" },
+            { level: 4, hidePercent: 0.98, label: "full recall" }
+        ];
+
+        const saveState = loadSave();
+
+        // --- 自訂單字匯入 ---
+        const CUSTOM_WORDS_KEY = "word-quest-custom-words";
+
+        function loadCustomWords() {
+            try {
+                return JSON.parse(localStorage.getItem(CUSTOM_WORDS_KEY) || "[]");
+            } catch(e) { return []; }
+        }
+
+        function mergeCustomWords() {
+            const custom = loadCustomWords();
+            const existingWords = new Set(vocabulary.map(v => v.word.toLowerCase()));
+            const baseLen = vocabulary.length;
+            custom.forEach((item, i) => {
+                if (existingWords.has(item.word.toLowerCase())) return;
+                existingWords.add(item.word.toLowerCase());
+                vocabulary.push({
+                    ...item,
+                    id: item.word.toLowerCase().replace(/[\s\-]+/g, "-") + "-c" + i,
+                    target: item.word.replace(/-/g, "").toUpperCase()
+                });
+            });
+        }
+
+        let _importParsed = null;
+
+        function parseWordLine(line) {
+            line = line.trim();
+            if (!line || line.startsWith('#')) return null;
+            let parts;
+            if (line.includes('\t'))      parts = line.split('\t');
+            else if (line.includes(','))  parts = line.split(',');
+            else if (line.includes('='))  parts = line.split('=');
+            else { const m = line.match(/^([a-zA-Z]+)\s+(.+)$/); parts = m ? [m[1],m[2]] : [line]; }
+            parts = parts.map(p => p.trim());
+            const word = parts[0] || '';
+            if (!word) return null;
+            if (!/^[a-zA-Z][a-zA-Z\-]*[a-zA-Z]$|^[a-zA-Z]$/.test(word)) return { error: true, reason: '"' + word + '" 含非英文字母' };
+            return { word: word.toLowerCase(), zh: parts[1] || '（待填）', category: parts[2] || 'custom' };
+        }
+
+        function parseWordInput(text) {
+            const valid = [], errors = [];
+            text.split('\n').forEach((line, i) => {
+                const r = parseWordLine(line);
+                if (r === null) return;
+                if (r.error) errors.push({ lineNum: i + 1, reason: r.reason });
+                else valid.push(r);
+            });
+            return { valid, errors };
+        }
+
+        function renderImportPreview(parsed) {
+            const el = document.getElementById('import-preview');
+            const btn = document.getElementById('import-confirm-btn');
+            if (!parsed || (!parsed.valid.length && !parsed.errors.length)) {
+                el.style.display = 'none'; btn.disabled = true; return;
+            }
+            const { valid, errors } = parsed;
+            let html = '<div class="preview-stats"><span class="preview-ok">✅ ' + valid.length + ' 個單字</span>';
+            if (errors.length) html += '<span class="preview-err-count">❌ ' + errors.length + ' 行錯誤</span>';
+            html += '</div><div class="preview-words">';
+            valid.slice(0, 5).forEach(w => { html += w.word + ' → ' + w.zh + '<br>'; });
+            if (valid.length > 5) html += '…還有 ' + (valid.length - 5) + ' 個';
+            html += '</div>';
+            if (errors.length) {
+                html += '<div class="preview-errors">';
+                errors.slice(0, 3).forEach(e => { html += '第 ' + e.lineNum + ' 行：' + e.reason + '<br>'; });
+                if (errors.length > 3) html += '…還有 ' + (errors.length - 3) + ' 個錯誤';
+                html += '</div>';
+            }
+            el.innerHTML = html; el.style.display = 'block';
+            btn.disabled = valid.length === 0;
+        }
+
+        let _importDebounce = null;
+        function onImportTextChange() {
+            clearTimeout(_importDebounce);
+            _importDebounce = setTimeout(() => {
+                const text = document.getElementById('import-text').value.trim();
+                if (!text) { _importParsed = null; renderImportPreview(null); return; }
+                _importParsed = parseWordInput(text);
+                renderImportPreview(_importParsed);
+            }, 280);
+        }
+
+        function readFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('import-text').value = e.target.result;
+                _importParsed = parseWordInput(e.target.result);
+                renderImportPreview(_importParsed);
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+        function handleFileSelect(e) { readFile(e.target.files[0]); }
+        function handleDropFile(e) {
+            e.preventDefault();
+            document.getElementById('drop-zone').classList.remove('drag-over');
+            readFile(e.dataTransfer.files[0]);
+        }
+
+        function confirmImport() {
+            if (!_importParsed || !_importParsed.valid.length) return;
+            localStorage.setItem(CUSTOM_WORDS_KEY, JSON.stringify(_importParsed.valid));
+            const keep = vocabulary.filter(v => !v.id.includes('-c'));
+            vocabulary.length = 0; keep.forEach(v => vocabulary.push(v));
+            mergeCustomWords();
+            const st = document.getElementById('import-status');
+            st.textContent = '✅ 已匯入 ' + _importParsed.valid.length + ' 個，共 ' + vocabulary.length + ' 個';
+            st.style.color = '#27ae60';
+            _importParsed = null;
+            setTimeout(closeImportDialog, 1400);
+        }
+
+        function openImportDialog() {
+            const ta = document.getElementById('import-text');
+            const existing = loadCustomWords();
+            if (existing.length > 0) {
+                ta.value = existing.map(w => w.word + ',' + w.zh + (w.category && w.category !== 'custom' ? ',' + w.category : '')).join('\n');
+                _importParsed = parseWordInput(ta.value);
+                renderImportPreview(_importParsed);
+            } else {
+                ta.value = '';
+                _importParsed = null;
+                renderImportPreview(null);
+            }
+            document.getElementById('import-status').textContent = '';
+            document.getElementById('import-dialog').classList.remove('hidden');
+        }
+
+        function closeImportDialog() {
+            document.getElementById('import-dialog').classList.add('hidden');
+        }
+
+        function loadVocabPreset(key) {
+            const preset = VOCAB_PRESETS[key];
+            if (!preset) return;
+            const text = preset.map(w => w.word + ',' + w.zh).join('\n');
+            const ta = document.getElementById('import-text');
+            ta.value = text;
+            _importParsed = parseWordInput(text);
+            renderImportPreview(_importParsed);
+            document.getElementById('import-status').textContent = `已載入 ${preset.length} 個 ${key.toUpperCase().replace('+', ' + ')} 單字，按確認匯入套用。`;
+            document.getElementById('import-confirm-btn').disabled = false;
+        }
+
+        function clearImportedWords() {
+            localStorage.removeItem(CUSTOM_WORDS_KEY);
+            const keep = vocabulary.filter(v => !v.id.includes('-c'));
+            vocabulary.length = 0;
+            keep.forEach(v => vocabulary.push(v));
+            document.getElementById('import-text').value = '';
+            document.getElementById('import-status').textContent = 'Cleared. Total: ' + vocabulary.length;
+            document.getElementById('import-status').style.color = '#e67e22';
+        }
+
+        mergeCustomWords();
+
+        const boxColors = ["#ff9ff3", "#ff6b6b", "#48dbfb", "#1dd1a1", "#5f27cd"];
+
+        // --- 易錯干擾字母系統 ---
+        // 母音池：母音位置一律以其他母音為優先干擾
+        const VOWELS = new Set(['A','E','I','O','U']);
+
+        // 形似字母：視覺上容易看錯的字母對
+        const SHAPE_CONFUSABLES = {
+            'A':['H','R','V','N'],  'B':['D','P','R','E'],
+            'C':['G','O','Q','S'],  'D':['B','O','P','Q'],
+            'E':['F','L','B','C'],  'F':['E','P','T','L'],
+            'G':['C','O','Q','S'],  'H':['M','N','K','A'],
+            'I':['L','J','T','F'],  'J':['I','L','G','Y'],
+            'K':['R','X','H','Y'],  'L':['I','J','T','F'],
+            'M':['N','W','H','R'],  'N':['M','H','U','V'],
+            'O':['D','Q','G','C'],  'P':['B','D','F','R'],
+            'Q':['O','G','C','D'],  'R':['B','P','K','F'],
+            'S':['Z','C','G','N'],  'T':['I','L','F','Y'],
+            'U':['V','W','N','J'],  'V':['U','W','Y','N'],
+            'W':['M','V','U','N'],  'X':['K','Y','Z','H'],
+            'Y':['V','T','J','X'],  'Z':['S','N','X','E']
+        };
+
+        // 音似字母：發音相近容易混淆的字母
+        const PHONETIC_CONFUSABLES = {
+            'C':['K','S'],  'K':['C','Q'],  'Q':['K','C'],
+            'S':['C','Z'],  'Z':['S'],      'J':['G','Y'],
+            'G':['J','K'],  'F':['V','P'],  'V':['F','B'],
+            'B':['P'],      'P':['B','F'],  'D':['T'],
+            'T':['D'],      'N':['M'],      'M':['N'],
+            'W':['V'],      'Y':['J'],      'X':['Z','S']
+        };
+
+        // 字尾位置偏誤（最後 2 個字母）：-er/-or, -tion/-sion, -ent/-ant 等
+        const SUFFIX_BIAS = {
+            'N':['M','L'],  'R':['L','N'],  'E':['A','I'],
+            'Y':['I','E'],  'D':['T'],      'T':['D','S'],
+            'L':['R','N'],  'S':['Z','C'],  'G':['J','K'],
+            'A':['E','O'],  'O':['A','U']
+        };
+
+        // 字首位置偏誤：ESL 學生常見的首字母混淆
+        const PREFIX_BIAS = {
+            'W':['V'],      'P':['B','F'],  'T':['D'],
+            'S':['C'],      'C':['K','S'],  'K':['C'],
+            'B':['P','D'],  'F':['P'],      'G':['J'],
+            'D':['B','T'],  'M':['N'],      'N':['M']
+        };
+
+        // --- 動物系統 ---
+        function bp(geo, col, pos, rot) {
+            const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: col }));
+            if (pos) m.position.set(pos[0], pos[1], pos[2]);
+            if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
+            m.castShadow = true;
+            m.userData = { isBodyPart: true, originalColor: col };
+            return m;
+        }
+
+        const ANIMAL_ORDER = [
+            'bunny','cat','dog','hamster','penguin','sheep',
+            'squirrel','beaver','fox','koala','tiger','deer',
+            'bear','lion','wolf','polarBear','unicorn','dragon',
+            'frog','raccoon'
+        ];
+
+        const ANIMALS = {
+            bunny: { name:'白兔', tier:0, dot:'#fff', ul:'預設角色',
+                check: () => true,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.2,1.2,1.2), 0xffffff, [0,.6,0]),
+                    bp(new THREE.BoxGeometry(1.1,1.1,1.1), 0xffffff, [0,1.7,0]),
+                    bp(new THREE.BoxGeometry(.3,.9,.25), 0xFFB6C1, [-.35,2.4,0]),
+                    bp(new THREE.BoxGeometry(.3,.9,.25), 0xFFB6C1, [.35,2.4,0]),
+                    bp(new THREE.SphereGeometry(.3), 0xffffff, [0,.6,.7]),
+                ]
+            },
+            cat: { name:'貓', tier:1, dot:'#888', ul:'通關 5 個單字',
+                check: (s) => s.totalCleared >= 5,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.1,1,1.3), 0x888888, [0,.5,0]),
+                    bp(new THREE.BoxGeometry(1,.9,.9), 0x888888, [0,1.5,0]),
+                    bp(new THREE.ConeGeometry(.18,.5,4), 0x888888, [-.3,2.15,0]),
+                    bp(new THREE.ConeGeometry(.18,.5,4), 0x888888, [.3,2.15,0]),
+                    bp(new THREE.CylinderGeometry(.06,.04,1.2,8), 0x888888, [0,.5,.8], [-.9,0,0]),
+                    bp(new THREE.BoxGeometry(.12,.08,.1), 0xFFB6C1, [0,1.25,.48]),
+                ]
+            },
+            dog: { name:'小狗', tier:1, dot:'#C4873B', ul:'累積通關 20 個單字',
+                check: (s) => s.totalCleared >= 20,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.2,1.1,1.4), 0xC4873B, [0,.55,0]),
+                    bp(new THREE.BoxGeometry(1,1,1), 0xC4873B, [0,1.6,0]),
+                    bp(new THREE.BoxGeometry(.3,.55,.2), 0x8B5E3C, [-.4,1.95,0], [0,0,.35]),
+                    bp(new THREE.BoxGeometry(.3,.55,.2), 0x8B5E3C, [.4,1.95,0], [0,0,-.35]),
+                    bp(new THREE.SphereGeometry(.12), 0x222222, [0,1.55,.52]),
+                    bp(new THREE.BoxGeometry(.15,.05,.12), 0xff4444, [.08,1.3,.52]),
+                    bp(new THREE.CylinderGeometry(.06,.06,.5,8), 0xC4873B, [0,.8,.8], [-1.2,0,0]),
+                ]
+            },
+            hamster: { name:'倉鼠', tier:2, dot:'#F5DEB3', ul:'同一關 5 次快速且 Stage 3+',
+                check: (s) => s.stageFastCount >= 5 && s.unlockedStage >= 3,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.4,.9,1.1), 0xF5DEB3, [0,.45,0]),
+                    bp(new THREE.SphereGeometry(.6), 0xF5DEB3, [0,1.35,0]),
+                    bp(new THREE.SphereGeometry(.28), 0xFFCCCC, [-.55,1.2,.15]),
+                    bp(new THREE.SphereGeometry(.28), 0xFFCCCC, [.55,1.2,.15]),
+                    bp(new THREE.SphereGeometry(.12), 0xFFB6C1, [-.35,1.75,0]),
+                    bp(new THREE.SphereGeometry(.12), 0xFFB6C1, [.35,1.75,0]),
+                    bp(new THREE.SphereGeometry(.05), 0x333333, [0,1.3,.55]),
+                    bp(new THREE.SphereGeometry(.08), 0xF5DEB3, [0,.25,.55]),
+                ]
+            },
+            penguin: { name:'企鵝', tier:2, dot:'#223', ul:'Stage 5 到達',
+                check: (s) => s.unlockedStage >= 5,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1,1.3,.9), 0x222233, [0,.65,0]),
+                    bp(new THREE.BoxGeometry(.55,.85,.1), 0xffffff, [0,.65,.46]),
+                    bp(new THREE.SphereGeometry(.5), 0x222233, [0,1.65,0]),
+                    bp(new THREE.ConeGeometry(.08,.2,8), 0xFF8C00, [0,1.5,.5], [-Math.PI/2,0,0]),
+                    bp(new THREE.BoxGeometry(.3,.06,.3), 0xFF8C00, [-.2,.03,.1]),
+                    bp(new THREE.BoxGeometry(.3,.06,.3), 0xFF8C00, [.2,.03,.1]),
+                    bp(new THREE.BoxGeometry(.1,.55,.25), 0x222233, [-.58,.7,0], [0,0,.2]),
+                    bp(new THREE.BoxGeometry(.1,.55,.25), 0x222233, [.58,.7,0], [0,0,-.2]),
+                ]
+            },
+            sheep: { name:'綿羊', tier:2, dot:'#eee', ul:'連續 25 個字母無錯',
+                check: (s) => s.bestConsecutiveLetters >= 25,
+                build: () => {
+                    const p = [];
+                    p.push(bp(new THREE.BoxGeometry(.7,.7,.7), 0x555555, [0,1.5,.1]));
+                    p.push(bp(new THREE.BoxGeometry(.2,.12,.1), 0x555555, [-.35,1.75,.1]));
+                    p.push(bp(new THREE.BoxGeometry(.2,.12,.1), 0x555555, [.35,1.75,.1]));
+                    [[-.35,.25,-.25],[.35,.25,-.25],[-.35,.25,.25],[.35,.25,.25]].forEach(
+                        l => p.push(bp(new THREE.BoxGeometry(.2,.5,.2), 0x555555, l))
+                    );
+                    [[0,.8,0],[.35,.85,0],[-.35,.85,0],[0,.85,.3],[0,.85,-.3],
+                     [.25,1.05,.15],[-.25,1.05,.15],[.25,1.05,-.15],[-.25,1.05,-.15],
+                     [0,1.15,0],[.2,.7,.2],[-.2,.7,.2]].forEach(
+                        w => p.push(bp(new THREE.SphereGeometry(.28), 0xffffff, w))
+                    );
+                    return p;
+                }
+            },
+            squirrel: { name:'松鼠', tier:3, dot:'#A0522D', ul:'累積 60 字通關',
+                check: (s) => s.totalCleared >= 60,
+                build: () => [
+                    bp(new THREE.BoxGeometry(.9,.9,1), 0xA0522D, [0,.45,0]),
+                    bp(new THREE.BoxGeometry(.8,.85,.8), 0xA0522D, [0,1.4,0]),
+                    bp(new THREE.ConeGeometry(.15,.35,4), 0xA0522D, [-.3,2,0]),
+                    bp(new THREE.ConeGeometry(.15,.35,4), 0xA0522D, [.3,2,0]),
+                    bp(new THREE.SphereGeometry(.5), 0xC87533, [0,1.3,.7]),
+                    bp(new THREE.SphereGeometry(.4), 0xC87533, [0,1.8,.6]),
+                    bp(new THREE.SphereGeometry(.3), 0xC87533, [0,2.2,.4]),
+                    bp(new THREE.BoxGeometry(.55,.1,.1), 0xffffff, [0,.5,.52]),
+                ]
+            },
+            beaver: { name:'河貍', tier:3, dot:'#6B4226', ul:'完成 3 次弱字複習',
+                check: (s) => s.reviewSessions >= 3,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.1,1,1.2), 0x6B4226, [0,.5,0]),
+                    bp(new THREE.BoxGeometry(.9,.85,.85), 0x6B4226, [0,1.45,0]),
+                    bp(new THREE.SphereGeometry(.12), 0x6B4226, [-.3,1.85,0]),
+                    bp(new THREE.SphereGeometry(.12), 0x6B4226, [.3,1.85,0]),
+                    bp(new THREE.BoxGeometry(.8,.12,.5), 0x4A2F1A, [0,.25,.85]),
+                    bp(new THREE.BoxGeometry(.1,.18,.06), 0xffffff, [-.08,1.15,.44]),
+                    bp(new THREE.BoxGeometry(.1,.18,.06), 0xffffff, [.08,1.15,.44]),
+                    bp(new THREE.SphereGeometry(.08), 0x333333, [0,1.4,.44]),
+                ]
+            },
+            fox: { name:'狐狸', tier:3, dot:'#E87A22', ul:'Stage 7 到達',
+                check: (s) => s.unlockedStage >= 7,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1,1,1.3), 0xE87A22, [0,.5,0]),
+                    bp(new THREE.BoxGeometry(.4,.6,.1), 0xffffff, [0,.5,.66]),
+                    bp(new THREE.BoxGeometry(.95,.95,.9), 0xE87A22, [0,1.5,0]),
+                    bp(new THREE.BoxGeometry(.35,.15,.2), 0xffffff, [0,1.2,.46]),
+                    bp(new THREE.ConeGeometry(.2,.55,4), 0xE87A22, [-.3,2.2,0]),
+                    bp(new THREE.ConeGeometry(.2,.55,4), 0xE87A22, [.3,2.2,0]),
+                    bp(new THREE.SphereGeometry(.35), 0xE87A22, [0,.7,.8]),
+                    bp(new THREE.SphereGeometry(.25), 0xffffff, [0,.7,1.1]),
+                    bp(new THREE.SphereGeometry(.05), 0x222222, [0,1.5,.48]),
+                ]
+            },
+            koala: { name:'無尾熊', tier:4, dot:'#808080', ul:'Stage 7+ 零超時且有快速',
+                check: (s,st) => st >= 7 && s.stageTimeoutCount === 0 && s.stageFastCount > 0,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.1,1,1), 0x808080, [0,.5,0]),
+                    bp(new THREE.SphereGeometry(.65), 0x808080, [0,1.5,0]),
+                    bp(new THREE.SphereGeometry(.35), 0x999999, [-.55,1.6,0]),
+                    bp(new THREE.SphereGeometry(.35), 0x999999, [.55,1.6,0]),
+                    bp(new THREE.SphereGeometry(.2), 0xFFCCCC, [-.4,1.6,0]),
+                    bp(new THREE.SphereGeometry(.2), 0xFFCCCC, [.4,1.6,0]),
+                    bp(new THREE.SphereGeometry(.15), 0x333333, [0,1.35,.6]),
+                ]
+            },
+            tiger: { name:'老虎', tier:4, dot:'#E8920C', ul:'Boss 關通關 2 次',
+                check: (s) => s.bossClears >= 2,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.2,1.1,1.3), 0xE8920C, [0,.55,0]),
+                    bp(new THREE.BoxGeometry(.3,.5,1.3), 0x222222, [0,.55,0]),
+                    bp(new THREE.BoxGeometry(1.05,1,.95), 0xE8920C, [0,1.6,0]),
+                    bp(new THREE.BoxGeometry(.3,.15,.95), 0x222222, [0,1.8,0]),
+                    bp(new THREE.ConeGeometry(.18,.35,4), 0xE8920C, [-.35,2.3,0]),
+                    bp(new THREE.ConeGeometry(.18,.35,4), 0xE8920C, [.35,2.3,0]),
+                    bp(new THREE.BoxGeometry(.35,.2,.1), 0xffffff, [0,1.3,.5]),
+                    bp(new THREE.CylinderGeometry(.06,.04,1,8), 0xE8920C, [0,.6,.8], [-.8,0,0]),
+                ]
+            },
+            deer: { name:'梅花鹿', tier:4, dot:'#CD853F', ul:'80 字且掌握度 >65',
+                check: (s) => s.totalCleared >= 80 && s.avgMastery > 65,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1,1,1.3), 0xCD853F, [0,.5,0]),
+                    bp(new THREE.BoxGeometry(.85,.9,.85), 0xCD853F, [0,1.5,0]),
+                    bp(new THREE.BoxGeometry(.25,.35,.15), 0xCD853F, [-.3,2.1,0]),
+                    bp(new THREE.BoxGeometry(.25,.35,.15), 0xCD853F, [.3,2.1,0]),
+                    bp(new THREE.CylinderGeometry(.04,.04,.5,6), 0x8B6914, [-.2,2.3,0], [0,0,.15]),
+                    bp(new THREE.CylinderGeometry(.03,.03,.25,6), 0x8B6914, [-.3,2.55,0], [0,0,.5]),
+                    bp(new THREE.CylinderGeometry(.04,.04,.5,6), 0x8B6914, [.2,2.3,0], [0,0,-.15]),
+                    bp(new THREE.CylinderGeometry(.03,.03,.25,6), 0x8B6914, [.3,2.55,0], [0,0,-.5]),
+                    bp(new THREE.SphereGeometry(.08), 0xffffff, [-.3,.7,.35]),
+                    bp(new THREE.SphereGeometry(.08), 0xffffff, [.2,.8,.4]),
+                    bp(new THREE.SphereGeometry(.08), 0xffffff, [.1,.5,-.3]),
+                    bp(new THREE.SphereGeometry(.05), 0x222222, [0,1.5,.44]),
+                ]
+            },
+            bear: { name:'棕熊', tier:5, dot:'#654321', ul:'5 次 Boss 通關',
+                check: (s) => s.bossClears >= 5,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.4,1.3,1.4), 0x654321, [0,.65,0]),
+                    bp(new THREE.BoxGeometry(1.1,1,1), 0x654321, [0,1.7,0]),
+                    bp(new THREE.SphereGeometry(.2), 0x654321, [-.4,2.25,0]),
+                    bp(new THREE.SphereGeometry(.2), 0x654321, [.4,2.25,0]),
+                    bp(new THREE.BoxGeometry(.3,.2,.1), 0xCD9B6B, [0,1.35,.52]),
+                    bp(new THREE.SphereGeometry(.08), 0x222222, [0,1.5,.52]),
+                    bp(new THREE.SphereGeometry(.15), 0x654321, [0,.5,.75]),
+                ]
+            },
+            lion: { name:'獅子', tier:5, dot:'#DAA520', ul:'累積 150 字通關',
+                check: (s) => s.totalCleared >= 150,
+                build: () => {
+                    const p = [];
+                    p.push(bp(new THREE.BoxGeometry(1.3,1.2,1.3), 0xDAA520, [0,.6,0]));
+                    p.push(bp(new THREE.BoxGeometry(1,1,1), 0xDAA520, [0,1.65,0]));
+                    for (let i = 0; i < 8; i++) {
+                        const a = (i/8)*Math.PI*2;
+                        p.push(bp(new THREE.ConeGeometry(.15,.4,6), 0xB8860B,
+                            [Math.cos(a)*.55, 1.65+Math.abs(Math.sin(a))*.15, Math.sin(a)*.55]));
+                    }
+                    p.push(bp(new THREE.SphereGeometry(.15), 0xDAA520, [-.35,2.25,0]));
+                    p.push(bp(new THREE.SphereGeometry(.15), 0xDAA520, [.35,2.25,0]));
+                    p.push(bp(new THREE.SphereGeometry(.07), 0x222222, [0,1.55,.52]));
+                    p.push(bp(new THREE.CylinderGeometry(.05,.04,.8,8), 0xDAA520, [0,.5,.8], [-.8,0,0]));
+                    p.push(bp(new THREE.SphereGeometry(.12), 0xB8860B, [0,.7,1.2]));
+                    return p;
+                }
+            },
+            wolf: { name:'狼', tier:5, dot:'#696969', ul:'Perfect Recall x10',
+                check: (s) => s.totalPerfectRecalls >= 10,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1,1,1.4), 0x696969, [0,.5,0]),
+                    bp(new THREE.BoxGeometry(.85,.85,1.05), 0x696969, [0,1.45,.1]),
+                    bp(new THREE.ConeGeometry(.18,.5,4), 0x696969, [-.28,2.15,.1]),
+                    bp(new THREE.ConeGeometry(.18,.5,4), 0x696969, [.28,2.15,.1]),
+                    bp(new THREE.BoxGeometry(.25,.2,.2), 0x444444, [0,1.2,.55]),
+                    bp(new THREE.SphereGeometry(.06), 0x111111, [0,1.3,.65]),
+                    bp(new THREE.SphereGeometry(.3), 0x696969, [0,.7,.8]),
+                    bp(new THREE.SphereGeometry(.2), 0x888888, [0,.9,1]),
+                ]
+            },
+            polarBear: { name:'北極熊', tier:5, dot:'#E8E8FF', ul:'一關零錯誤且 3+ 次快速',
+                check: (s) => s.stageWrongCount === 0 && s.stageTimeoutCount === 0 && s.stageFastCount >= 3,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.4,1.3,1.4), 0xF0F0F0, [0,.65,0]),
+                    bp(new THREE.BoxGeometry(1.1,1,1), 0xF0F0F0, [0,1.7,0]),
+                    bp(new THREE.SphereGeometry(.18), 0xF0F0F0, [-.4,2.25,0]),
+                    bp(new THREE.SphereGeometry(.18), 0xF0F0F0, [.4,2.25,0]),
+                    bp(new THREE.SphereGeometry(.1), 0x222222, [0,1.55,.52]),
+                    bp(new THREE.BoxGeometry(.06,.06,.06), 0x4488ff, [-.18,1.7,.5]),
+                    bp(new THREE.BoxGeometry(.06,.06,.06), 0x4488ff, [.18,1.7,.5]),
+                    bp(new THREE.SphereGeometry(.12), 0xF0F0F0, [0,.5,.75]),
+                ]
+            },
+            unicorn: { name:'獨角獸', tier:6, dot:'#FFE4E1', ul:'Perfect Recall x25',
+                check: (s) => s.totalPerfectRecalls >= 25,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.1,1.1,1.2), 0xFFE4E1, [0,.55,0]),
+                    bp(new THREE.BoxGeometry(1,1,.95), 0xFFE4E1, [0,1.6,0]),
+                    bp(new THREE.ConeGeometry(.08,.6,6), 0xFFD700, [0,2.4,.1]),
+                    bp(new THREE.ConeGeometry(.15,.4,4), 0xFFE4E1, [-.3,2.15,0]),
+                    bp(new THREE.ConeGeometry(.15,.4,4), 0xFFE4E1, [.3,2.15,0]),
+                    bp(new THREE.SphereGeometry(.3), 0xDDA0DD, [0,.6,.7]),
+                    bp(new THREE.SphereGeometry(.2), 0x87CEEB, [0,.8,.9]),
+                    bp(new THREE.SphereGeometry(.15), 0xFFB6C1, [0,1,1]),
+                ]
+            },
+            dragon: { name:'龍', tier:6, dot:'#228B22', ul:'Stage 10 通關',
+                check: (s) => s.unlockedStage >= 10,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.2,1.1,1.3), 0x228B22, [0,.55,0]),
+                    bp(new THREE.BoxGeometry(1,.95,.95), 0x228B22, [0,1.55,0]),
+                    bp(new THREE.ConeGeometry(.12,.35,4), 0x228B22, [-.3,2.2,0]),
+                    bp(new THREE.ConeGeometry(.12,.35,4), 0x228B22, [.3,2.2,0]),
+                    bp(new THREE.BoxGeometry(.05,.6,.7), 0x2E8B2E, [-.7,1,0], [0,0,.3]),
+                    bp(new THREE.BoxGeometry(.05,.6,.7), 0x2E8B2E, [.7,1,0], [0,0,-.3]),
+                    bp(new THREE.BoxGeometry(.3,.15,.1), 0xFFD700, [0,.55,.66]),
+                    bp(new THREE.CylinderGeometry(.08,.03,1,8), 0x228B22, [0,.4,.9], [-.6,0,0]),
+                    bp(new THREE.ConeGeometry(.12,.25,4), 0xff4444, [0,.5,1.35], [-1.2,0,0]),
+                ]
+            },
+            frog: { name:'青蛙', tier:'hidden', dot:'#32CD32', ul:'???',
+                check: () => false,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.3,.7,1), 0x32CD32, [0,.35,0]),
+                    bp(new THREE.BoxGeometry(1.1,.6,.8), 0x32CD32, [0,1.1,0]),
+                    bp(new THREE.SphereGeometry(.28), 0x32CD32, [-.35,1.6,.1]),
+                    bp(new THREE.SphereGeometry(.28), 0x32CD32, [.35,1.6,.1]),
+                    bp(new THREE.SphereGeometry(.12), 0xffffff, [-.35,1.7,.25]),
+                    bp(new THREE.SphereGeometry(.12), 0xffffff, [.35,1.7,.25]),
+                    bp(new THREE.SphereGeometry(.05), 0x111111, [-.35,1.72,.35]),
+                    bp(new THREE.SphereGeometry(.05), 0x111111, [.35,1.72,.35]),
+                    bp(new THREE.BoxGeometry(.6,.1,.3), 0x228B22, [0,.85,.4]),
+                ]
+            },
+            raccoon: { name:'浣熊', tier:'hidden', dot:'#777', ul:'全部改正後清關',
+                check: (s) => s.stageAllCorrected,
+                build: () => [
+                    bp(new THREE.BoxGeometry(1.1,1,1.2), 0x808080, [0,.5,0]),
+                    bp(new THREE.BoxGeometry(.95,.9,.9), 0x808080, [0,1.5,0]),
+                    bp(new THREE.BoxGeometry(.8,.2,.1), 0x222222, [0,1.6,.46]),
+                    bp(new THREE.BoxGeometry(.08,.08,.06), 0xffffff, [-.2,1.62,.5]),
+                    bp(new THREE.BoxGeometry(.08,.08,.06), 0xffffff, [.2,1.62,.5]),
+                    bp(new THREE.ConeGeometry(.15,.35,4), 0x808080, [-.32,2.1,0]),
+                    bp(new THREE.ConeGeometry(.15,.35,4), 0x808080, [.32,2.1,0]),
+                    bp(new THREE.SphereGeometry(.06), 0x222222, [0,1.4,.48]),
+                    bp(new THREE.CylinderGeometry(.12,.08,.3,8), 0x808080, [0,.5,.7], [-.7,0,0]),
+                    bp(new THREE.CylinderGeometry(.1,.12,.2,8), 0x222222, [0,.55,.85], [-.7,0,0]),
+                    bp(new THREE.CylinderGeometry(.08,.1,.2,8), 0x808080, [0,.6,.98], [-.7,0,0]),
+                ]
+            }
+        };
+
+        // 遊戲狀態機
+        const GAME_STATE = {
+            MENU: 0,
+            PLAYING: 1,
+            TRANSITION: 2, // 每個單字完成後的過場
+            SHOWCASE: 3,   // 通關後的展示模式
+            PAUSED: 4      // 暫停
+        };
+
+        let gameState = {
+            state: GAME_STATE.MENU,
+            mode: "adventure",
+            stageNumber: saveState.unlockedStage || 1,
+            stageMeta: null,
+            levelOrder: [],     
+            currentLevelIndex: 0,
+            wordData: null,
+            currentRound: null,
+            runResults: [],
+            letterIndex: 0,
+            mistakes: 0,
+            roundStartedAt: 0,
+            roundDeadline: 0,
+            firstHitAt: 0,
+            correctHits: 0,
+            wrongHits: 0,
+            score: 0,
+            speed: 0.19,
+            lastSpawnTime: 0,
+            flashTimer: 0,
+            rng: null,
+            mouseX: 0,
+            combo: 0,
+            comboMult: 1,
+            hitStopFrames: 0,
+            consecutiveCorrectLetters: 0,
+            chunkPlan: null,
+            chunkIndex: 0,
+            totalTimerMs: 0,
+            currentWaveId: 0
+        };
+        let _pausedDeadlineRemaining = 0;
+
+        let scene, camera, renderer;
+        let playerGroup, playerBody;
+        let _timerFill, _comboDom, _dangerVignette;
+        let anchors ={ top: null, left: null, right: null, shoulderL: null, shoulderR: null };
+        let targets = [];
+        let particles = [];
+        let lanes = [-5, 0, 5];
+        let _lastFrameMs = performance.now();
+
+        // --- 2. 初始化 ---
+        function init() {
+            _timerFill = document.getElementById('timer-fill');
+            _comboDom  = document.getElementById('combo-display');
+            _dangerVignette = document.getElementById('danger-vignette');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 65);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 7, 15);
+            camera.lookAt(0, 0, -5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(12, 20, 10);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+            scene.add(new THREE.HemisphereLight(0x87CEEB, 0x7a5c3a, 0.35));
+
+            createGround();
+            createPlayer(saveState.currentAnimal);
+            createBackgroundProps();
+
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('mousemove', handleInput);
+            document.addEventListener('touchmove', handleInput, { passive: false });
+            document.addEventListener('touchstart', handleInput, { passive: false });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (gameState.state === GAME_STATE.PAUSED) resumeGame();
+                    else pauseGame();
+                }
+            });
+
+            // Fix 4: clear the initial "準備中..." placeholder so screen readers
+            // don't read stale text when the main menu is active.
+            const _ch = document.getElementById('chinese-hint');
+            if (_ch) _ch.textContent = '';
+            renderAnimalSelector();
+            updateStartStats();
+
+            // 青蛙彩蛋：開始畫面連點 10 次
+            let _frogClicks = 0, _frogTimer = 0;
+            renderer.domElement.addEventListener('click', () => {
+                if (gameState.state !== GAME_STATE.MENU) return;
+                _frogClicks++;
+                clearTimeout(_frogTimer);
+                _frogTimer = setTimeout(() => { _frogClicks = 0; }, 3000);
+                if (_frogClicks >= 10 && !saveState.unlockedAnimals.includes('frog')) {
+                    saveState.unlockedAnimals.push('frog');
+                    persistSave();
+                    showUnlockToast('frog');
+                    renderAnimalSelector();
+                    _frogClicks = 0;
+                }
+            });
+
+            animate();
+        }
+
+        function createGround() {
+            const geo = new THREE.PlaneGeometry(120, 300);
+            const mat = new THREE.MeshPhongMaterial({ color: 0x81ecec, flatShading: true });
+            const ground = new THREE.Mesh(geo, mat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.z = -100;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            const lineGeo = new THREE.PlaneGeometry(0.2, 300);
+            const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.4, transparent: true });
+            [-2.5, 2.5].forEach(x => {
+                const line = new THREE.Mesh(lineGeo, lineMat);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(x, 0.02, -100);
+                scene.add(line);
+            });
+        }
+
+        function createBackgroundProps() {
+            // Trees flanking the track
+            const treePos = [
+                [-9,-18], [-11,-30], [-10,-44], [-12,-56],
+                [9,-18],  [11,-30],  [10,-44], [12,-56]
+            ];
+            treePos.forEach(([x, z]) => {
+                const s = 0.85 + Math.abs(z) * 0.005;
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.18*s, 0.24*s, 2*s, 6),
+                    new THREE.MeshLambertMaterial({ color: 0x7B5B3A })
+                );
+                trunk.position.set(x, s, z);
+                scene.add(trunk);
+                [[3.2*s, 2.2*s], [4.4*s, 1.7*s], [5.3*s, 1.2*s]].forEach(([y, r]) => {
+                    const leaf = new THREE.Mesh(
+                        new THREE.ConeGeometry(r, 1.6*s, 7),
+                        new THREE.MeshLambertMaterial({ color: x < 0 ? 0x2d7a27 : 0x3a8f32 })
+                    );
+                    leaf.position.set(x, y, z);
+                    scene.add(leaf);
+                });
+            });
+
+            // Background mountains
+            [[-22,-76,10],[0,-86,13],[22,-76,10],[-12,-80,8],[14,-79,9]].forEach(([x,z,sz]) => {
+                const mt = new THREE.Mesh(
+                    new THREE.ConeGeometry(sz, sz*1.4, 5),
+                    new THREE.MeshLambertMaterial({ color: 0x546e7a })
+                );
+                mt.position.set(x, sz*0.7, z);
+                scene.add(mt);
+            });
+
+            // Cloud puffs high in sky
+            [[-18,10,-32],[16,12,-45],[-6,14,-58],[12,10,-22]].forEach(([x,y,z]) => {
+                [[0,0,0],[1.1,0.3,0],[-0.9,0.2,0],[0.4,0.65,0],[-0.5,0.45,0]].forEach(([dx,dy,dz]) => {
+                    const c = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.7+Math.random()*0.4, 7, 5),
+                        new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.85})
+                    );
+                    c.position.set(x+dx, y+dy, z+dz);
+                    scene.add(c);
+                });
+            });
+        }
+
+        function createPlayer(animalKey) {
+            animalKey = animalKey || saveState.currentAnimal || 'bunny';
+            playerGroup = new THREE.Group();
+            playerBody = new THREE.Group();
+
+            // 掛載點（與動物無關，固定建立一次）
+            anchors.top = new THREE.Group(); anchors.top.position.set(0, 2.4, 0);
+            anchors.left = new THREE.Group(); anchors.left.position.set(-0.9, 0.8, 0);
+            anchors.right = new THREE.Group(); anchors.right.position.set(0.9, 0.8, 0);
+            anchors.shoulderL = new THREE.Group(); anchors.shoulderL.position.set(-0.6, 1.25, 0);
+            anchors.shoulderR = new THREE.Group(); anchors.shoulderR.position.set(0.6, 1.25, 0);
+            playerBody.add(anchors.top, anchors.left, anchors.right, anchors.shoulderL, anchors.shoulderR);
+
+            // 建構動物身體
+            const animal = ANIMALS[animalKey] || ANIMALS.bunny;
+            animal.build().forEach(mesh => playerBody.add(mesh));
+
+            playerGroup.add(playerBody);
+            scene.add(playerGroup);
+        }
+
+        function switchAnimal(animalKey) {
+            const animal = ANIMALS[animalKey] || ANIMALS.bunny;
+            // 移除舊身體部件（保留掛載點與道具）
+            const toRemove = [];
+            playerBody.children.forEach(child => {
+                if (child.userData && child.userData.isBodyPart) toRemove.push(child);
+            });
+            toRemove.forEach(child => playerBody.remove(child));
+            // 建構新身體
+            animal.build().forEach(mesh => playerBody.add(mesh));
+        }
+
+        // --- 3. 道具系統 (分類與邏輯) ---
+        
+        // 將道具分類，確保不會戴錯位置
+        const propsDB = [
+            // TOP (頭)
+            { type: 'top', fn: () => { 
+                const g = new THREE.Group(); const m = new THREE.MeshPhongMaterial({color: 0xffd700});
+                g.add(new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 16), m));
+                for(let i=0;i<3;i++) { const s = new THREE.Mesh(new THREE.ConeGeometry(0.08,0.3,8), m); s.position.set(Math.cos(i*2)*0.3, 0.15, Math.sin(i*2)*0.3); g.add(s); }
+                g.rotation.x = -0.2; return g; 
+            }}, // 皇冠
+            { type: 'top', fn: () => { 
+                const g = new THREE.Group();
+                g.add(new THREE.Mesh(new THREE.SphereGeometry(0.35,16,8, 0, Math.PI*2, 0, Math.PI/2), new THREE.MeshLambertMaterial({color:0x3498db})));
+                const prop = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.1), new THREE.MeshBasicMaterial({color:0xe74c3c}));
+                prop.position.y = 0.4; g.add(prop); return g;
+            }}, // 螺旋槳帽
+            { type: 'top', fn: () => { 
+                const t = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.04, 6, 20), new THREE.MeshBasicMaterial({color:0xffffff}));
+                t.rotation.x = Math.PI/2; t.position.y = 0.4; return t;
+            }}, // 天使環
+            { type: 'top', fn: () => { 
+                const g = new THREE.Group();
+                g.add(new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshLambertMaterial({color:0xff4757})));
+                const l = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.05,0.1), new THREE.MeshBasicMaterial({color:0x2ecc71})); l.position.y=0.25; g.add(l);
+                return g;
+            }}, // 蘋果
+
+            // HAND (手: left/right 通用)
+            { type: 'hand', fn: () => { 
+                const s = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.05, 8), new THREE.MeshPhongMaterial({color:0xe74c3c}));
+                s.rotation.x = Math.PI/2; s.rotation.z = Math.PI/2; return s;
+            }}, // 盾牌
+            { type: 'hand', fn: () => { 
+                const g = new THREE.Group();
+                g.add(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.05), new THREE.MeshPhongMaterial({color:0xbdc3c7})));
+                const h = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.3), new THREE.MeshLambertMaterial({color:0x34495e})); h.position.y = -0.5; g.add(h);
+                g.rotation.z = -0.4; return g;
+            }}, // 寶劍
+            { type: 'hand', fn: () => { 
+                const g = new THREE.Group();
+                const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.7), new THREE.MeshBasicMaterial({color:0xffffff}));
+                const heart = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2,0), new THREE.MeshBasicMaterial({color:0xff6b81}));
+                heart.position.y = 0.35; g.add(stick); g.add(heart); return g;
+            }}, // 愛心杖
+            { type: 'hand', fn: () => {
+                 return new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.1), new THREE.MeshLambertMaterial({color:0x9b59b6}));
+            }}, // 魔法書
+            { type: 'hand', fn: () => {
+                const g = new THREE.Group();
+                g.add(new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshPhongMaterial({color:0xfeca57, shininess:80})));
+                const l = new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.6), new THREE.MeshBasicMaterial({color:0xffffff})); l.position.y=-0.5; g.add(l);
+                return g;
+            }}, // 氣球
+
+            // SHOULDER (肩: shoulderL/shoulderR 通用)
+            { type: 'shoulder', fn: () => { 
+                const g = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.3,0.15), new THREE.MeshBasicMaterial({color:0x2ecc71}));
+                const beak = new THREE.Mesh(new THREE.ConeGeometry(0.05,0.1,8), new THREE.MeshBasicMaterial({color:0xf1c40f}));
+                beak.rotation.x = -Math.PI/2; beak.position.set(0, 0.1, 0.1);
+                g.add(body); g.add(beak); return g;
+            }}, // 鸚鵡
+            { type: 'shoulder', fn: () => { 
+                const c = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.1, 8), new THREE.MeshPhongMaterial({color:0xf1c40f, shininess:100}));
+                return c;
+            }}, // 肩章
+            { type: 'shoulder', fn: () => { 
+                const g = new THREE.Group();
+                const s = new THREE.Mesh(new THREE.SphereGeometry(0.15), new THREE.MeshLambertMaterial({color:0x95a5a6}));
+                const a = new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.3), new THREE.MeshBasicMaterial({color:0xff0000}));
+                a.position.y = 0.15; g.add(s); g.add(a); return g;
+            }}, // 衛星
+             { type: 'shoulder', fn: () => { 
+                const g = new THREE.Group();
+                const f = new THREE.Mesh(new THREE.ConeGeometry(0.1,0.2,8,1,true), new THREE.MeshBasicMaterial({color:0xff9ff3}));
+                f.position.y = 0.1; f.rotation.x = Math.PI;
+                const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.2), new THREE.MeshBasicMaterial({color:0x2ecc71}));
+                g.add(f); g.add(stem); return g;
+            }}, // 小花
+            { type: 'shoulder', fn: () => {
+                return new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.1, 0.25), new THREE.MeshStandardMaterial({color:0x34495e}));
+            }} // 對講機
+        ];
+
+        // 智慧分配道具邏輯
+        function grantSmartProp() {
+            // 1. 檢查所有欄位狀態
+            const emptySlots = [];
+            for (let key in anchors) {
+                if (anchors[key].children.length === 0) {
+                    emptySlots.push(key);
+                }
+            }
+
+            let targetSlot;
+            
+            // 2. 決定目標欄位 (優先填補空缺)
+            if (emptySlots.length > 0) {
+                // 有空位，隨機選一個空位
+                targetSlot = emptySlots[Math.floor(Math.random() * emptySlots.length)];
+            } else {
+                // 滿了，隨機選一個覆蓋 (增加重複遊玩樂趣)
+                const keys = Object.keys(anchors);
+                targetSlot = keys[Math.floor(Math.random() * keys.length)];
+            }
+
+            // 3. 根據欄位類型篩選合適的道具
+            // 對應關係映射
+            let neededType;
+            if (targetSlot === 'top') neededType = 'top';
+            else if (targetSlot === 'left' || targetSlot === 'right') neededType = 'hand';
+            else neededType = 'shoulder';
+
+            const candidates = propsDB.filter(p => p.type === neededType);
+            const selectedProp = candidates[Math.floor(Math.random() * candidates.length)];
+
+            // 4. 裝備道具
+            const anchor = anchors[targetSlot];
+            // 清空舊的
+            while(anchor.children.length > 0) anchor.remove(anchor.children[0]);
+            
+            anchor.add(selectedProp.fn());
+            
+            createParticles(playerGroup.position.clone().add(new THREE.Vector3(0,3,0)), "#ffffff");
+        }
+
+        function clearAllProps() {
+            for(let k in anchors) {
+                while(anchors[k].children.length > 0) anchors[k].remove(anchors[k].children[0]);
+            }
+        }
+
+        // --- 4. 貼圖生成 ---
+        function _hexShift(hex, n) {
+            let c = parseInt(hex.replace('#',''), 16);
+            const r = Math.min(255, Math.max(0, ((c>>16)&0xff)+n));
+            const g = Math.min(255, Math.max(0, ((c>>8) &0xff)+n));
+            const b = Math.min(255, Math.max(0,  (c     &0xff)+n));
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function createBoxWithTexture(letter, color) {
+            // Scale canvas width and box width with letter count for readability
+            const n = letter.length;
+            const cW = 256 + Math.max(0, n - 1) * 148; // 256 / 404 / 552 / 700…
+            const cH = 256;
+            const boxW = 1.3 + Math.max(0, n - 1) * 0.75; // 1.3 / 2.05 / 2.8 / 3.55…
+
+            const canvas = document.createElement('canvas');
+            canvas.width = cW;
+            canvas.height = cH;
+            const ctx = canvas.getContext('2d');
+
+            // Gradient background
+            const grad = ctx.createLinearGradient(0, 0, 0, cH);
+            grad.addColorStop(0, _hexShift(color, 45));
+            grad.addColorStop(1, _hexShift(color, -30));
+
+            // Rounded-rect path
+            const r = 30;
+            ctx.beginPath();
+            ctx.moveTo(r, 0); ctx.lineTo(cW-r, 0);
+            ctx.quadraticCurveTo(cW, 0, cW, r);
+            ctx.lineTo(cW, cH-r); ctx.quadraticCurveTo(cW, cH, cW-r, cH);
+            ctx.lineTo(r, cH); ctx.quadraticCurveTo(0, cH, 0, cH-r);
+            ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Inner border
+            ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // Letter with drop shadow — auto-fit: start at 78% of box height, shrink only if text overflows width
+            let fontSize = Math.floor(cH * 0.78);
+            ctx.font = '900 ' + fontSize + 'px Arial Black, Arial';
+            while (fontSize > 24 && ctx.measureText(letter).width > cW * 0.86) {
+                fontSize = Math.floor(fontSize * 0.88);
+                ctx.font = '900 ' + fontSize + 'px Arial Black, Arial';
+            }
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.55)';
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetX = 3;
+            ctx.shadowOffsetY = 3;
+            ctx.fillStyle = 'white';
+            ctx.fillText(letter, cW / 2, cH / 2 + 8);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.MeshLambertMaterial({ map: tex });
+            const geo = new THREE.BoxGeometry(boxW, 1.3, 1.3);
+            const box = new THREE.Mesh(geo, mat);
+
+            // Multi-letter boxes approach 15% slower so players can read them
+            box.userData = {
+                active: true,
+                letter: letter,
+                speedMult: n === 1 ? 1.0 : Math.max(0.75, 1.0 - (n - 1) * 0.10),
+                boxW: boxW,
+                waveId: -1  // set by spawnWave()
+            };
+            return box;
+        }
+
+        // --- 5. 遊戲流程控制 ---
+
+        function hashSeed(value) {
+            let hash = 2166136261;
+            for (let i = 0; i < value.length; i++) {
+                hash ^= value.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            return hash >>> 0;
+        }
+
+        function createSeededRng(seed) {
+            let value = seed >>> 0;
+            return () => {
+                value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
+                return value / 4294967296;
+            };
+        }
+
+        function loadSave() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+                return {
+                    unlockedStage: Math.max(1, Math.min(10, parsed.unlockedStage || 1)),
+                    progress: parsed.progress || {},
+                    runs: Array.isArray(parsed.runs) ? parsed.runs.slice(-12) : [],
+                    unlockedAnimals: Array.isArray(parsed.unlockedAnimals) ? parsed.unlockedAnimals : ['bunny'],
+                    currentAnimal: parsed.currentAnimal || 'bunny',
+                    stats: parsed.stats || { totalPerfectRecalls: 0, bestConsecutiveLetters: 0, flawlessStages: 0 }
+                };
+            } catch (error) {
+                return { unlockedStage: 1, progress: {}, runs: [], unlockedAnimals: ['bunny'], currentAnimal: 'bunny', stats: { totalPerfectRecalls: 0, bestConsecutiveLetters: 0, flawlessStages: 0 } };
+            }
+        }
+
+        function persistSave() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    unlockedStage: saveState.unlockedStage,
+                    progress: saveState.progress,
+                    runs: saveState.runs.slice(-12),
+                    unlockedAnimals: saveState.unlockedAnimals,
+                    currentAnimal: saveState.currentAnimal,
+                    stats: saveState.stats
+                }));
+            } catch (e) {
+                console.warn("[persistSave] localStorage write failed:", e?.name, "— progress not saved this turn.");
+            }
+        }
+
+        function defaultProgress(wordEntry) {
+            return {
+                word: wordEntry.word,
+                zh: wordEntry.zh,
+                mastery: 0,
+                masteryScore: 0,
+                recallStrength: 0,
+                typingEase: 0,
+                correctCount: 0,
+                wrongCount: 0,
+                seenCount: 0,
+                avgResponseMs: 0,
+                lastSeenAt: 0,
+                nextDueAt: 0,
+                hintLevelUnlocked: 0,
+                correctAfterCorrectionCount: 0,
+                timeoutCount: 0,
+                recentOutcomes: []
+            };
+        }
+
+        function getProgress(wordEntry) {
+            if (!saveState.progress[wordEntry.id]) {
+                saveState.progress[wordEntry.id] = defaultProgress(wordEntry);
+            }
+            const item = saveState.progress[wordEntry.id];
+            item.word = item.word || wordEntry.word;
+            item.zh = item.zh || wordEntry.zh;
+            item.masteryScore = Number.isFinite(item.masteryScore) ? item.masteryScore : (item.mastery || 0);
+            item.mastery = item.masteryScore;
+            item.recentOutcomes = Array.isArray(item.recentOutcomes) ? item.recentOutcomes.slice(-8) : [];
+            return item;
+        }
+
+        function buildStageMeta(stageNumber, mode = "adventure") {
+            const clamped = Math.max(1, Math.min(10, stageNumber));
+            const curve = STAGE_LEARNING_CURVE[clamped];
+            const isBoss = mode === "boss" || clamped % 5 === 0;
+            return {
+                stageNumber: clamped,
+                isBoss,
+                worldName: WORLD_NAMES[Math.min(Math.floor((clamped - 1) / 4), WORLD_NAMES.length - 1)],
+                roundCount: mode === "review" ? 6 : mode === "typing" ? 6 : curve.roundCount,
+                timerMs: mode === "typing" ? 22000 : isBoss ? 17000 : Math.max(12500, 24000 - clamped * 950),
+                speedFactor: mode === "typing" ? 0.86 : isBoss ? 1.36 : 1 + clamped * 0.055,
+                curve,
+                label: isBoss ? "Boss" : curve.label
+            };
+        }
+
+        function getStageHideBand(stageNumber = 1, wave = "core", wordLength = 6) {
+            const baseBands = {
+                1:  { min: 0.35, max: 0.50 },
+                2:  { min: 0.40, max: 0.58 },
+                3:  { min: 0.48, max: 0.65 },
+                4:  { min: 0.55, max: 0.72 },
+                5:  { min: 0.60, max: 0.78 },
+                6:  { min: 0.66, max: 0.84 },
+                7:  { min: 0.72, max: 0.90 },
+                8:  { min: 0.78, max: 0.94 },
+                9:  { min: 0.85, max: 0.97 },
+                10: { min: 0.92, max: 1.00 }
+            };
+            const band = { ...(baseBands[Math.max(1, Math.min(10, stageNumber))] || baseBands[10]) };
+            if (wave === "warmup") {
+                band.min = Math.max(0.04, band.min - 0.07);
+                band.max = Math.max(band.min + 0.04, band.max - 0.12);
+            } else if (wave === "review") {
+                band.min = Math.max(0.08, band.min - 0.03);
+                band.max = Math.max(band.min + 0.05, band.max - 0.04);
+            } else if (wave === "pressure") {
+                band.min = Math.min(0.96, band.min + 0.05);
+                band.max = Math.min(1, band.max + 0.08);
+            } else if (wave === "boss") {
+                band.min = Math.min(0.98, band.min + 0.10);
+                band.max = Math.min(1, band.max + 0.12);
+            }
+            if (wordLength >= 8 && stageNumber <= 4) band.max = Math.min(band.max, 0.68);
+            if (wordLength >= 10 && stageNumber <= 5) band.max = Math.min(band.max, 0.72);
+            if (wordLength <= 4 && stageNumber >= 7) band.min = Math.max(band.min, 0.78);
+            band.max = Math.max(band.min + 0.04, Math.min(1, band.max));
+            return band;
+        }
+
+        function buildVisibleAnchors(length, visibleTarget, preserveHint, hidePercent) {
+            const anchors = [];
+            const add = (index) => {
+                if (index >= 0 && index < length && !anchors.includes(index)) anchors.push(index);
+            };
+            if (visibleTarget <= 0) return anchors;
+            if (preserveHint) add(0);
+            if (visibleTarget >= 2) add(hidePercent < 0.42 ? length - 1 : Math.floor(length / 2));
+            if (visibleTarget >= 3) add(anchors.includes(Math.floor(length / 2)) ? length - 1 : Math.floor(length / 2));
+            if (visibleTarget >= 4) {
+                add(Math.max(1, Math.floor(length / 3)));
+                add(Math.min(length - 2, Math.ceil(length * 2 / 3)));
+            }
+            if (!anchors.length) add(Math.floor(length / 2));
+            return anchors.slice(0, visibleTarget);
+        }
+
+        function buildHidePriority(length, anchors) {
+            const anchorSet = new Set(anchors);
+            const center = (length - 1) / 2;
+            return Array.from({ length }, (_, index) => index)
+                .filter((index) => !anchorSet.has(index))
+                .sort((a, b) => {
+                    const edgeA = Math.min(a, length - 1 - a);
+                    const edgeB = Math.min(b, length - 1 - b);
+                    if (edgeA !== edgeB) return edgeB - edgeA;
+                    const centerA = Math.abs(a - center);
+                    const centerB = Math.abs(b - center);
+                    if (centerA !== centerB) return centerA - centerB;
+                    return a - b;
+                });
+        }
+
+        function makeMask(word, hidePercent, preserveHint = true, stageNumber = 1, wave = "core") {
+            const letters = word.toUpperCase().split("");
+            const stageFloor = getStageHideBand(stageNumber, wave, letters.length).min;
+            const hiddenCount = Math.min(letters.length, Math.max(1, Math.max(
+                Math.round(letters.length * hidePercent),
+                Math.floor(letters.length * stageFloor)
+            )));
+            const visibleTarget = hidePercent >= 0.97 ? 0
+                : hidePercent >= 0.72 ? (preserveHint ? 1 : 0)
+                : hidePercent >= 0.45 ? Math.min(2, letters.length)
+                : hidePercent >= 0.25 ? Math.min(3, letters.length)
+                : Math.min(4, letters.length);
+            const anchors = buildVisibleAnchors(letters.length, visibleTarget, preserveHint, hidePercent);
+            const exactHiddenCount = Math.min(hiddenCount, Math.max(0, letters.length - anchors.length));
+            const hidden = new Set(buildHidePriority(letters.length, anchors).slice(0, exactHiddenCount));
+            if (hidePercent >= 0.97) {
+                for (let i = 0; i < letters.length; i++) hidden.add(i);
+            }
+            return letters.map((letter, index) => hidden.has(index) ? "_" : letter).join("");
+        }
+
+        function computeHintLevel(progress, mode, stageMeta, context = {}) {
+            if (mode === "typing") return { ...HINT_LEVELS[0], hidePercent: 0, label: "typing visible" };
+            // 未見過的詞強制給最低遮罩（recognition 起點）
+            if ((progress.seenCount || 0) === 0) {
+                return { ...HINT_LEVELS[0], hidePercent: 0.08, label: "First Look" };
+            }
+            const unlocked = Math.max(0, Math.min(4, progress.hintLevelUnlocked || 0));
+            let targetLevel = Math.min(4, unlocked + Math.min(3, Math.floor((stageMeta.stageNumber - 1) / 2)));
+            if ((progress.seenCount || 0) <= 1) targetLevel = Math.min(targetLevel, 1);
+            if (context.source === "new") targetLevel = Math.min(targetLevel, 1);
+            if (context.wave === "warmup") targetLevel = Math.max(0, targetLevel - 1);
+            if (context.wave === "review") targetLevel = Math.min(targetLevel, 2);
+            if (context.wave === "pressure") targetLevel = Math.min(4, targetLevel + 1);
+            if (context.wave === "boss" || stageMeta.isBoss) targetLevel = Math.max(targetLevel, stageMeta.stageNumber >= 8 ? 4 : 3);
+            const profile = HINT_LEVELS[targetLevel];
+            const band = getStageHideBand(stageMeta.stageNumber, context.wave || "core", context.wordLength || 6);
+            const hidePercent = Math.min(band.max, Math.max(band.min, profile.hidePercent + stageMeta.stageNumber * 0.018));
+            return { ...profile, hidePercent };
+        }
+
+        function waveForRound(index, total, stageMeta) {
+            if (stageMeta.isBoss) return "boss";
+            const phase = index / Math.max(total - 1, 1);
+            if (phase < 0.35) return "warmup";
+            if (phase > 0.75) return "pressure";
+            return "core";
+        }
+
+        function wordPriority(wordEntry, source, stageMeta) {
+            const progress = getProgress(wordEntry);
+            const due = progress.nextDueAt && progress.nextDueAt <= Date.now() ? 80 : 0;
+            const weak = Math.max(0, 65 - (progress.masteryScore || 0)) + (progress.wrongCount || 0) * 12 + (progress.timeoutCount || 0) * 16;
+            const fresh = (progress.seenCount || 0) === 0 ? 40 : Math.max(0, 15 - progress.seenCount * 3);
+            const corrected = (progress.correctAfterCorrectionCount || 0) * 10;
+            const sourceWeight = source === "due" ? due : source === "weak" ? weak + corrected : fresh;
+            const tie = hashSeed(`${wordEntry.id}-${stageMeta.stageNumber}-${source}`) % 1000 / 1000;
+            return sourceWeight + tie;
+        }
+
+        function takeBySource(source, quota, used, stageMeta) {
+            return vocabulary
+                .filter((word) => !used.has(word.id))
+                .sort((a, b) => wordPriority(b, source, stageMeta) - wordPriority(a, source, stageMeta))
+                .slice(0, quota)
+                .map((word) => {
+                    used.add(word.id);
+                    return { wordEntry: word, source };
+                });
+        }
+
+        function selectWordsForMode(mode, count, stageMeta) {
+            const used = new Set();
+            if (mode === "review") {
+                const review = takeBySource("due", Math.ceil(count / 2), used, stageMeta)
+                    .concat(takeBySource("weak", count, used, stageMeta));
+                return review.slice(0, count).map((plan, index) => ({ ...plan, wave: "review" }));
+            }
+            if (stageMeta.isBoss) {
+                // boss 模式：只取已見詞（seenCount > 0）
+                const bossFilter = (word) => {
+                    const p = getProgress(word);
+                    return (p.seenCount || 0) > 0;
+                };
+                const bossPool = vocabulary.filter(bossFilter);
+                // 若已見詞不足，補充低 seenCount（1–2）詞（不引入 seenCount=0 新詞）
+                const lowSeenPool = vocabulary.filter((word) => {
+                    const p = getProgress(word);
+                    const sc = p.seenCount || 0;
+                    return sc >= 1 && sc <= 2;
+                });
+                const bossVocab = bossPool.length >= count ? bossPool
+                    : [...bossPool, ...lowSeenPool.filter((w) => !bossPool.find((b) => b.id === w.id))];
+                const usedBoss = new Set();
+                const bossPlan = bossVocab
+                    .filter((word) => !used.has(word.id))
+                    .sort((a, b) => wordPriority(b, "weak", stageMeta) - wordPriority(a, "weak", stageMeta))
+                    .slice(0, count)
+                    .map((word) => {
+                        used.add(word.id);
+                        return { wordEntry: word, source: "boss", wave: "boss" };
+                    });
+                return bossPlan;
+            }
+            const mix = stageMeta.curve.mix;
+            const freshQuota = Math.round(count * mix.fresh);
+            const weakQuota = Math.round(count * mix.weak);
+            const dueQuota = Math.max(0, count - freshQuota - weakQuota);
+            const plans = []
+                .concat(takeBySource("new", freshQuota, used, stageMeta))
+                .concat(takeBySource("weak", weakQuota, used, stageMeta))
+                .concat(takeBySource("due", dueQuota, used, stageMeta));
+            if (plans.length < count) plans.push(...takeBySource("weak", count - plans.length, used, stageMeta));
+            return plans.slice(0, count).map((plan, index) => ({
+                ...plan,
+                wave: waveForRound(index, count, stageMeta)
+            }));
+        }
+
+        function createRound(plan, stageMeta, mode) {
+            const progress = getProgress(plan.wordEntry);
+            const hint = computeHintLevel(progress, mode, stageMeta, {
+                source: plan.source,
+                wave: plan.wave,
+                wordLength: plan.wordEntry.word.length
+            });
+            return {
+                ...plan.wordEntry,
+                source: plan.source,
+                wave: plan.wave,
+                difficulty: hint,
+                maskedWord: makeMask(plan.wordEntry.word, hint.hidePercent, hint.level < 4, stageMeta.stageNumber, plan.wave)
+            };
+        }
+
+        function classifyOutcome(success, timedOut = false) {
+            if (timedOut) return "timeout";
+            if (!success) return "wrong";
+            if (gameState.wrongHits > 0) return "corrected-after-error";
+            const elapsed = Date.now() - gameState.roundStartedAt;
+            const ratio = elapsed / Math.max(1, gameState.stageMeta.timerMs);
+            const hintLevel = gameState.currentRound.difficulty.level || 0;
+            if (hintLevel === 0) return "hint-dependent-correct";
+            // 高遮罩且快速完成 = 真正的記憶回想
+            if (hintLevel >= 3 && ratio <= 0.50 && gameState.wrongHits === 0) return "perfect-recall";
+            return ratio <= 0.45 ? "correct-fast" : "correct-slow";
+        }
+
+        function applyRoundResult(outcome) {
+            const round = gameState.currentRound;
+            const progress = getProgress(round);
+            const elapsed = Math.max(1, Date.now() - gameState.roundStartedAt);
+            progress.seenCount += 1;
+            progress.lastSeenAt = Date.now();
+            progress.avgResponseMs = progress.avgResponseMs
+                ? Math.round(progress.avgResponseMs * 0.75 + elapsed * 0.25)
+                : elapsed;
+
+            if (outcome === "perfect-recall") {
+                progress.correctCount += 1;
+                progress.recallStrength = Math.min(100, (progress.recallStrength || 0) + 16);
+                progress.typingEase    = Math.min(100, (progress.typingEase    || 0) + 10);
+                progress.masteryScore  = Math.min(100, (progress.masteryScore  || 0) + 16);
+                progress.nextDueAt = Date.now() + 1000 * 60 * 60 * 48;
+            } else if (outcome === "correct-fast") {
+                progress.correctCount += 1;
+                progress.recallStrength = Math.min(100, (progress.recallStrength || 0) + 12);
+                progress.typingEase = Math.min(100, (progress.typingEase || 0) + 8);
+                progress.masteryScore = Math.min(100, (progress.masteryScore || 0) + 12);
+                progress.nextDueAt = Date.now() + 1000 * 60 * 60 * 16;
+            } else if (outcome === "correct-slow") {
+                progress.correctCount += 1;
+                progress.recallStrength = Math.min(100, (progress.recallStrength || 0) + 9);
+                progress.typingEase = Math.min(100, (progress.typingEase || 0) + 7);
+                progress.masteryScore = Math.min(100, (progress.masteryScore || 0) + 10);
+                progress.nextDueAt = Date.now() + 1000 * 60 * 60 * 8;
+            } else if (outcome === "corrected-after-error") {
+                progress.correctCount += 1;
+                progress.correctAfterCorrectionCount += 1;
+                progress.recallStrength = Math.min(100, (progress.recallStrength || 0) + 5);
+                progress.typingEase = Math.max(0, (progress.typingEase || 0) + 4);
+                progress.masteryScore = Math.min(100, (progress.masteryScore || 0) + 6);
+                progress.nextDueAt = Date.now() + 1000 * 60 * 25;
+            } else if (outcome === "hint-dependent-correct") {
+                progress.correctCount += 1;
+                progress.recallStrength = Math.min(100, (progress.recallStrength || 0) + 4);
+                progress.typingEase = Math.min(100, (progress.typingEase || 0) + 5);
+                progress.masteryScore = Math.min(100, (progress.masteryScore || 0) + 8);
+                progress.nextDueAt = Date.now() + 1000 * 60 * 30;
+            } else {
+                progress.wrongCount += outcome === "wrong" ? 1 : 0;
+                progress.timeoutCount += outcome === "timeout" ? 1 : 0;
+                progress.recallStrength = Math.max(0, (progress.recallStrength || 0) - (outcome === "timeout" ? 8 : 7));
+                progress.typingEase = Math.max(0, (progress.typingEase || 0) - 2);
+                progress.masteryScore = Math.max(0, (progress.masteryScore || 0) - 7);
+                progress.nextDueAt = Date.now() - 1000 * 60;
+            }
+            progress.mastery = progress.masteryScore;
+            progress.recentOutcomes = [...(progress.recentOutcomes || []), outcome].slice(-8);
+            const lastTwo = progress.recentOutcomes.slice(-2);
+            const goodOutcomes = new Set(["correct-fast", "correct-slow", "perfect-recall"]);
+            if (lastTwo.length === 2 && lastTwo.every(item => goodOutcomes.has(item))) {
+                progress.hintLevelUnlocked = Math.min(4, (progress.hintLevelUnlocked || 0) + 1);
+            }
+            if (outcome === "wrong" || outcome === "timeout") {
+                progress.hintLevelUnlocked = Math.max(0, (progress.hintLevelUnlocked || 0) - 1);
+            }
+            gameState.runResults.push({ word: round.word, outcome, ms: elapsed });
+            persistSave();
+        }
+
+        function dueCount() {
+            return Object.values(saveState.progress).filter((item) => item.nextDueAt && item.nextDueAt <= Date.now()).length;
+        }
+
+        function weakCount() {
+            // Fix 2: exclude words that have never been played (seenCount=0) so brand-new
+            // vocabularies don't show an inflated "弱字" count on the main menu.
+            return Object.values(saveState.progress).filter((item) =>
+                (item.seenCount || 0) > 0 &&
+                ((item.masteryScore || 0) < 55 || (item.wrongCount || 0) > 0 || (item.timeoutCount || 0) > 0)
+            ).length;
+        }
+
+        function shuffleArray(array) {
+            const rng = gameState.rng || Math.random;
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- 易錯干擾選字 ---
+        function getComboMult(combo) {
+            if (combo >= 12) return 3;
+            if (combo >= 8)  return 2;
+            if (combo >= 4)  return 1.5;
+            return 1;
+        }
+
+        function getDistractors(targetChar, wordTarget, letterIndex) {
+            const pool = new Set();
+
+            // 1. 母音位置：所有其他母音皆列入候選
+            if (VOWELS.has(targetChar)) {
+                VOWELS.forEach(v => { if (v !== targetChar) pool.add(v); });
+            }
+
+            // 2. 形似字母
+            (SHAPE_CONFUSABLES[targetChar] || []).forEach(c => pool.add(c));
+
+            // 3. 音似字母
+            (PHONETIC_CONFUSABLES[targetChar] || []).forEach(c => pool.add(c));
+
+            // 4. 字首偏誤（第一個字母）
+            if (letterIndex === 0) {
+                (PREFIX_BIAS[targetChar] || []).forEach(c => pool.add(c));
+            }
+
+            // 5. 字尾偏誤（最後 2 個字母）
+            if (letterIndex >= wordTarget.length - 2) {
+                (SUFFIX_BIAS[targetChar] || []).forEach(c => pool.add(c));
+            }
+
+            // 6. 重複字母陷阱：若此字母在前面已出現，加入前一個字母（轉置錯誤）
+            if (wordTarget.slice(0, letterIndex).includes(targetChar) && letterIndex > 0) {
+                pool.add(wordTarget[letterIndex - 1]);
+            }
+
+            // 7. 順序記憶陷阱：偶爾加入下一個字母測試序列記憶
+            if (letterIndex < wordTarget.length - 1) {
+                pool.add(wordTarget[letterIndex + 1]);
+            }
+
+            // 移除正確字母與非英文大寫字元
+            pool.delete(targetChar);
+            [...pool].forEach(c => { if (!/^[A-Z]$/.test(c)) pool.delete(c); });
+
+            const candidates = shuffleArray([...pool]);
+
+            // 若候選不足 2 個，從字母表依序補充（不隨機，保持確定性）
+            for (let code = 65; code <= 90 && candidates.length < 2; code++) {
+                const c = String.fromCharCode(code);
+                if (c !== targetChar && !candidates.includes(c)) candidates.push(c);
+            }
+
+            return candidates.slice(0, 2);
+        }
+
+        // --- 多字母方塊系統 ---
+        function planChunks(word) {
+            const key = word.toLowerCase();
+            const rng = gameState.rng || Math.random;
+            const stage = gameState.stageMeta ? gameState.stageMeta.stageNumber : 1;
+            // 階段越高，越多 chunk 被拆回單字母（測試完整記憶）
+            const breakChance = Math.min(0.55, stage * 0.055);
+
+            const base = WORD_CHUNKS[key];
+            if (base) {
+                const result = [];
+                for (const chunk of base) {
+                    if (chunk.length > 1 && rng() < breakChance) {
+                        for (const c of chunk) result.push(c);
+                    } else {
+                        result.push(chunk);
+                    }
+                }
+                return result;
+            }
+
+            // 自訂匯入單字的 fallback：機械式雙字母切分
+            const upper = word.toUpperCase();
+            if (upper.length <= 5) return upper.split('');
+            const chunks = [upper[0]];
+            let pos = 1;
+            while (pos < upper.length) {
+                const left = upper.length - pos;
+                if (left <= 2) { chunks.push(upper.substring(pos, pos + left)); pos += left; }
+                else { chunks.push(upper.substring(pos, pos + 2)); pos += 2; }
+            }
+            return chunks;
+        }
+
+        function getChunkDistractors(correctChunk, wordTarget, startIndex) {
+            const rng = gameState.rng || Math.random;
+            const pool = [];
+            const len = correctChunk.length;
+
+            // 策略 1：逐位替換為形似/音似字母
+            for (let p = 0; p < len; p++) {
+                const ch = correctChunk[p];
+                const sources = [
+                    ...(SHAPE_CONFUSABLES[ch] || []),
+                    ...(PHONETIC_CONFUSABLES[ch] || [])
+                ];
+                if (startIndex + p >= wordTarget.length - 2) sources.push(...(SUFFIX_BIAS[ch] || []));
+                if (startIndex + p === 0) sources.push(...(PREFIX_BIAS[ch] || []));
+                if (VOWELS.has(ch)) VOWELS.forEach(v => { if (v !== ch) sources.push(v); });
+                for (const rep of sources) {
+                    if (!/^[A-Z]$/.test(rep)) continue;
+                    const variant = correctChunk.substring(0, p) + rep + correctChunk.substring(p + 1);
+                    if (variant !== correctChunk && !pool.includes(variant)) pool.push(variant);
+                }
+            }
+
+            // 策略 2：字母轉置（測試順序記憶）
+            if (len === 2) {
+                const t = correctChunk[1] + correctChunk[0];
+                if (t !== correctChunk && !pool.includes(t)) pool.push(t);
+            } else if (len >= 3) {
+                const t1 = correctChunk[1] + correctChunk[0] + correctChunk.substring(2);
+                if (t1 !== correctChunk && !pool.includes(t1)) pool.push(t1);
+                const t2 = correctChunk[0] + correctChunk.substring(2, len) + correctChunk[1];
+                if (t2 !== correctChunk && !pool.includes(t2)) pool.push(t2);
+            }
+
+            // 策略 3：相鄰位置的 chunk（測試位置記憶）
+            if (startIndex > 0) {
+                const prev = wordTarget.substring(Math.max(0, startIndex - len), startIndex);
+                if (prev.length === len && prev !== correctChunk && !pool.includes(prev)) pool.push(prev);
+            }
+
+            // 洗牌
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+
+            // 不足 2 個時用字母位移補足
+            while (pool.length < 2) {
+                const p = pool.length % len;
+                const ch = correctChunk[p];
+                const next = String.fromCharCode(((ch.charCodeAt(0) - 65 + 1 + pool.length) % 26) + 65);
+                const fb = correctChunk.substring(0, p) + next + correctChunk.substring(p + 1);
+                if (fb !== correctChunk && !pool.includes(fb)) pool.push(fb);
+                else {
+                    const p2 = (p + 1) % len;
+                    const n2 = String.fromCharCode(((correctChunk[p2].charCodeAt(0) - 65 + 2 + pool.length) % 26) + 65);
+                    const fb2 = correctChunk.substring(0, p2) + n2 + correctChunk.substring(p2 + 1);
+                    if (fb2 !== correctChunk && !pool.includes(fb2)) pool.push(fb2);
+                }
+            }
+
+            return pool.slice(0, 2);
+        }
+
+        // --- Combo UI ---
+        function showCombo() {
+            if (!_comboDom) return;
+            const combo = gameState.combo;
+            if (combo < 2) { hideCombo(); return; }
+            const multStr = combo >= 12 ? 'x3' : combo >= 8 ? 'x2' : combo >= 4 ? 'x1.5' : 'x1';
+            _comboDom.querySelector('.combo-count').textContent = 'COMBO ' + combo;
+            _comboDom.querySelector('.combo-mult').textContent = multStr;
+            _comboDom.classList.remove('glow-2', 'glow-3');
+            if (combo >= 12) _comboDom.classList.add('glow-3');
+            else if (combo >= 8) _comboDom.classList.add('glow-2');
+            _comboDom.classList.add('active');
+            // 彈跳感
+            _comboDom.style.transform = 'scale(1.3) translateY(0)';
+            setTimeout(() => { if (_comboDom) _comboDom.style.transform = 'scale(1) translateY(0)'; }, 110);
+        }
+
+        function hideCombo() {
+            if (_comboDom) _comboDom.classList.remove('active', 'glow-2', 'glow-3');
+        }
+
+        function updateErrorBudget() {
+            const m = gameState.mistakes;
+            for (let i = 0; i < 3; i++) {
+                const h = document.getElementById('heart-' + i);
+                if (!h) continue;
+                h.classList.toggle('lost', i < m);
+                h.classList.toggle('warning', i === m && m === 2);
+            }
+        }
+
+        // --- 解鎖系統 ---
+        function computeStats(save, runResults, stageNumber) {
+            let totalCleared = 0, masterySum = 0, masteryCount = 0;
+            Object.values(save.progress).forEach(p => {
+                totalCleared += (p.correctCount || 0);
+                if (p.seenCount > 0) { masterySum += (p.masteryScore || 0); masteryCount++; }
+            });
+            const bossClears = (save.runs || []).filter(r => r.stage % 5 === 0 && r.accuracy >= 60).length;
+            const reviewSessions = (save.runs || []).filter(r => r.mode === 'review').length;
+            const rr = runResults || [];
+            const fastCount = rr.filter(r => r.outcome === 'correct-fast' || r.outcome === 'perfect-recall').length;
+            const timeoutCount = rr.filter(r => r.outcome === 'timeout').length;
+            const wrongCount = rr.filter(r => r.outcome === 'wrong').length;
+            const correctedCount = rr.filter(r => r.outcome === 'corrected-after-error').length;
+            return {
+                totalCleared, bossClears, reviewSessions,
+                unlockedStage: save.unlockedStage || 1,
+                avgMastery: masteryCount ? Math.round(masterySum / masteryCount) : 0,
+                stageFastCount: fastCount,
+                stageTimeoutCount: timeoutCount,
+                stageWrongCount: wrongCount,
+                stageAllCorrected: correctedCount > 0 && wrongCount === 0 && timeoutCount === 0,
+                totalPerfectRecalls: save.stats?.totalPerfectRecalls || 0,
+                bestConsecutiveLetters: save.stats?.bestConsecutiveLetters || 0,
+            };
+        }
+
+        function checkUnlocks(save, runResults, stageNumber) {
+            const stats = computeStats(save, runResults, stageNumber);
+            const newlyUnlocked = [];
+            for (const key of ANIMAL_ORDER) {
+                if (save.unlockedAnimals.includes(key)) continue;
+                const animal = ANIMALS[key];
+                if (animal.check(stats, stageNumber)) {
+                    save.unlockedAnimals.push(key);
+                    newlyUnlocked.push(key);
+                    break; // max 1 unlock per run — keep progression meaningful
+                }
+            }
+            return newlyUnlocked;
+        }
+
+        function updateStartStats() {
+            const el = document.getElementById('start-stats');
+            if (!el) return;
+            // Fix 3b: show "已接觸" (seenCount>0) instead of "已學" (masteryScore>=40)
+            // so players who just completed their first run see a non-zero count.
+            const seen = Object.values(saveState.progress).filter(p => (p.seenCount || 0) > 0).length;
+            const wk = weakCount();
+            const du = dueCount();
+            const st = saveState.unlockedStage || 1;
+            const unlocked = saveState.unlockedAnimals.length;
+            let html = 'Stage <strong>' + st + '</strong> &nbsp;·&nbsp; 已接觸 <strong>' + seen + '</strong> 字';
+            if (wk > 0) html += ' &nbsp;·&nbsp; 弱字 <strong>' + wk + '</strong>';
+            if (du > 0) html += ' &nbsp;·&nbsp; <span style="color:#ffd32a">到期 ' + du + '</span>';
+            html += ' &nbsp;·&nbsp; 角色 <strong>' + unlocked + '</strong>';
+            el.innerHTML = html;
+        }
+
+        function renderAnimalSelector() {
+            const row = document.getElementById('animal-row');
+            if (!row) return;
+            row.innerHTML = '';
+            for (const key of ANIMAL_ORDER) {
+                const a = ANIMALS[key];
+                const unlocked = saveState.unlockedAnimals.includes(key);
+                const selected = saveState.currentAnimal === key;
+                const card = document.createElement('div');
+                card.className = 'animal-card' + (selected ? ' sel' : '') + (!unlocked ? ' locked' : '');
+                card.title = unlocked ? a.name : a.ul;
+                card.innerHTML = '<div class="animal-dot" style="background:' + a.dot + '">' +
+                    (unlocked ? a.name[0] : '?') + '</div><div class="animal-card-name">' +
+                    (unlocked ? a.name : '???') + '</div>' +
+                    (!unlocked ? '<div class="animal-card-hint">' + a.ul + '</div>' : '');
+                if (unlocked) {
+                    card.setAttribute('data-key', key);
+                    card.onclick = function() { selectAnimalUI(this.getAttribute('data-key')); };
+                }
+                row.appendChild(card);
+            }
+        }
+
+        function selectAnimalUI(key) {
+            if (!saveState.unlockedAnimals.includes(key)) return;
+            saveState.currentAnimal = key;
+            persistSave();
+            switchAnimal(key);
+            renderAnimalSelector();
+        }
+
+        function showUnlockToast(animalKey) {
+            const animal = ANIMALS[animalKey];
+            const el = document.getElementById('unlock-toast');
+            if (!el || !animal) return;
+            document.getElementById('unlock-animal-name').textContent = animal.name;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 2800);
+        }
+
+        function startGame(mode = "adventure", stageNum = null) {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.remove('active');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').style.opacity = 0;
+            document.getElementById('pause-overlay').classList.remove('visible');
+            document.getElementById('pause-btn').classList.add('visible');
+            document.getElementById('ui-container').style.opacity = 1;
+            // Reset result screen state for fresh animations on next run
+            for (let i=0;i<3;i++){const s=document.getElementById('star-'+i);if(s){s.className='star-off';s.style.animationDelay='';}}
+            ['pill-accuracy','pill-perfects','pill-words'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('highlight');});
+
+            // Reset Camera
+            camera.position.set(0, 7, 15);
+            camera.lookAt(0, 0, -5);
+            
+            const nextStage = stageNum !== null ? Math.max(1, Math.min(10, stageNum)) : Math.max(1, saveState.unlockedStage || 1);
+            gameState.mode = mode;
+            gameState.stageNumber = nextStage;
+            gameState.stageMeta = buildStageMeta(nextStage, mode);
+            gameState.rng = createSeededRng(hashSeed(`${mode}-${nextStage}-${JSON.stringify(saveState.progress)}`));
+            gameState.state = GAME_STATE.PLAYING;
+            gameState.levelOrder = selectWordsForMode(mode, gameState.stageMeta.roundCount, gameState.stageMeta)
+                .map((plan) => createRound(plan, gameState.stageMeta, mode));
+            gameState.currentLevelIndex = 0;
+            gameState.runResults = [];
+            gameState.score = 0;
+            gameState.lastSpawnTime = Date.now();
+            gameState.combo = 0;
+            gameState.comboMult = 1;
+            gameState.hitStopFrames = 0;
+            gameState.consecutiveCorrectLetters = 0;
+            gameState.currentWaveId = 0;
+            _lastFrameMs = performance.now();
+            hideCombo();
+
+            resetPlayerVisuals();
+            clearAllProps();
+            clearScene();
+            
+            loadLevel();
+        }
+
+        function clearScene() {
+            targets.forEach(t => scene.remove(t));
+            targets = [];
+        }
+
+        function speak(text) {
+            try {
+                speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text.toLowerCase());
+                u.lang = 'en-US'; u.rate = 0.85;
+                speechSynthesis.speak(u);
+            } catch(e) {}
+        }
+
+        function loadLevel() {
+            if (gameState.currentLevelIndex >= gameState.levelOrder.length) {
+                enterShowcaseMode();
+                return;
+            }
+
+            gameState.currentRound = gameState.levelOrder[gameState.currentLevelIndex];
+            gameState.wordData = gameState.currentRound;
+            gameState.letterIndex = 0;
+            gameState.mistakes = 0;
+            for (let i=0;i<3;i++){const h=document.getElementById('heart-'+i);if(h)h.classList.remove('lost','warning');}
+            gameState.correctHits = 0;
+            gameState.wrongHits = 0;
+            gameState.firstHitAt = 0;
+            gameState.chunkPlan = planChunks(gameState.currentRound.word);
+            gameState.chunkIndex = 0;
+            gameState.roundStartedAt = Date.now();
+            const waveCount = gameState.chunkPlan.length;
+            const wordLenBuffer = Math.max(0, waveCount - 4) * 1500;
+            gameState.totalTimerMs = gameState.stageMeta.timerMs + wordLenBuffer;
+            gameState.roundDeadline = Date.now() + gameState.totalTimerMs;
+            gameState.state = GAME_STATE.PLAYING;
+            gameState.speed = 0.28 * gameState.stageMeta.speedFactor;
+            clearScene();
+            if (_timerFill) {
+                _timerFill.style.width = '100%';
+                _timerFill.style.background = '#2ecc71';
+                _timerFill.style.opacity = '1';
+            }
+
+            updateUI();
+            // Speak word after display settles — reinforces sound-meaning link before typing
+            setTimeout(() => speak(gameState.wordData.target), 400);
+            // Spawn first wave immediately — no dead wait at word start
+            spawnWave();
+            gameState.lastSpawnTime = Date.now();
+        }
+
+        function updateUI() {
+            const round = gameState.currentRound;
+            document.getElementById('chinese-hint').innerText = `${round.zh}  ${round.category ? "· " + round.category : ""}`;
+            document.getElementById('level-indicator').innerText = `${gameState.mode.toUpperCase()} Stage ${gameState.stageMeta.stageNumber} · ${gameState.currentLevelIndex + 1}/${gameState.levelOrder.length}`;
+            document.getElementById('score-board').innerText = `⭐ ${gameState.score}`;
+            document.getElementById('mode-indicator').innerHTML = `<strong>模式</strong> ${gameState.mode === "adventure" ? "冒險" : gameState.mode === "review" ? "複習" : "練習"}`;
+            document.getElementById('stage-rule').innerHTML = `<strong>難度</strong> ${round.difficulty.label}`;
+            document.getElementById('word-source').innerHTML = `<strong>佇列</strong> ${round.source} / ${round.wave}`;
+            document.getElementById('review-stats').innerHTML = `<strong>複習庫</strong> 弱字 ${weakCount()} · 到期 ${dueCount()}`;
+
+            const container = document.getElementById('word-container');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < gameState.wordData.target.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'letter-slot';
+                slot.id = `slot-${i}`;
+                const maskChar = gameState.wordData.maskedWord[i];
+                if (maskChar && maskChar !== "_") {
+                    slot.innerText = maskChar;
+                    slot.classList.add('hint');
+                }
+                if (gameState.chunkPlan && i < gameState.chunkPlan[0].length) slot.classList.add('current');
+                container.appendChild(slot);
+            }
+
+            const instrEl = document.getElementById('spell-instruction');
+            if (instrEl && gameState.chunkPlan) {
+                const csLen = gameState.chunkPlan[0].length;
+                let display = '';
+                for (let k = 0; k < csLen; k++) {
+                    const mc = gameState.wordData.maskedWord[k];
+                    display += (mc && mc !== '_') ? mc : '?';
+                }
+                instrEl.innerHTML = '依序撞擊拼出完整單字 <span class="next-letter">' + display + '</span>';
+            }
+        }
+
+        function updateLetterSlots() {
+            const len = gameState.wordData.target.length;
+            const plan = gameState.chunkPlan;
+            const ci = gameState.chunkIndex;
+            const chunkSize = (plan && ci < plan.length) ? plan[ci].length : 1;
+
+            for (let i = 0; i < len; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                if (!slot) continue;
+                slot.classList.remove('current');
+                if (i < gameState.letterIndex) {
+                    slot.innerText = gameState.wordData.target[i];
+                    slot.classList.add('filled');
+                    slot.classList.remove('hint');
+                }
+            }
+
+            if (gameState.letterIndex < len) {
+                let display = '';
+                for (let offset = 0; offset < chunkSize && (gameState.letterIndex + offset) < len; offset++) {
+                    const idx = gameState.letterIndex + offset;
+                    const curSlot = document.getElementById(`slot-${idx}`);
+                    if (curSlot) {
+                        curSlot.classList.add('current');
+                        if (gameState.mistakes >= 3) {
+                            const maskChar = gameState.wordData.maskedWord[idx];
+                            if (maskChar === '_' && !curSlot.classList.contains('filled') && !curSlot.classList.contains('hint')) {
+                                curSlot.innerText = gameState.wordData.target[idx];
+                                curSlot.classList.add('hint');
+                                curSlot.classList.remove('hint-revealed');
+                                void curSlot.offsetWidth;
+                                curSlot.classList.add('hint-revealed');
+                            }
+                        }
+                    }
+                    const mc = gameState.wordData.maskedWord[idx];
+                    display += (mc && mc !== '_') ? mc : '?';
+                }
+                const instrEl = document.getElementById('spell-instruction');
+                if (instrEl) {
+                    instrEl.innerHTML = '找 <span class="next-letter">' + display + '</span> (' + gameState.letterIndex + '/' + len + ')';
+                }
+            }
+        }
+
+        function completeWordSequence() {
+            gameState.state = GAME_STATE.TRANSITION;
+            clearScene();
+
+            const outcome = classifyOutcome(true);
+            applyRoundResult(outcome);
+            const label = outcome === "perfect-recall" ? "PERFECT!"
+                        : outcome === "correct-fast"       ? "FAST!"
+                        : outcome === "corrected-after-error" ? "FIXED!"
+                        : "CLEAR!";
+            const qualityBonus = { 'perfect-recall': 50, 'correct-fast': 30, 'correct-slow': 15, 'corrected-after-error': 10, 'hint-dependent-correct': 5 };
+            gameState.score += qualityBonus[outcome] || 0;
+            showFeedback(label, "#f1c40f");
+            speak(gameState.currentRound.target);
+            createParticles(playerGroup.position.clone().add(new THREE.Vector3(0,1,2)), "#f1c40f");
+            document.getElementById('score-board').innerText = '⭐ ' + gameState.score;
+
+            // 短暫顯示完整單字 + 中文（強化記憶連結）
+            const round = gameState.currentRound;
+            document.getElementById('chinese-hint').innerHTML =
+                '<span style="color:#2ecc71">' + round.target + '</span> = ' + round.zh;
+
+            setTimeout(() => {
+                grantSmartProp();
+            }, 600);
+
+            setTimeout(() => {
+                gameState.currentLevelIndex++;
+                loadLevel();
+            }, 2200);
+        }
+
+        function timeoutRound() {
+            if (gameState.state !== GAME_STATE.PLAYING) return;
+            gameState.state = GAME_STATE.TRANSITION;
+            clearScene();
+            gameState.combo = 0;
+            gameState.comboMult = 1;
+            hideCombo();
+            applyRoundResult("timeout");
+            showFeedback("TIME UP!", "#ff4757");
+            speak(gameState.currentRound.target);
+            document.getElementById('chinese-hint').innerHTML =
+                '<span style="color:#ff4757">' + gameState.currentRound.target + '</span> = ' + gameState.currentRound.zh;
+            triggerHurtEffect();
+            setTimeout(() => {
+                gameState.currentLevelIndex++;
+                loadLevel();
+            }, 1300);
+        }
+
+        function trySpawnWave() {
+            if (gameState.state !== GAME_STATE.PLAYING) return;
+
+            const now = Date.now();
+            if (now > gameState.roundDeadline) {
+                timeoutRound();
+                return;
+            }
+            if (now - gameState.lastSpawnTime > 1500) {
+                spawnWave();
+                gameState.lastSpawnTime = now;
+            }
+        }
+
+        function spawnWave() {
+            if (gameState.letterIndex >= gameState.wordData.target.length) return;
+            const plan = gameState.chunkPlan;
+            const ci = gameState.chunkIndex;
+            if (!plan || ci >= plan.length) return;
+
+            // Advance waveId so new boxes get a fresh id; old-id boxes can no longer trigger collision
+            gameState.currentWaveId = (gameState.currentWaveId || 0) + 1;
+            // Remove (not just deactivate) old-wave boxes that are still approaching
+            for (let i = targets.length - 1; i >= 0; i--) {
+                const t = targets[i];
+                if (!t.userData.velocity) { // only remove approaching boxes, not flying-away ones
+                    scene.remove(t);
+                    targets.splice(i, 1);
+                }
+            }
+
+            const targetChunk = plan[ci];
+            const chunkSize = targetChunk.length;
+            const startIdx = gameState.letterIndex;
+
+            const distractors = chunkSize === 1
+                ? getDistractors(targetChunk, gameState.wordData.target, startIdx)
+                : getChunkDistractors(targetChunk, gameState.wordData.target, startIdx);
+
+            let waveData = [
+                { letter: targetChunk,     isCorrect: true  },
+                { letter: distractors[0],  isCorrect: false },
+                { letter: distractors[1],  isCorrect: false }
+            ];
+            waveData = shuffleArray(waveData);
+
+            for (let i = 0; i < 3; i++) {
+                const data = waveData[i];
+                const color = boxColors[Math.floor((gameState.rng || Math.random)() * boxColors.length)];
+                const box = createBoxWithTexture(data.letter, color);
+                box.userData.waveId = gameState.currentWaveId;
+                box.userData.isCorrect = data.isCorrect;
+                box.position.set(lanes[i], 0.7, -20);
+                box.castShadow = true;
+                scene.add(box);
+                targets.push(box);
+            }
+        }
+
+        // --- 6. 展示模式 (Showcase Mode) ---
+        function enterShowcaseMode() {
+            gameState.state = GAME_STATE.SHOWCASE;
+            document.getElementById('pause-btn').classList.remove('visible');
+            const clearCount = gameState.runResults.filter((item) => item.outcome !== "wrong" && item.outcome !== "timeout").length;
+            const accuracy = gameState.runResults.length
+                ? Math.round((clearCount / gameState.runResults.length) * 100)
+                : 0;
+            if (gameState.mode === "adventure" && accuracy >= 60) {
+                saveState.unlockedStage = Math.max(saveState.unlockedStage || 1, Math.min(10, gameState.stageNumber + 1));
+            }
+            saveState.runs.push({
+                mode: gameState.mode,
+                stage: gameState.stageNumber,
+                score: gameState.score,
+                accuracy,
+                at: Date.now()
+            });
+
+            // 更新持久統計
+            const perfectsThisRun = gameState.runResults.filter(r => r.outcome === 'perfect-recall').length;
+            saveState.stats.totalPerfectRecalls = (saveState.stats.totalPerfectRecalls || 0) + perfectsThisRun;
+            if (gameState.consecutiveCorrectLetters > (saveState.stats.bestConsecutiveLetters || 0)) {
+                saveState.stats.bestConsecutiveLetters = gameState.consecutiveCorrectLetters;
+            }
+            const noErrors = gameState.runResults.every(r => r.outcome !== 'wrong' && r.outcome !== 'timeout');
+            if (noErrors && gameState.runResults.length > 0) {
+                saveState.stats.flawlessStages = (saveState.stats.flawlessStages || 0) + 1;
+            }
+
+            // 檢查動物解鎖
+            const newAnimals = checkUnlocks(saveState, gameState.runResults, gameState.stageNumber);
+            persistSave();
+            renderAnimalSelector();
+            const nextStageBtn = document.getElementById('next-stage-btn');
+            if (nextStageBtn) {
+                const canAdvance = gameState.mode === 'adventure' && saveState.unlockedStage > gameState.stageNumber;
+                nextStageBtn.style.display = canAdvance ? '' : 'none';
+            }
+            if (newAnimals.length > 0) {
+                let delay = 300;
+                newAnimals.forEach(key => {
+                    setTimeout(() => showUnlockToast(key), delay);
+                    delay += 1200;
+                });
+            }
+            
+            // UI 切換
+            document.getElementById('ui-container').style.opacity = 0;
+            const endScreen = document.getElementById('game-over-screen');
+            document.getElementById('run-summary').innerText = `Stage ${gameState.stageNumber} · ${accuracy}% clear · 弱字 ${weakCount()} · 到期 ${dueCount()}`;
+
+            // 星星評分
+            const stars = accuracy >= 85 ? 3 : accuracy >= 65 ? 2 : accuracy >= 40 ? 1 : 0;
+            for (let i = 0; i < 3; i++) {
+                const s = document.getElementById('star-' + i);
+                if (!s) continue;
+                if (i < stars) { s.className = 'star-on'; s.style.animationDelay = (i * 0.12) + 's'; }
+                else { s.className = 'star-off'; s.style.animationDelay = ''; }
+            }
+            const perfects = gameState.runResults.filter(r => r.outcome === 'perfect-recall').length;
+            const total    = gameState.runResults.length;
+            const accEl    = document.getElementById('pill-accuracy');
+            const perfEl   = document.getElementById('pill-perfects');
+            const wordsEl  = document.getElementById('pill-words');
+            if (accEl)   { accEl.textContent = '正確率 ' + accuracy + '%'; accEl.classList.toggle('highlight', accuracy >= 65); }
+            // Fix 3a: when perfects=0 but accuracy=100, show "全清 ✓" instead of "完美 0"
+            if (perfEl) {
+                const perfectsLabel = perfects > 0 ? '完美 ' + perfects : (accuracy === 100 ? '全清 ✓' : '完美 0');
+                perfEl.textContent = perfectsLabel;
+                perfEl.classList.toggle('highlight', perfects > 0 || accuracy === 100);
+            }
+            if (wordsEl) { wordsEl.textContent = '單字 ' + total; }
+            const titleEl = document.getElementById('end-title');
+            if (titleEl) titleEl.textContent = stars === 3 ? '完美通關！' : stars === 2 ? '任務完成！' : stars === 1 ? '繼續加油！' : '下次再試！';
+            endScreen.classList.remove('hidden');
+            // 強制重繪以觸發 transition
+            requestAnimationFrame(() => {
+                endScreen.style.opacity = 1;
+            });
+
+            // 鏡頭特寫
+            // 簡單平滑移動相機到正面近處
+            // 這裡使用簡單的直接設置，但在 animate 中可以做 lerp
+            camera.position.set(0, 3.5, 8);
+            camera.lookAt(0, 1, 0);
+            
+            hideCombo();
+
+            // 兔子回正
+            playerGroup.position.x = 0;
+            playerGroup.rotation.z = 0;
+            playerGroup.rotation.y = 0;
+        }
+
+        // --- 7. 互動與輸入 ---
+        function pauseGame() {
+            if (gameState.state !== GAME_STATE.PLAYING && gameState.state !== GAME_STATE.TRANSITION) return;
+            _pausedDeadlineRemaining = Math.max(0, gameState.roundDeadline - Date.now());
+            gameState.state = GAME_STATE.PAUSED;
+            document.getElementById('pause-overlay').classList.add('visible');
+            document.getElementById('pause-btn').classList.remove('visible');
+        }
+
+        function resumeGame() {
+            if (gameState.state !== GAME_STATE.PAUSED) return;
+            gameState.roundDeadline = Date.now() + _pausedDeadlineRemaining;
+            _lastFrameMs = performance.now();
+            gameState.state = GAME_STATE.PLAYING;
+            document.getElementById('pause-overlay').classList.remove('visible');
+            document.getElementById('pause-btn').classList.add('visible');
+        }
+
+        function returnToTitle() {
+            gameState.state = GAME_STATE.MENU;
+            document.getElementById('pause-overlay').classList.remove('visible');
+            document.getElementById('pause-btn').classList.remove('visible');
+            clearScene();
+            particles.forEach(p => scene.remove(p));
+            particles = [];
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').style.opacity = '0';
+            document.getElementById('ui-container').style.opacity = 0;
+            camera.position.set(0, 5, 14);
+            camera.lookAt(0, 0, 0);
+            // Fix 1: clear feedback overlay so stale text is not visible on main menu
+            const fo = document.getElementById('feedback-overlay');
+            if (fo) { fo.style.opacity = '0'; fo.textContent = ''; }
+            // Fix 4: clear chinese-hint stale text when returning to menu
+            const ch = document.getElementById('chinese-hint');
+            if (ch) ch.textContent = '';
+            updateStartStats();
+        }
+
+        function handleInput(e) {
+            // 計算標準化座標
+            let clientX = (e.touches) ? e.touches[0].clientX : e.clientX;
+            let normalizedX = (clientX / window.innerWidth) * 2 - 1; // -1 to 1
+
+            if (gameState.state === GAME_STATE.PLAYING) {
+                // 遊戲中：左右移動
+                const x = normalizedX * 6; // 映射到跑道寬度
+                playerGroup.position.x = Math.max(-5.5, Math.min(5.5, x));
+            } 
+            else if (gameState.state === GAME_STATE.SHOWCASE) {
+                // 展示中：左右旋轉 (微轉)
+                // 限制角度在 -0.5 ~ 0.5 弧度之間 (約正負 30 度)
+                const limit = 0.6; 
+                playerGroup.rotation.y = Math.max(-limit, Math.min(limit, normalizedX * 0.8));
+            }
+        }
+
+        function triggerHurtEffect() {
+            gameState.flashTimer = 15;
+            playerBody.children.forEach(mesh => {
+                if (mesh.userData && mesh.userData.isBodyPart) mesh.material.color.setHex(0xff6b81);
+            });
+        }
+
+        function resetPlayerVisuals() {
+            gameState.flashTimer = 0;
+            playerBody.children.forEach(mesh => {
+                if (mesh.userData && mesh.userData.isBodyPart && mesh.userData.originalColor !== undefined) {
+                    mesh.material.color.setHex(mesh.userData.originalColor);
+                }
+            });
+        }
+
+        function onHit(box) {
+            box.userData.active = false;
+            const plan = gameState.chunkPlan;
+            const ci = gameState.chunkIndex;
+            const requiredChunk = (plan && ci < plan.length) ? plan[ci] : gameState.wordData.target[gameState.letterIndex];
+            const chunkSize = requiredChunk.length;
+            if (!gameState.firstHitAt) gameState.firstHitAt = Date.now();
+
+            if (box.userData.letter === requiredChunk) {
+                gameState.combo++;
+                gameState.comboMult = getComboMult(gameState.combo);
+                gameState.score += Math.round(10 * chunkSize * gameState.comboMult);
+                gameState.mistakes = 0;
+                updateErrorBudget();
+                gameState.correctHits++;
+                gameState.consecutiveCorrectLetters += chunkSize;
+                gameState.hitStopFrames = 7;
+                scene.remove(box);
+                const _hitIdx = targets.indexOf(box); if (_hitIdx !== -1) targets.splice(_hitIdx, 1);
+                // Deactivate remaining wrong boxes so they can't cause false misses
+                targets.forEach(t => { if (t.userData.active) t.userData.active = false; });
+                // Allow next wave to spawn quickly (~200ms) without waiting the full interval
+                gameState.lastSpawnTime = Date.now() - 1300;
+                createParticles(box.position, "#2ecc71");
+                showFeedback(chunkSize > 1 ? "GREAT!" : "YES!", "#2ecc71");
+                showCombo();
+                const popStart = gameState.letterIndex;
+                gameState.letterIndex += chunkSize;
+                gameState.chunkIndex++;
+                updateLetterSlots();
+                // Pop animation on newly filled slots
+                for (let _i = popStart; _i < gameState.letterIndex; _i++) {
+                    const _s = document.getElementById('slot-' + _i);
+                    if (_s) { _s.classList.remove('pop-anim'); void _s.offsetWidth; _s.classList.add('pop-anim'); }
+                }
+
+                if (gameState.letterIndex >= gameState.wordData.target.length) {
+                    completeWordSequence();
+                }
+            } else {
+                gameState.combo = gameState.combo >= 4 ? Math.floor(gameState.combo / 2) : 0;
+                gameState.comboMult = getComboMult(gameState.combo);
+                gameState.consecutiveCorrectLetters = 0;
+                gameState.mistakes++;
+                updateErrorBudget();
+                gameState.wrongHits++;
+                showFeedback("Miss!", "#ff4757");
+                createParticles(box.position, "#ff4757");
+                triggerHurtEffect();
+                updateLetterSlots();
+                // Shake animation on current-chunk slots
+                for (let _i = gameState.letterIndex; _i < gameState.letterIndex + chunkSize && _i < gameState.wordData.target.length; _i++) {
+                    const _s = document.getElementById('slot-' + _i);
+                    if (_s) { _s.classList.remove('shake-anim'); void _s.offsetWidth; _s.classList.add('shake-anim'); }
+                }
+                hideCombo();
+                box.userData.velocity = new THREE.Vector3((Math.random()-0.5)*4, 3, 2);
+                gameState.lastSpawnTime = Date.now() - 700; // retry same chunk in ~800ms
+            }
+        }
+
+        function showFeedback(text, color) {
+            const el = document.getElementById('feedback-overlay');
+            el.innerText = text;
+            el.style.color = color;
+            el.style.opacity = 1;
+            el.style.transform = "translate(-50%, -50%) scale(1.3)";
+            setTimeout(() => {
+                el.style.opacity = 0;
+                el.style.transform = "translate(-50%, -50%) scale(1)";
+            }, 600);
+        }
+
+        function createParticles(pos, colorHex) {
+            const color = new THREE.Color(colorHex);
+            for(let i=0; i<10; i++) {
+                const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+                const mat = new THREE.MeshBasicMaterial({ color: color });
+                const p = new THREE.Mesh(geo, mat);
+                p.position.copy(pos);
+                p.userData.vel = new THREE.Vector3((Math.random()-0.5), Math.random(), (Math.random()-0.5));
+                scene.add(p);
+                particles.push(p);
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- 8. 主迴圈 ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Delta-time：使物理移動與螢幕更新率無關，1.0 = 60fps
+            const _nowMs = performance.now();
+            const _dt = Math.min((_nowMs - _lastFrameMs) / 16.667, 3.0);
+            _lastFrameMs = _nowMs;
+
+            // 暫停：只渲染畫面，不更新物理
+            if (gameState.state === GAME_STATE.PAUSED) {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            // Hit-stop：正確撞擊後凍結物理幾幀，增加重量感
+            if (gameState.hitStopFrames > 0) {
+                gameState.hitStopFrames--;
+                renderer.render(scene, camera);
+                return;
+            }
+
+            const time = Date.now() * 0.008;
+
+            if (gameState.state === GAME_STATE.PLAYING || gameState.state === GAME_STATE.TRANSITION) {
+                // 計時條即時更新
+                if (gameState.state === GAME_STATE.PLAYING && _timerFill && gameState.stageMeta) {
+                    const ratio = Math.max(0, (gameState.roundDeadline - Date.now()) / (gameState.totalTimerMs || gameState.stageMeta.timerMs));
+                    _timerFill.style.width   = (ratio * 100) + '%';
+                    _timerFill.style.background = ratio > 0.5 ? '#2ecc71' : ratio > 0.25 ? '#f1c40f' : '#ff4757';
+                    _timerFill.style.opacity = ratio < 0.2
+                        ? String(0.5 + Math.abs(Math.sin(Date.now() * 0.009)) * 0.5)
+                        : '1';
+                    _timerFill.classList.toggle('urgent', ratio <= 0.25);
+                }
+
+                // Danger vignette — red edge glow when box is very close
+                if (_dangerVignette && gameState.state === GAME_STATE.PLAYING) {
+                    let closestZ = -99;
+                    for (const _tb of targets) {
+                        if (_tb.userData.active && !_tb.userData.velocity) closestZ = Math.max(closestZ, _tb.position.z);
+                    }
+                    const _danger = closestZ > -6 ? Math.min(1, (closestZ + 6) / 6) : 0;
+                    _dangerVignette.style.opacity = _danger;
+                    _dangerVignette.classList.toggle('active', _danger > 0.01);
+                } else if (_dangerVignette) {
+                    _dangerVignette.style.opacity = 0;
+                    _dangerVignette.classList.remove('active');
+                }
+
+                // 1. 主角動畫 (跑步)
+                playerBody.position.y = Math.abs(Math.sin(time * 2.5)) * 0.25;
+                if(gameState.state === GAME_STATE.PLAYING) {
+                    playerGroup.rotation.z = playerGroup.position.x * -0.05;
+                } else {
+                    playerGroup.rotation.z = 0;
+                }
+
+                // 受傷閃爍
+                if (gameState.flashTimer > 0) {
+                    gameState.flashTimer--;
+                    if (gameState.flashTimer <= 0) resetPlayerVisuals();
+                }
+
+                // 道具浮動 (大幅度)
+                for(let k in anchors) {
+                    if(anchors[k].children.length > 0) {
+                        anchors[k].children[0].rotation.y += 0.02;
+                        const range = k.includes('shoulder') ? 0.02 : 0.05;
+                        anchors[k].children[0].position.y = Math.sin(time*3)*range;
+                    }
+                }
+
+                // 3. 方塊移動
+                for (let i = targets.length - 1; i >= 0; i--) {
+                    if (!targets[i]) continue;
+                    const box = targets[i];
+                    
+                    if (box.userData.velocity) {
+                        box.position.x += box.userData.velocity.x * _dt;
+                        box.position.y += box.userData.velocity.y * _dt;
+                        box.position.z += box.userData.velocity.z * _dt;
+                        box.rotation.x += 0.2 * _dt;
+                        box.userData.velocity.y -= 0.1 * _dt;
+                    } else {
+                        box.position.z += gameState.speed * _dt * (box.userData.speedMult || 1.0);
+                        box.rotation.y += 0.01 * _dt;
+
+                        if (box.userData.active && gameState.state === GAME_STATE.PLAYING &&
+                            box.userData.waveId === gameState.currentWaveId) {
+                            const xThresh = Math.max(1.4, (box.userData.boxW || 1.3) * 0.55);
+                            if (Math.abs(box.position.z - playerGroup.position.z) < 1.0 &&
+                                Math.abs(box.position.x - playerGroup.position.x) < xThresh) {
+                                onHit(box);
+                            }
+                        }
+                    }
+                    if (box.position.z > 5 || box.position.y < -10) {
+                        scene.remove(box);
+                        targets.splice(i, 1);
+                    }
+                }
+
+                // 2b. 新波次生成（在碰撞檢測後，確保不會在同一幀內先取消再判定）
+                trySpawnWave();
+
+                // 粒子
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.position.x += p.userData.vel.x * _dt;
+                    p.position.y += p.userData.vel.y * _dt;
+                    p.position.z += p.userData.vel.z * _dt;
+                    p.userData.vel.y -= 0.05 * _dt;
+                    p.rotation.x += 0.1;
+                    if(p.position.y < -5) {
+                        scene.remove(p);
+                        particles.splice(i, 1);
+                    }
+                }
+            } 
+            else if (gameState.state === GAME_STATE.SHOWCASE) {
+                // 展示模式動畫：微呼吸感
+                playerBody.position.y = Math.sin(time) * 0.05;
+                
+                // 道具繼續轉動
+                for(let k in anchors) {
+                    if(anchors[k].children.length > 0) {
+                        anchors[k].children[0].rotation.y += 0.01;
+                    }
+                }
+                
+                // 粒子繼續飄 (如果有的話)
+                for (let i = particles.length - 1; i >= 0; i--) {
+                     const p = particles[i];
+                     p.position.add(p.userData.vel);
+                     if(p.position.y < -5) { scene.remove(p); particles.splice(i, 1); }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
