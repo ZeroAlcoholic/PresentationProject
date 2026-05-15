@@ -166,25 +166,25 @@
         
         #score-board {
             font-family: "Baloo 2", "Fredoka", sans-serif;
-            font-size: 1.55rem;
+            font-size: 1.25rem;
             font-weight: 800;
             color: #fff;
             text-shadow: 0 2px 4px rgba(0,0,0,0.25);
             background: linear-gradient(135deg, #ff7a59, #e9542f);
-            padding: 10px 22px;
-            border-radius: 20px;
-            box-shadow: 0 6px 0 rgba(180,50,20,0.5), 0 10px 24px rgba(255,100,70,0.3);
+            padding: 7px 16px;
+            border-radius: 16px;
+            box-shadow: 0 5px 0 rgba(180,50,20,0.5), 0 8px 18px rgba(255,100,70,0.3);
             letter-spacing: 0.04em;
         }
 
         #level-indicator {
-            margin-top: 8px;
-            font-size: 1rem;
+            margin-top: 6px;
+            font-size: 0.82rem;
             font-weight: 700;
-            color: rgba(255,255,255,0.9);
+            color: rgba(255,255,255,0.85);
             background: rgba(15,25,50,0.45);
             backdrop-filter: blur(8px);
-            padding: 5px 16px;
+            padding: 4px 12px;
             border-radius: 999px;
             display: inline-block;
             border: 1px solid rgba(255,255,255,0.18);
@@ -251,6 +251,9 @@
             justify-content: center;
             pointer-events: auto;
             z-index: 20;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 24px 16px;
         }
 
         /* 遊戲結束畫面改為底部浮層，讓主角露出來 */
@@ -502,6 +505,7 @@
             #spelling-bar {
                 width: calc(100% - 32px);
                 padding: 10px 12px;
+                margin-top: 54px;
             }
             #chinese-hint { font-size: 1.55rem; }
             .letter-slot {
@@ -518,12 +522,30 @@
                 width: calc(100% - 52px);
             }
             #progress-info {
-                top: 88px;
-                right: 12px;
+                top: 10px;
+                right: 10px;
+                bottom: auto;
+            }
+            #score-board {
+                font-size: 0.92rem;
+                padding: 5px 12px;
+                border-radius: 12px;
+                box-shadow: 0 4px 0 rgba(180,50,20,0.5), 0 6px 14px rgba(255,100,70,0.28);
+            }
+            #level-indicator {
+                display: none;
             }
             h1 { font-size: 2.2rem; }
-            p { font-size: 1.2rem; }
-            .mode-buttons .btn { font-size: 1.15rem; padding: 11px 18px; }
+            p { font-size: 1.15rem; }
+            .mode-buttons .btn { font-size: 1.1rem; padding: 10px 16px; }
+            #start-screen { justify-content: flex-start; padding-top: 32px; }
+            #start-screen h1 { font-size: 2.4rem; margin-bottom: 2px; }
+            .start-sub { margin-bottom: 14px; font-size: 0.82rem; }
+            .intro-box { padding: 12px 22px; margin-bottom: 0; }
+            .mode-buttons { margin-top: 16px; gap: 8px; }
+            #start-stats { margin-top: 8px; padding: 4px 14px; font-size: 0.78rem; }
+            #animal-selector { margin-top: 10px; }
+            .animal-row { max-height: 130px; }
         }
 
         /* 單字匯入對話框 */
@@ -791,8 +813,7 @@
         <h1>Word Quest 3D</h1>
         <p class="start-sub">Recall Runner · 字母跑道</p>
         <div class="intro-box">
-            <p>1. 看中文提示，<span class="highlight">依序撞擊字母</span>拼出完整單字</p>
-            <p>2. 左右滑動控制角色，撞對得分、撞錯扣 combo</p>
+            <p>左右滑動，撞擊<span class="highlight">正確字母</span>拼出單字</p>
         </div>
         <div class="mode-buttons">
             <button class="btn" onclick="startGame('adventure')">冒險</button>
@@ -1538,7 +1559,7 @@
         let anchors ={ top: null, left: null, right: null, shoulderL: null, shoulderR: null };
         let targets = [];
         let particles = [];
-        let lanes = [-5, 0, 5];
+        let lanes = [-3.8, 0, 3.8];
         let _lastFrameMs = performance.now();
 
         // --- 2. 初始化 ---
