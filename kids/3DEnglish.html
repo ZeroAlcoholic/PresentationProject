@@ -931,58 +931,82 @@
 
         let vocabulary = buildVocabArray(VOCAB_PRESETS["unit3+4"]);
 
-        // --- 語言學斷詞表（音節/詞根/前後綴/phonics 為依據）---
-        const WORD_CHUNKS = {
-            'apple':     ['A','P','P','L','E'],
-            'banana':    ['B','A','NA','NA'],
-            'orange':    ['OR','A','N','GE'],
-            'water':     ['W','A','T','ER'],
-            'morning':   ['MOR','N','ING'],
-            'window':    ['WIN','D','OW'],
-            'chair':     ['CH','A','I','R'],
-            'school':    ['SCH','OO','L'],
-            'teacher':   ['TEACH','ER'],
-            'student':   ['STU','D','ENT'],
-            'pencil':    ['PEN','C','IL'],
-            'library':   ['LI','BRA','RY'],
-            'computer':  ['COM','PU','TER'],
-            'animal':    ['A','NI','MAL'],
-            'garden':    ['GAR','D','EN'],
-            'planet':    ['PLA','N','ET'],
-            'rocket':    ['ROCK','ET'],
-            'yellow':    ['Y','EL','L','OW'],
-            'happy':     ['H','A','P','P','Y'],
-            'important': ['IM','POR','TANT'],
-            'because':   ['BE','CAUSE'],
-            'beautiful': ['BEAU','TI','FUL'],
-            'different': ['DIF','FER','ENT'],
-            'remember':  ['RE','MEM','BER'],
-            'practice':  ['PRAC','T','ICE'],
-            'chicken':   ['CH','ICK','EN'],
-            'kitchen':   ['K','ITCH','EN'],
-            'brother':   ['BRO','THER'],
-            'sister':    ['SIS','TER'],
-            'friend':    ['FR','I','END'],
-            'mountain':  ['MOUN','TAIN'],
-            'river':     ['R','I','V','ER'],
-            'weather':   ['WEA','THER'],
-            'doctor':    ['DOC','TOR'],
-            'elephant':  ['E','LE','PHANT'],
-            'butterfly': ['BUT','TER','FLY'],
-            'rainbow':   ['RAIN','BOW'],
-            'umbrella':  ['UM','BREL','LA'],
-            'together':  ['TO','GE','THER'],
-            'question':  ['QUES','TION'],
-            'exercise':  ['EX','ER','CISE'],
-            'favorite':  ['FA','VOR','ITE'],
-            'birthday':  ['BIRTH','DAY'],
-            'surprise':  ['SUR','PRISE'],
-            'sandwich':  ['SAND','WICH'],
-            'dinosaur':  ['DI','NO','SAUR'],
-            'treasure':  ['TREA','SURE'],
-            'princess':  ['PRIN','CESS'],
-            'chocolate': ['CHO','CO','LATE'],
-            'vegetable': ['VE','GE','TA','BLE']
+        // --- Phonics / Grapheme 切分規則 ---
+        // 優先順序：4字母組 > 3字母組(三字素) > 2字母組(二字素) > 單字母
+        // 左至右貪婪掃描，適用於任何英文單字（含自訂匯入）
+
+        // 4-letter grapheme patterns
+        const QUAD_GRAPHEMES = new Set([
+            'ough', // thought /ɔː/, through /uː/, tough /ʌ/, cough /ɒ/
+            'augh', // caught /ɔː/, daughter, laugh /æ/
+            'eigh', // eight /eɪ/, weight, height /aɪ/
+        ]);
+
+        // Trigraphs (3-letter grapheme units)
+        const TRI_GRAPHEMES = new Set([
+            'tch', // watch, catch, kitchen — /tʃ/
+            'dge', // bridge, judge, edge   — /dʒ/
+            'igh', // light, night, high    — /aɪ/
+            'ght', // straight, eight(t)    — silent gh + /t/
+            'air', // chair, fair, hair     — /eə/
+            'ear', // hear, near, learn     — /ɪə/ or /ɜː/
+            'ure', // pure, sure, treasure  — /jʊə/ or /ə/
+            'sch', // school, scheme        — /sk/
+        ]);
+
+        // Digraphs (2-letter grapheme units)
+        const DI_GRAPHEMES = new Set([
+            // Consonant digraphs
+            'ch','sh','th','wh','ph',
+            'ng','ck','gh','kn','wr','qu','nk',
+            // Vowel teams
+            'ai','ay','ee','ea','ie',
+            'oa','oo','ue','ew',
+            'oi','oy','ou','ow','au','aw',
+            'ui','ey','oe',
+            // R-controlled vowels
+            'ar','er','ir','or','ur',
+            // Common doubled consonants (one phoneme, two letters)
+            'ss','ll','tt','ff','rr','nn','mm','pp','zz',
+        ]);
+
+        // Grapheme-level confusable pairs — for phonics-aware distractor generation
+        const GRAPHEME_CONFUSABLES = {
+            // Consonant digraphs
+            'CH':['SH','TH','CK','TCH'],  'SH':['CH','TH','S','SCH'],
+            'TH':['CH','SH','PH','T'],     'WH':['W','TH','SH'],
+            'PH':['F','TH','CH'],           'NG':['NK','N','GN'],
+            'CK':['C','CH','K','CC'],       'GH':['G','F','CH'],
+            'KN':['N','GN','K'],            'WR':['R','W'],
+            'QU':['CK','K','C'],            'NK':['NG','CK','N'],
+            // Trigraphs
+            'TCH':['CH','CK','SH'],         'DGE':['GE','J','DG'],
+            'IGH':['IE','AI','I','EE'],     'GHT':['T','GT','CT'],
+            'AIR':['EAR','ARE','AR','AI'],  'EAR':['AIR','ER','EE','EA'],
+            'URE':['UR','ER','OUR'],        'SCH':['SK','SH','SC'],
+            // Vowel teams
+            'AI':['AY','A','EI','IE'],      'AY':['AI','EY','A'],
+            'EE':['EA','IE','I','E'],       'EA':['EE','IE','A','AI'],
+            'IE':['EE','EI','I','EA'],      'OA':['OW','OE','O'],
+            'OO':['OU','EW','UE','O'],      'UE':['OO','EW','U'],
+            'EW':['UE','OO','U'],           'OI':['OY','OE','O'],
+            'OY':['OI','O','OW'],           'OU':['OW','AU','OO','O'],
+            'OW':['OU','OA','OE','O'],      'AU':['AW','OU','AH'],
+            'AW':['AU','OW','AH'],          'UI':['UE','OO','U'],
+            'EY':['AY','EE','E'],           'OE':['OW','OA','O'],
+            // R-controlled vowels
+            'AR':['OR','ER','A'],           'ER':['AR','IR','UR','E'],
+            'IR':['ER','UR','AR','I'],      'OR':['AR','OUR','O'],
+            'UR':['ER','IR','AR','U'],
+            // 4-letter
+            'OUGH':['OW','OO','AU'],        'AUGH':['AW','AU','OW'],
+            'EIGH':['AY','AI','EI'],
+            // Doubled consonants
+            'SS':['S','SE','C'],            'LL':['L','LE'],
+            'TT':['T','TE'],               'FF':['F','PH'],
+            'RR':['R'],                     'NN':['N'],
+            'MM':['M'],                     'PP':['P'],
+            'ZZ':['Z','S'],
         };
 
         const STAGE_LEARNING_CURVE = {
@@ -1125,6 +1149,7 @@
         }
 
         function openImportDialog() {
+            if (gameState.state === GAME_STATE.PLAYING || gameState.state === GAME_STATE.TRANSITION) return;
             const ta = document.getElementById('import-text');
             const existing = loadCustomWords();
             if (existing.length > 0) {
@@ -1560,7 +1585,13 @@
         let targets = [];
         let particles = [];
         let lanes = [-3.8, 0, 3.8];
+        let _animFrameId = null;
         let _lastFrameMs = performance.now();
+        let _roundTimeouts = [];
+        let _feedbackTimeout = null;
+        let _lastInputWasTouch = false;
+        let _lastTouchTime = 0;
+        let _targetPlayerX = 0;
 
         // --- 2. 初始化 ---
         function init() {
@@ -1627,6 +1658,15 @@
             });
 
             animate();
+
+            // Pause rendering when tab is hidden; resume when visible again
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    if (_animFrameId) { cancelAnimationFrame(_animFrameId); _animFrameId = null; }
+                } else {
+                    if (!_animFrameId) animate();
+                }
+            });
         }
 
         function createGround() {
@@ -1718,13 +1758,14 @@
 
         function switchAnimal(animalKey) {
             const animal = ANIMALS[animalKey] || ANIMALS.bunny;
-            // 移除舊身體部件（保留掛載點與道具）
             const toRemove = [];
             playerBody.children.forEach(child => {
                 if (child.userData && child.userData.isBodyPart) toRemove.push(child);
             });
-            toRemove.forEach(child => playerBody.remove(child));
-            // 建構新身體
+            toRemove.forEach(child => {
+                playerBody.remove(child);
+                disposeMeshRecursive(child);
+            });
             animal.build().forEach(mesh => playerBody.add(mesh));
         }
 
@@ -1847,8 +1888,11 @@
 
             // 4. 裝備道具
             const anchor = anchors[targetSlot];
-            // 清空舊的
-            while(anchor.children.length > 0) anchor.remove(anchor.children[0]);
+            while(anchor.children.length > 0) {
+                const child = anchor.children[0];
+                anchor.remove(child);
+                disposeMeshRecursive(child);
+            }
             
             anchor.add(selectedProp.fn());
             
@@ -1857,7 +1901,11 @@
 
         function clearAllProps() {
             for(let k in anchors) {
-                while(anchors[k].children.length > 0) anchors[k].remove(anchors[k].children[0]);
+                while(anchors[k].children.length > 0) {
+                    const child = anchors[k].children[0];
+                    anchors[k].remove(child);
+                    disposeMeshRecursive(child);
+                }
             }
         }
 
@@ -2234,7 +2282,7 @@
                 source: plan.source,
                 wave: plan.wave,
                 difficulty: hint,
-                maskedWord: makeMask(plan.wordEntry.word, hint.hidePercent, hint.level < 4, stageMeta.stageNumber, plan.wave)
+                maskedWord: makeMask(plan.wordEntry.word.replace(/-/g, ''), hint.hidePercent, hint.level < 4, stageMeta.stageNumber, plan.wave)
             };
         }
 
@@ -2336,6 +2384,32 @@
             return array;
         }
 
+        // --- Phonics segmentation engine ---
+        // Greedy left-to-right scan: longest grapheme match wins at each position.
+        // Works for any English word, including custom imported vocabulary.
+        function segmentByGraphemes(wordLower) {
+            const segments = [];
+            let i = 0;
+            const len = wordLower.length;
+            while (i < len) {
+                const rem = len - i;
+                if (rem >= 4 && QUAD_GRAPHEMES.has(wordLower.slice(i, i + 4))) {
+                    segments.push(wordLower.slice(i, i + 4));
+                    i += 4;
+                } else if (rem >= 3 && TRI_GRAPHEMES.has(wordLower.slice(i, i + 3))) {
+                    segments.push(wordLower.slice(i, i + 3));
+                    i += 3;
+                } else if (rem >= 2 && DI_GRAPHEMES.has(wordLower.slice(i, i + 2))) {
+                    segments.push(wordLower.slice(i, i + 2));
+                    i += 2;
+                } else {
+                    segments.push(wordLower[i]);
+                    i++;
+                }
+            }
+            return segments;
+        }
+
         // --- 易錯干擾選字 ---
         function getComboMult(combo) {
             if (combo >= 12) return 3;
@@ -2393,38 +2467,24 @@
             return candidates.slice(0, 2);
         }
 
-        // --- 多字母方塊系統 ---
+        // --- 多字母方塊系統（Phonics Grapheme Segmentation）---
         function planChunks(word) {
-            const key = word.toLowerCase();
             const rng = gameState.rng || Math.random;
             const stage = gameState.stageMeta ? gameState.stageMeta.stageNumber : 1;
-            // 階段越高，越多 chunk 被拆回單字母（測試完整記憶）
+            // 階段越高，二字素/三字素被拆回單字母的機率越高（測試更深層的拼字記憶）
             const breakChance = Math.min(0.55, stage * 0.055);
 
-            const base = WORD_CHUNKS[key];
-            if (base) {
-                const result = [];
-                for (const chunk of base) {
-                    if (chunk.length > 1 && rng() < breakChance) {
-                        for (const c of chunk) result.push(c);
-                    } else {
-                        result.push(chunk);
-                    }
+            // 用 phonics 引擎分解任意英文單字（含自訂匯入）
+            const base = segmentByGraphemes(word.toLowerCase());
+            const result = [];
+            for (const chunk of base) {
+                if (chunk.length > 1 && rng() < breakChance) {
+                    for (const c of chunk) result.push(c.toUpperCase());
+                } else {
+                    result.push(chunk.toUpperCase());
                 }
-                return result;
             }
-
-            // 自訂匯入單字的 fallback：機械式雙字母切分
-            const upper = word.toUpperCase();
-            if (upper.length <= 5) return upper.split('');
-            const chunks = [upper[0]];
-            let pos = 1;
-            while (pos < upper.length) {
-                const left = upper.length - pos;
-                if (left <= 2) { chunks.push(upper.substring(pos, pos + left)); pos += left; }
-                else { chunks.push(upper.substring(pos, pos + 2)); pos += 2; }
-            }
-            return chunks;
+            return result;
         }
 
         function getChunkDistractors(correctChunk, wordTarget, startIndex) {
@@ -2432,7 +2492,14 @@
             const pool = [];
             const len = correctChunk.length;
 
-            // 策略 1：逐位替換為形似/音似字母
+            // 策略 0：Phonics/Grapheme 知識干擾（最高優先）
+            // 選用與正確字素音近或形近的其他字素，讓干擾具有真實的辨識難度
+            const confusables = GRAPHEME_CONFUSABLES[correctChunk] || [];
+            for (const c of confusables) {
+                if (c !== correctChunk && !pool.includes(c)) pool.push(c);
+            }
+
+            // 策略 1：逐位替換為形似/音似字母（單字母層級）
             for (let p = 0; p < len; p++) {
                 const ch = correctChunk[p];
                 const sources = [
@@ -2456,8 +2523,6 @@
             } else if (len >= 3) {
                 const t1 = correctChunk[1] + correctChunk[0] + correctChunk.substring(2);
                 if (t1 !== correctChunk && !pool.includes(t1)) pool.push(t1);
-                const t2 = correctChunk[0] + correctChunk.substring(2, len) + correctChunk[1];
-                if (t2 !== correctChunk && !pool.includes(t2)) pool.push(t2);
             }
 
             // 策略 3：相鄰位置的 chunk（測試位置記憶）
@@ -2473,7 +2538,8 @@
             }
 
             // 不足 2 個時用字母位移補足
-            while (pool.length < 2) {
+            let _guard = 0;
+            while (pool.length < 2 && _guard++ < 52) {
                 const p = pool.length % len;
                 const ch = correctChunk[p];
                 const next = String.fromCharCode(((ch.charCodeAt(0) - 65 + 1 + pool.length) % 26) + 65);
@@ -2484,6 +2550,13 @@
                     const n2 = String.fromCharCode(((correctChunk[p2].charCodeAt(0) - 65 + 2 + pool.length) % 26) + 65);
                     const fb2 = correctChunk.substring(0, p2) + n2 + correctChunk.substring(p2 + 1);
                     if (fb2 !== correctChunk && !pool.includes(fb2)) pool.push(fb2);
+                }
+            }
+            // Emergency: alphabet scan ensures we always get 2 distractors
+            if (pool.length < 2) {
+                for (let _ai = 0; _ai < 26 && pool.length < 2; _ai++) {
+                    const fb = String.fromCharCode(65 + _ai);
+                    if (fb !== correctChunk && !pool.includes(fb)) pool.push(fb);
                 }
             }
 
@@ -2621,6 +2694,7 @@
         }
 
         function startGame(mode = "adventure", stageNum = null) {
+            if (!_animFrameId) animate(); // restart loop if paused (e.g. tab was hidden)
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-over-screen').classList.remove('active');
             document.getElementById('game-over-screen').classList.add('hidden');
@@ -2663,23 +2737,62 @@
             loadLevel();
         }
 
+        function disposeMesh(mesh) {
+            if (!mesh) return;
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) {
+                if (mesh.material.map) mesh.material.map.dispose();
+                mesh.material.dispose();
+            }
+        }
+
+        function disposeMeshRecursive(obj) {
+            if (!obj) return;
+            for (let i = obj.children.length - 1; i >= 0; i--) {
+                disposeMeshRecursive(obj.children[i]);
+                obj.remove(obj.children[i]);
+            }
+            disposeMesh(obj);
+        }
+
+        function clearRoundTimeouts() {
+            _roundTimeouts.forEach(id => clearTimeout(id));
+            _roundTimeouts = [];
+        }
+
+        function scheduleRoundTimeout(fn, ms) {
+            const id = setTimeout(() => {
+                _roundTimeouts = _roundTimeouts.filter(x => x !== id);
+                fn();
+            }, ms);
+            _roundTimeouts.push(id);
+            return id;
+        }
+
         function clearScene() {
-            targets.forEach(t => scene.remove(t));
+            targets.forEach(t => { scene.remove(t); disposeMesh(t); });
             targets = [];
         }
 
         function speak(text) {
+            if (!window.speechSynthesis) return;
             try {
                 speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance(text.toLowerCase());
                 u.lang = 'en-US'; u.rate = 0.85;
                 speechSynthesis.speak(u);
-            } catch(e) {}
+            } catch(e) { /* speech synthesis unavailable */ }
         }
 
         function loadLevel() {
+            clearRoundTimeouts();
             if (gameState.currentLevelIndex >= gameState.levelOrder.length) {
                 enterShowcaseMode();
+                return;
+            }
+            if (gameState.levelOrder.length === 0) {
+                showFeedback("No words!", "#ff4757");
+                scheduleRoundTimeout(() => returnToTitle(), 1500);
                 return;
             }
 
@@ -2687,6 +2800,8 @@
             gameState.wordData = gameState.currentRound;
             gameState.letterIndex = 0;
             gameState.mistakes = 0;
+            gameState.flashTimer = 0;
+            gameState.hitStopFrames = 0;
             for (let i=0;i<3;i++){const h=document.getElementById('heart-'+i);if(h)h.classList.remove('lost','warning');}
             gameState.correctHits = 0;
             gameState.wrongHits = 0;
@@ -2708,9 +2823,7 @@
             }
 
             updateUI();
-            // Speak word after display settles — reinforces sound-meaning link before typing
-            setTimeout(() => speak(gameState.wordData.target), 400);
-            // Spawn first wave immediately — no dead wait at word start
+            scheduleRoundTimeout(() => speak(gameState.wordData.target), 400);
             spawnWave();
             gameState.lastSpawnTime = Date.now();
         }
@@ -2820,11 +2933,11 @@
             document.getElementById('chinese-hint').innerHTML =
                 '<span style="color:#2ecc71">' + round.target + '</span> = ' + round.zh;
 
-            setTimeout(() => {
+            scheduleRoundTimeout(() => {
                 grantSmartProp();
             }, 600);
 
-            setTimeout(() => {
+            scheduleRoundTimeout(() => {
                 gameState.currentLevelIndex++;
                 loadLevel();
             }, 2200);
@@ -2843,7 +2956,25 @@
             document.getElementById('chinese-hint').innerHTML =
                 '<span style="color:#ff4757">' + gameState.currentRound.target + '</span> = ' + gameState.currentRound.zh;
             triggerHurtEffect();
-            setTimeout(() => {
+            scheduleRoundTimeout(() => {
+                gameState.currentLevelIndex++;
+                loadLevel();
+            }, 1300);
+        }
+
+        function failRound() {
+            if (gameState.state !== GAME_STATE.PLAYING) return;
+            gameState.state = GAME_STATE.TRANSITION;
+            clearScene();
+            gameState.combo = 0;
+            gameState.comboMult = 1;
+            hideCombo();
+            applyRoundResult("wrong");
+            showFeedback("MISS ×3", "#ff4757");
+            speak(gameState.currentRound.target);
+            document.getElementById('chinese-hint').innerHTML =
+                '<span style="color:#ff4757">' + gameState.currentRound.target + '</span> = ' + gameState.currentRound.zh;
+            scheduleRoundTimeout(() => {
                 gameState.currentLevelIndex++;
                 loadLevel();
             }, 1300);
@@ -2958,7 +3089,8 @@
             // UI 切換
             document.getElementById('ui-container').style.opacity = 0;
             const endScreen = document.getElementById('game-over-screen');
-            document.getElementById('run-summary').innerText = `Stage ${gameState.stageNumber} · ${accuracy}% clear · 弱字 ${weakCount()} · 到期 ${dueCount()}`;
+            const _runSummaryEl = document.getElementById('run-summary');
+            if (_runSummaryEl) _runSummaryEl.innerText = `Stage ${gameState.stageNumber} · ${accuracy}% clear · 弱字 ${weakCount()} · 到期 ${dueCount()}`;
 
             // 星星評分
             const stars = accuracy >= 85 ? 3 : accuracy >= 65 ? 2 : accuracy >= 40 ? 1 : 0;
@@ -3014,7 +3146,7 @@
 
         function resumeGame() {
             if (gameState.state !== GAME_STATE.PAUSED) return;
-            gameState.roundDeadline = Date.now() + _pausedDeadlineRemaining;
+            gameState.roundDeadline = Date.now() + Math.max(1500, _pausedDeadlineRemaining);
             _lastFrameMs = performance.now();
             gameState.state = GAME_STATE.PLAYING;
             document.getElementById('pause-overlay').classList.remove('visible');
@@ -3022,11 +3154,12 @@
         }
 
         function returnToTitle() {
+            clearRoundTimeouts();
             gameState.state = GAME_STATE.MENU;
             document.getElementById('pause-overlay').classList.remove('visible');
             document.getElementById('pause-btn').classList.remove('visible');
             clearScene();
-            particles.forEach(p => scene.remove(p));
+            particles.forEach(p => { scene.remove(p); disposeMesh(p); });
             particles = [];
             document.getElementById('start-screen').classList.remove('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
@@ -3044,19 +3177,23 @@
         }
 
         function handleInput(e) {
-            // 計算標準化座標
-            let clientX = (e.touches) ? e.touches[0].clientX : e.clientX;
-            let normalizedX = (clientX / window.innerWidth) * 2 - 1; // -1 to 1
+            const isTouch = !!e.touches;
+            if (isTouch) {
+                if (e.cancelable) e.preventDefault();
+                _lastInputWasTouch = true;
+                _lastTouchTime = Date.now();
+            } else {
+                // Suppress mouse events that arrive within 500ms of a touch event (hybrid device ghost)
+                if (_lastInputWasTouch && Date.now() - _lastTouchTime < 500) return;
+            }
+
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const normalizedX = (clientX / window.innerWidth) * 2 - 1;
 
             if (gameState.state === GAME_STATE.PLAYING) {
-                // 遊戲中：左右移動
-                const x = normalizedX * 6; // 映射到跑道寬度
-                playerGroup.position.x = Math.max(-5.5, Math.min(5.5, x));
-            } 
-            else if (gameState.state === GAME_STATE.SHOWCASE) {
-                // 展示中：左右旋轉 (微轉)
-                // 限制角度在 -0.5 ~ 0.5 弧度之間 (約正負 30 度)
-                const limit = 0.6; 
+                _targetPlayerX = Math.max(-5.5, Math.min(5.5, normalizedX * 6));
+            } else if (gameState.state === GAME_STATE.SHOWCASE) {
+                const limit = 0.6;
                 playerGroup.rotation.y = Math.max(-limit, Math.min(limit, normalizedX * 0.8));
             }
         }
@@ -3134,6 +3271,10 @@
                 }
                 hideCombo();
                 box.userData.velocity = new THREE.Vector3((Math.random()-0.5)*4, 3, 2);
+                if (gameState.mistakes >= 3) {
+                    setTimeout(() => failRound(), 700);
+                    return; // skip re-spawn; failRound handles transition
+                }
                 gameState.lastSpawnTime = Date.now() - 700; // retry same chunk in ~800ms
             }
         }
@@ -3144,7 +3285,9 @@
             el.style.color = color;
             el.style.opacity = 1;
             el.style.transform = "translate(-50%, -50%) scale(1.3)";
-            setTimeout(() => {
+            if (_feedbackTimeout) clearTimeout(_feedbackTimeout);
+            _feedbackTimeout = setTimeout(() => {
+                _feedbackTimeout = null;
                 el.style.opacity = 0;
                 el.style.transform = "translate(-50%, -50%) scale(1)";
             }, 600);
@@ -3171,7 +3314,7 @@
 
         // --- 8. 主迴圈 ---
         function animate() {
-            requestAnimationFrame(animate);
+            _animFrameId = requestAnimationFrame(animate);
 
             // Delta-time：使物理移動與螢幕更新率無關，1.0 = 60fps
             const _nowMs = performance.now();
@@ -3220,6 +3363,9 @@
                 }
 
                 // 1. 主角動畫 (跑步)
+                if (gameState.state === GAME_STATE.PLAYING) {
+                    playerGroup.position.x = _targetPlayerX;
+                }
                 playerBody.position.y = Math.abs(Math.sin(time * 2.5)) * 0.25;
                 if(gameState.state === GAME_STATE.PLAYING) {
                     playerGroup.rotation.z = playerGroup.position.x * -0.05;
@@ -3268,6 +3414,7 @@
                     }
                     if (box.position.z > 5 || box.position.y < -10) {
                         scene.remove(box);
+                        disposeMesh(box);
                         targets.splice(i, 1);
                     }
                 }
@@ -3285,10 +3432,11 @@
                     p.rotation.x += 0.1;
                     if(p.position.y < -5) {
                         scene.remove(p);
+                        disposeMesh(p);
                         particles.splice(i, 1);
                     }
                 }
-            } 
+            }
             else if (gameState.state === GAME_STATE.SHOWCASE) {
                 // 展示模式動畫：微呼吸感
                 playerBody.position.y = Math.sin(time) * 0.05;
@@ -3304,7 +3452,7 @@
                 for (let i = particles.length - 1; i >= 0; i--) {
                      const p = particles[i];
                      p.position.add(p.userData.vel);
-                     if(p.position.y < -5) { scene.remove(p); particles.splice(i, 1); }
+                     if(p.position.y < -5) { scene.remove(p); disposeMesh(p); particles.splice(i, 1); }
                 }
             }
 
