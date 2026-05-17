@@ -1657,6 +1657,9 @@
                 }
             });
 
+            // Hide in-game UI from a11y tree until startGame runs (start screen overlays it)
+            setUiHidden(true);
+
             animate();
 
             // Pause rendering when tab is hidden; resume when visible again
@@ -2701,7 +2704,7 @@
             document.getElementById('game-over-screen').style.opacity = 0;
             document.getElementById('pause-overlay').classList.remove('visible');
             document.getElementById('pause-btn').classList.add('visible');
-            document.getElementById('ui-container').style.opacity = 1;
+            setUiHidden(false);
             // Reset result screen state for fresh animations on next run
             for (let i=0;i<3;i++){const s=document.getElementById('star-'+i);if(s){s.className='star-off';s.style.animationDelay='';}}
             ['pill-accuracy','pill-perfects','pill-words'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('highlight');});
@@ -2735,6 +2738,19 @@
             clearScene();
             
             loadLevel();
+        }
+
+        function setUiHidden(hidden) {
+            const uc = document.getElementById('ui-container');
+            if (!uc) return;
+            uc.style.opacity = hidden ? 0 : 1;
+            if (hidden) {
+                uc.setAttribute('aria-hidden', 'true');
+                uc.inert = true;
+            } else {
+                uc.removeAttribute('aria-hidden');
+                uc.inert = false;
+            }
         }
 
         function disposeMesh(mesh) {
@@ -3087,7 +3103,7 @@
             }
             
             // UI 切換
-            document.getElementById('ui-container').style.opacity = 0;
+            setUiHidden(true);
             const endScreen = document.getElementById('game-over-screen');
             const _runSummaryEl = document.getElementById('run-summary');
             if (_runSummaryEl) _runSummaryEl.innerText = `Stage ${gameState.stageNumber} · ${accuracy}% clear · 弱字 ${weakCount()} · 到期 ${dueCount()}`;
@@ -3164,7 +3180,7 @@
             document.getElementById('start-screen').classList.remove('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
             document.getElementById('game-over-screen').style.opacity = '0';
-            document.getElementById('ui-container').style.opacity = 0;
+            setUiHidden(true);
             camera.position.set(0, 5, 14);
             camera.lookAt(0, 0, 0);
             // Fix 1: clear feedback overlay so stale text is not visible on main menu
@@ -3179,7 +3195,13 @@
         function handleInput(e) {
             const isTouch = !!e.touches;
             if (isTouch) {
-                if (e.cancelable) e.preventDefault();
+                // Only block scroll-during-gameplay; NEVER preventDefault on touchstart
+                // (would suppress synthetic click and break every UI button on mobile/tablet).
+                const isActiveGameplay = gameState.state === GAME_STATE.PLAYING || gameState.state === GAME_STATE.SHOWCASE;
+                if (e.type === 'touchmove' && e.cancelable && isActiveGameplay) {
+                    e.preventDefault();
+                }
+                if (!e.touches[0]) return; // touchend has empty touches list
                 _lastInputWasTouch = true;
                 _lastTouchTime = Date.now();
             } else {
