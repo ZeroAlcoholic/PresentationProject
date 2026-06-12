@@ -693,14 +693,19 @@ html, body {
   var DURATION = ACTS[ACTS.length - 1].end;
 
   // 相機關鍵影格 [t, worldX, scale]
+  // 每個站點在其幕內「停留」大部分時間，僅在交界處快速轉場 → 相機、字幕、器官同步對齊
   var CAM_KEYS = [
     [0,    STATION.intake + 120, 0.95],
     [2.5,  STATION.intake,        1.0],
-    [6,    STATION.eyes,          1.16],
-    [11,   STATION.brain,         1.05],
-    [16,   STATION.mouth,         1.1],
-    [21,   3200,                  0.95],  // 聚焦專業人員與客戶
-    [23.5, 3200,                  0.86],  // 略拉遠，納入價值階梯
+    [5.2,  STATION.intake,        1.0],   // 停留：資料湧入
+    [6,    STATION.eyes,          1.16],  // 轉場 → 眼睛
+    [10.2, STATION.eyes,          1.16],  // 停留：眼睛
+    [11,   STATION.brain,         1.05],  // 轉場 → 大腦
+    [15.2, STATION.brain,         1.05],  // 停留：大腦
+    [16,   STATION.mouth,         1.1],   // 轉場 → 耳口
+    [20.2, STATION.mouth,         1.1],   // 停留：耳口
+    [21,   3200,                  0.95],  // 轉場 → 終幕（人＋價值階梯）
+    [23.5, 3200,                  0.86],
     [25,   3200,                  0.85]
   ];
   function camAt(t) {
@@ -922,15 +927,18 @@ html, body {
 
     drawBackground(t);
 
-    // 運鏡：和緩的進場推鏡與輕微漂移（避免切換時的彈跳閃動）
+    // 運鏡：和緩的進場推鏡 + 停留時的緩慢推進（dolly）+ 輕微漂移（不產生彈跳閃動）
     var a = currentAct(t);
     var dt0 = t - a.start;
-    var punch = 0.028 * (1 - smoothstep(dt0 / 1.3));         // 較小、較慢的進場推鏡
-    var roll = 0.008 * (1 - smoothstep(dt0 / 1.3)) * (a.id % 2 ? 1 : -1) // 微側傾
-             + 0.004 * Math.sin(t * 0.35);                   // 緩慢漂移
+    var punch = 0.028 * (1 - smoothstep(dt0 / 1.3));         // 進場推鏡（快速回穩）
+    var dolly = 0.024 * smoothstep(dt0 / 3.5);               // 停留時持續緩推，畫面有呼吸
+    var roll = 0.008 * (1 - smoothstep(dt0 / 1.3)) * (a.id % 2 ? 1 : -1)
+             + 0.004 * Math.sin(t * 0.35);
+
+    drawAtmosphere(t, a.id);   // 舞台氛圍光（隨幕別換色：冷→暖）
 
     // 套用相機（世界 → 螢幕）
-    var zoom = (CH / WORLD_H) * cam.scale * (1 + punch);
+    var zoom = (CH / WORLD_H) * cam.scale * (1 + punch + dolly);
     ctx.save();
     ctx.translate(CW / 2, CH / 2);
     ctx.rotate(roll);
@@ -939,10 +947,11 @@ html, body {
 
     drawRiver(t);
     drawStationMarkers(t);
+    drawActivationPulse(a.id, dt0);   // 站點啟動光環（能量點亮）
     drawFlow(t);
 
-    // 各幕場景：含「提前淡入」與「延後淡出」，使相鄰幕真正交叉重疊（不會先消失再出現）
-    var LEAD = 1.4, TAIL = 1.2;
+    // 各幕場景：小幅交叉重疊，使器官在「相機抵達＋字幕出現」的同一時刻成形（連續性由資料流保證）
+    var LEAD = 0.7, TAIL = 0.6;
     for (var i = 0; i < ACTS.length; i++) {
       var ac = ACTS[i];
       var span = ac.end - ac.start;
@@ -1582,16 +1591,34 @@ html, body {
     ctx.beginPath(); ctx.arc(24, -28, 3, 0, TAU); ctx.fill();
     ctx.restore();
 
-    // 客戶（理解、安心 — 溫暖光暈）
+    // 客戶（理解、安心 — 溫暖光暈 + 放射光芒，象徵安心服務的圓滿）
     var custX = Xc + 170;
     var calm = smoothstep((p - 0.25) / 0.4);
+    // 放射的溫暖光芒（god-rays）
+    if (calm > 0.01) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.translate(custX, cy - 30);
+      ctx.rotate(t * 0.06);
+      var rays = 16;
+      for (var ry = 0; ry < rays; ry++) {
+        var ang = ry / rays * TAU;
+        var rl = 150 + 50 * Math.sin(t * 0.8 + ry);
+        var rg = ctx.createLinearGradient(0, 0, Math.cos(ang) * rl, Math.sin(ang) * rl);
+        rg.addColorStop(0, rgba(C.gold, 0.16 * alpha * calm));
+        rg.addColorStop(1, rgba(C.gold, 0));
+        ctx.strokeStyle = rg; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(ang) * rl, Math.sin(ang) * rl); ctx.stroke();
+      }
+      ctx.restore();
+    }
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    var wg = ctx.createRadialGradient(custX, cy - 30, 0, custX, cy - 30, 150);
-    wg.addColorStop(0, rgba(C.gold, 0.20 * alpha * calm * (0.7 + 0.3 * Math.sin(t * 1.5))));
+    var wg = ctx.createRadialGradient(custX, cy - 30, 0, custX, cy - 30, 160);
+    wg.addColorStop(0, rgba(C.gold, 0.24 * alpha * calm * (0.75 + 0.25 * Math.sin(t * 1.2))));
     wg.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = wg;
-    ctx.beginPath(); ctx.arc(custX, cy - 30, 150, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(custX, cy - 30, 160, 0, TAU); ctx.fill();
     ctx.restore();
     drawPerson(custX, cy + 10, 1.05, C.gold, alpha * calm);
 
@@ -1634,6 +1661,12 @@ html, body {
       ctx.restore();
       for (var s = 0; s < steps.length; s++) {
         var sa = stepA * smoothstep((p - 0.5 - s * 0.07) * 3);
+        if (sa <= 0.01) continue;
+        // 點亮瞬間的光暈（價值階梯依序綻放）
+        var ignite = sa * (1 - smoothstep((p - 0.52 - s * 0.07) * 2.2)); // 出現時最亮、隨後收斂
+        ctx.save(); ctx.globalCompositeOperation = "lighter";
+        glow(xs[s], y0, 70 + 70 * ignite, steps[s].col, 0.25 * sa + 0.45 * ignite);
+        ctx.restore();
         drawPill(steps[s].label, xs[s], y0, steps[s].col, sa, sc);
       }
     }
@@ -1746,6 +1779,46 @@ html, body {
     ctx.restore();
   }
 
+  // 各幕主色（用於氛圍光暈與啟動脈衝）：冷 → 暖 的價值旅程
+  function actCol(id) { return id === 4 ? C.violet : id === 5 ? C.amber : id === 6 ? C.gold : id === 2 ? C.gold : C.cyan; }
+  function actStationX(id) {
+    return id === 1 ? STATION.intake + 120 : id === 2 ? STATION.intake : id === 3 ? STATION.eyes
+         : id === 4 ? STATION.brain : id === 5 ? STATION.mouth : 3200;
+  }
+
+  // 氛圍光暈（螢幕空間，置於世界之後）：隨幕別換色，營造華麗的舞台光氛
+  function drawAtmosphere(t, id) {
+    var col = actCol(id);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var cx = CW * 0.5, cy = CH * 0.45;
+    var pulse = 0.045 + 0.018 * Math.sin(t * 0.45);
+    var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, CH * 0.8);
+    g.addColorStop(0, rgba(col, pulse));
+    g.addColorStop(0.5, rgba(col, pulse * 0.38));
+    g.addColorStop(1, rgba(col, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.restore();
+  }
+
+  // 器官「啟動」脈衝（世界空間）：抵達站點時擴散的光環，像能量點亮
+  function drawActivationPulse(id, dt0) {
+    if (dt0 < 0 || dt0 > 1.6) return;
+    var x = actStationX(id), col = actCol(id);
+    var k = smoothstep(dt0 / 1.6);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (var r = 0; r < 2; r++) {
+      var kk = clamp(k - r * 0.18, 0, 1);
+      if (kk <= 0 || kk >= 1) continue;
+      ctx.strokeStyle = rgba(col, (1 - kk) * 0.45 * (1 - r * 0.4));
+      ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.arc(x, AXIS_Y, lerp(50, 320, kk), 0, TAU); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function drawVignette() {
     ctx.save();
     var g = ctx.createRadialGradient(CW / 2, CH * 0.46, CH * 0.3, CW / 2, CH * 0.5, CH * 0.85);
@@ -1789,7 +1862,7 @@ html, body {
     var span = a.end - a.start;
     var local = t - a.start;
     var isLast = (a.id === ACTS[ACTS.length - 1].id);
-    var alpha = isLast ? smoothstep(local / 1.0) : fade(local, 1.0, span - 1.2, span);
+    var alpha = isLast ? smoothstep(local / 0.7) : fade(local, 0.7, span - 0.7, span);
     capEl.style.opacity = alpha.toFixed(3);
   }
 
