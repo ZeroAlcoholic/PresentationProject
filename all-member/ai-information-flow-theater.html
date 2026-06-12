@@ -81,7 +81,7 @@ html, body {
   transition: opacity 0.8s ease;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
 }
-.started .grain { opacity: 0.06; }
+.started .grain { opacity: 0.04; }
 
 /* ----------------------------- 字幕 / 旁白 ----------------------------- */
 .captions {
@@ -671,22 +671,22 @@ html, body {
   var WORLD_H = 1080, AXIS_Y = 552;
 
   var ACTS = [
-    { id: 1, start: 0,    end: 2,    pos: "center",
+    { id: 1, start: 0,   end: 2.5, pos: "center",
       title: "企業 AI 資訊流劇場",
       sub: "三個 AI 專案 · 一條從資料到服務的流程" },
-    { id: 2, start: 2,    end: 4.5,  pos: "lower",
+    { id: 2, start: 2.5, end: 6,   pos: "lower",
       title: "混亂的起點",
       sub: "文件 · 核保資料 · 客戶問題　湧入" },
-    { id: 3, start: 4.5,  end: 8.5,  pos: "lower",
+    { id: 3, start: 6,   end: 11,  pos: "lower",
       title: "牌卡三 · AI 的眼睛",
       sub: "讀懂單據 — 摘要 · 翻譯 · 標記" },
-    { id: 4, start: 8.5,  end: 12.5, pos: "lower",
+    { id: 4, start: 11,  end: 16,  pos: "lower",
       title: "牌卡四 · AI 的大腦",
       sub: "整理核保歷史 — 分類 · 標註 · 知識結構" },
-    { id: 5, start: 12.5, end: 16.5, pos: "lower",
+    { id: 5, start: 16,  end: 21,  pos: "lower",
       title: "牌卡六 · AI 的嘴巴與耳朵",
       sub: "聽懂問題 · 清楚回應 · 必要時轉交專業" },
-    { id: 6, start: 16.5, end: 19.5, pos: "lower",
+    { id: 6, start: 21,  end: 25,  pos: "lower",
       title: "資訊清楚 · 服務安心",
       sub: "從混亂到清楚 · 專業決策由人完成，AI 全程輔助" }
   ];
@@ -695,13 +695,13 @@ html, body {
   // 相機關鍵影格 [t, worldX, scale]
   var CAM_KEYS = [
     [0,    STATION.intake + 120, 0.95],
-    [2,    STATION.intake,        1.0],
-    [4.5,  STATION.eyes,          1.18],
-    [8.5,  STATION.brain,         1.05],
-    [12.5, STATION.mouth,         1.12],
-    [16.5, 3200,                  0.95],  // 聚焦專業人員與客戶
-    [18.5, 3200,                  0.86],  // 略拉遠，納入價值階梯
-    [19.5, 3200,                  0.85]
+    [2.5,  STATION.intake,        1.0],
+    [6,    STATION.eyes,          1.16],
+    [11,   STATION.brain,         1.05],
+    [16,   STATION.mouth,         1.1],
+    [21,   3200,                  0.95],  // 聚焦專業人員與客戶
+    [23.5, 3200,                  0.86],  // 略拉遠，納入價值階梯
+    [25,   3200,                  0.85]
   ];
   function camAt(t) {
     var k = CAM_KEYS;
@@ -819,7 +819,7 @@ html, body {
   for (var ki = 0; ki < 32; ki++) {
     STREAM.push({
       u0: ki / 32 + rnd(ki, 11) * 0.015,
-      speed: 0.052 + rnd(ki, 12) * 0.014,
+      speed: 0.042 + rnd(ki, 12) * 0.012,
       lane: (rnd(ki, 13) - 0.5) * 90,
       seed: rnd(ki, 14)
     });
@@ -846,7 +846,7 @@ html, body {
   }
   function gNode(x, y, a, t, seed) {
     ctx.save(); ctx.globalCompositeOperation = "lighter";
-    glow(x, y, 18, C.violet, a * (0.7 + 0.3 * Math.sin(t * 3 + seed * 9)));
+    glow(x, y, 18, C.violet, a * (0.8 + 0.2 * Math.sin(t * 1.6 + seed * 9)));
     ctx.strokeStyle = rgba(C.violet, 0.5 * a); ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.ellipse(x, y, 16, 6, Math.sin(t + seed * 6) * 0.7, 0, TAU); ctx.stroke();
     ctx.restore();
@@ -886,7 +886,7 @@ html, body {
       var flash = Math.sin(mix * Math.PI);
       var col = sB === 1 ? C.cyan : sB === 2 ? C.violet : C.amber;
       ctx.save(); ctx.globalCompositeOperation = "lighter";
-      glow(x, y, 12 + 36 * flash, col, a * flash * 0.9);
+      glow(x, y, 14 + 24 * flash, col, a * flash * 0.45); // 較柔的轉換光暈
       ctx.restore();
     }
   }
@@ -922,12 +922,12 @@ html, body {
 
     drawBackground(t);
 
-    // 運鏡：切換瞬間的「推鏡」與輕微側傾，營造特別節目的鏡頭能量
+    // 運鏡：和緩的進場推鏡與輕微漂移（避免切換時的彈跳閃動）
     var a = currentAct(t);
     var dt0 = t - a.start;
-    var punch = 0.075 * (1 - smoothstep(dt0 / 0.7));         // 進場推鏡
-    var roll = 0.022 * (1 - smoothstep(dt0 / 0.8)) * (a.id % 2 ? 1 : -1) // 進場側傾
-             + 0.006 * Math.sin(t * 0.4);                    // 緩慢漂移
+    var punch = 0.028 * (1 - smoothstep(dt0 / 1.3));         // 較小、較慢的進場推鏡
+    var roll = 0.008 * (1 - smoothstep(dt0 / 1.3)) * (a.id % 2 ? 1 : -1) // 微側傾
+             + 0.004 * Math.sin(t * 0.35);                   // 緩慢漂移
 
     // 套用相機（世界 → 螢幕）
     var zoom = (CH / WORLD_H) * cam.scale * (1 + punch);
@@ -942,7 +942,7 @@ html, body {
     drawFlow(t);
 
     // 各幕場景：含「提前淡入」與「延後淡出」，使相鄰幕真正交叉重疊（不會先消失再出現）
-    var LEAD = 1.1, TAIL = 0.9;
+    var LEAD = 1.4, TAIL = 1.2;
     for (var i = 0; i < ACTS.length; i++) {
       var ac = ACTS[i];
       var span = ac.end - ac.start;
@@ -968,24 +968,22 @@ html, body {
     drawVignette();
   }
 
-  // 換幕時掃過的光條（電視特別節目式硬切能量）
+  // 換幕時極輕柔的掃光（僅一道淡光緩緩掠過，不做全螢幕閃亮，避免閃現感）
   function drawCut(dt0) {
-    var prog = dt0 / 0.5;
+    var prog = dt0 / 0.9;
     if (prog < 0 || prog > 1) return;
-    var a = (1 - prog);
+    var a = Math.sin(prog * Math.PI) * 0.08;   // 中段最亮、兩端為 0，柔和
+    if (a <= 0.002) return;
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    var x = lerp(-CW * 0.3, CW * 1.3, easeInOut(prog));
-    var w = CW * 0.5;
+    var x = lerp(-CW * 0.2, CW * 1.2, easeInOut(prog));
+    var w = CW * 0.6;
     var g = ctx.createLinearGradient(x - w, 0, x + w, 0);
-    g.addColorStop(0, "rgba(255,255,255,0)");
-    g.addColorStop(0.5, "rgba(210,235,255," + (0.22 * a) + ")");
-    g.addColorStop(1, "rgba(255,255,255,0)");
+    g.addColorStop(0, "rgba(200,225,255,0)");
+    g.addColorStop(0.5, "rgba(200,225,255," + a + ")");
+    g.addColorStop(1, "rgba(200,225,255,0)");
     ctx.fillStyle = g;
     ctx.fillRect(x - w, 0, w * 2, CH);
-    // 進場整體微亮
-    ctx.fillStyle = "rgba(180,210,255," + (0.05 * a) + ")";
-    ctx.fillRect(0, 0, CW, CH);
     ctx.restore();
   }
 
@@ -1047,7 +1045,7 @@ html, body {
       var frac = (x - x0) / range;
       var col = frac < 0.4 ? C.cyan : frac < 0.66 ? C.violet : C.amber;
       var y = AXIS_Y + f.y * (0.4 + 0.6 * Math.sin(x * 0.004 + f.phase));
-      var a = f.bright * (0.55 + 0.45 * Math.sin(t * 2 + f.phase));
+      var a = f.bright * (0.74 + 0.26 * Math.sin(t * 1.1 + f.phase));
       glow(x, y, f.size * 4, col, a);
     }
     ctx.restore();
@@ -1155,7 +1153,7 @@ html, body {
     var pts = [];
     for (var h = 0; h < halo; h++) {
       var ang = h / halo * TAU;
-      var rp = rot3(Math.cos(ang) * 235, Math.sin(ang) * 235, 0, t * 0.7, 1.15);
+      var rp = rot3(Math.cos(ang) * 235, Math.sin(ang) * 235, 0, t * 0.45, 1.15);
       var pr = proj3(rp, 720);
       pts.push({ x: cx + pr.x, y: cy + pr.y, z: rp[2], s: pr.s });
     }
@@ -1163,8 +1161,8 @@ html, body {
     for (var hp = 0; hp < pts.length; hp++) {
       var pt = pts[hp];
       var da = clamp(pt.s, 0.5, 1.2);
-      ctx.fillStyle = rgba(C.cyan, 0.5 * alpha * da);
-      ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.4 * da, 0, TAU); ctx.fill();
+      ctx.fillStyle = rgba(C.cyan, 0.38 * alpha * da);
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.2 * da, 0, TAU); ctx.fill();
     }
     ctx.restore();
 
@@ -1371,7 +1369,7 @@ html, body {
     ctx.globalCompositeOperation = "lighter";
     for (var oi = 0; oi < order.length; oi++) {
       var q = P[order[oi]];
-      var fire = 0.6 + 0.4 * Math.sin(t * 3 + q.ph);
+      var fire = 0.74 + 0.26 * Math.sin(t * 1.8 + q.ph);
       glow(q.x, q.y, q.r * q.s * 4.2, q.col, 0.95 * q.a * fire);
       ctx.fillStyle = rgba([255, 255, 255], 0.95 * q.a * clamp(q.s, 0.5, 1.1));
       ctx.beginPath(); ctx.arc(q.x, q.y, q.r * q.s * 0.7, 0, TAU); ctx.fill();
@@ -1431,7 +1429,7 @@ html, body {
       ctx.lineWidth = 3; ctx.lineCap = "round";
       for (var b = 0; b < 5; b++) {
         var bx = -24 + b * 12;
-        var bh = (h - 3) * (0.35 + 0.65 * Math.abs(Math.sin(t * 8 + b * 1.1)));
+        var bh = (h - 3) * (0.4 + 0.6 * Math.abs(Math.sin(t * 5 + b * 1.1)));
         ctx.beginPath(); ctx.moveTo(bx, -bh); ctx.lineTo(bx, bh); ctx.stroke();
       }
     }
@@ -1511,7 +1509,7 @@ html, body {
     ctx.restore();
 
     // ── 嘴巴（下）＋ 說出去的清楚聲波 ──
-    var openAmt = speak * (0.45 + 0.55 * Math.abs(Math.sin(t * 7)));
+    var openAmt = speak * (0.5 + 0.5 * Math.abs(Math.sin(t * 5)));
     drawMouth(mouX, mouY, C.amber, alpha * Math.max(0.3, speak), openAmt, t);
     if (speak > 0.01) {
       ctx.save();
