@@ -686,9 +686,9 @@ html, body {
     { id: 5, start: 16,  end: 21,  pos: "lower",
       title: "牌卡六 · AI 的嘴巴與耳朵",
       sub: "聽懂問題 · 清楚回應 · 必要時轉交專業" },
-    { id: 6, start: 21,  end: 25,  pos: "lower",
+    { id: 6, start: 21,  end: 27,  pos: "lower",
       title: "資訊清楚 · 服務安心",
-      sub: "從混亂到清楚 · 專業決策由人完成，AI 全程輔助" }
+      sub: "AI Agent 全程輔助 · 專業決策與服務仍由人完成" }
   ];
   var DURATION = ACTS[ACTS.length - 1].end;
 
@@ -705,9 +705,9 @@ html, body {
     [14.5, STATION.brain,         1.07],  // 停留：大腦
     [16,   STATION.mouth,         1.09],  // 平滑轉場 → 耳口
     [19.5, STATION.mouth,         1.09],  // 停留：耳口
-    [21,   3200,                  0.95],  // 平滑轉場 → 終幕（人＋價值階梯）
-    [23.5, 3200,                  0.9],
-    [25,   3200,                  0.88]
+    [21,   3100,                  0.9],   // 平滑轉場 → 終幕（AI Agent ＋ 人 ＋ 價值階梯）
+    [23,   3100,                  0.85],
+    [27,   3100,                  0.84]
   ];
   function camAt(t) {
     var k = CAM_KEYS;
@@ -1569,31 +1569,130 @@ html, body {
     ctx.restore();
   }
 
-  /* 幕六：資訊清楚、服務安心 — 聚焦人的成果，並以價值階梯收束整條流程 */
+  // AI Agent 助理（頭＋胸，無四肢）：眼=visor、腦=胸腔核心、耳/嘴=側收音+語音帶；全像半透明
+  // asm 0..1 為組裝完成度
+  function drawAgent(ax, ay, a, asm, t) {
+    if (a <= 0.01 || asm <= 0.01) return;
+    var col = C.cyan;
+    ctx.save();
+    ctx.translate(ax, ay);
+    // 整體柔光底
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    glow(0, 6, 160, col, 0.10 * a * asm);
+    ctx.restore();
+    ctx.globalCompositeOperation = "lighter";
+
+    // 頭殼
+    ctx.strokeStyle = rgba(col, 0.8 * a * asm); ctx.lineWidth = 2.4;
+    roundRect(-58, -118, 116, 104, 26); ctx.stroke();
+    ctx.fillStyle = rgba(col, 0.05 * a * asm); roundRect(-58, -118, 116, 104, 26); ctx.fill();
+
+    // 耳（兩側收音模組）
+    ctx.strokeStyle = rgba(C.amber, 0.75 * a * asm); ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(-58, -66, 11, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(58, -66, 11, -Math.PI * 0.5, Math.PI * 0.5); ctx.stroke();
+
+    // 眼（visor 橫向光帶 + 移動高光）
+    var vy = -78;
+    var vg = ctx.createLinearGradient(-44, vy, 44, vy);
+    vg.addColorStop(0, rgba(col, 0)); vg.addColorStop(0.5, rgba([190, 240, 255], 0.95 * a * asm)); vg.addColorStop(1, rgba(col, 0));
+    ctx.strokeStyle = vg; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(-40, vy); ctx.lineTo(40, vy); ctx.stroke();
+    glow(Math.sin(t * 0.8) * 28, vy, 16, col, 0.55 * a * asm);
+
+    // 嘴（語音波形帶）
+    var my = -34;
+    ctx.strokeStyle = rgba(C.amber, 0.85 * a * asm); ctx.lineWidth = 3;
+    for (var b = 0; b < 5; b++) { var bx = -24 + b * 12; var bh = 4 + Math.abs(Math.sin(t * 4 + b)) * 7 * asm; ctx.beginPath(); ctx.moveTo(bx, my - bh); ctx.lineTo(bx, my + bh); ctx.stroke(); }
+
+    // 頸
+    ctx.strokeStyle = rgba(col, 0.7 * a * asm); ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(-20, -14); ctx.lineTo(-24, 6); ctx.moveTo(20, -14); ctx.lineTo(24, 6); ctx.stroke();
+
+    // 胸（肩→胸，無手臂，胸口收束）
+    ctx.strokeStyle = rgba(col, 0.7 * a * asm); ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-92, 96); ctx.quadraticCurveTo(-86, 14, -24, 6);
+    ctx.lineTo(24, 6); ctx.quadraticCurveTo(86, 14, 92, 96);
+    ctx.stroke();
+    ctx.fillStyle = rgba(col, 0.045 * a * asm);
+    ctx.beginPath();
+    ctx.moveTo(-92, 96); ctx.quadraticCurveTo(-86, 14, -24, 6);
+    ctx.lineTo(24, 6); ctx.quadraticCurveTo(86, 14, 92, 96); ctx.closePath(); ctx.fill();
+
+    // 胸腔核心：腦知識雲（紫，緩轉）
+    var ccy = 50;
+    glow(0, ccy, 34, C.violet, 0.5 * a * asm * (0.75 + 0.25 * Math.sin(t * 1.6)));
+    for (var n = 0; n < 6; n++) {
+      var ang = t * 0.5 + n / 6 * TAU;
+      glow(Math.cos(ang) * 18, ccy + Math.sin(ang) * 11, 6, C.violet, 0.7 * a * asm);
+    }
+    ctx.fillStyle = rgba([255, 255, 255], 0.9 * a * asm);
+    ctx.beginPath(); ctx.arc(0, ccy, 3, 0, TAU); ctx.fill();
+
+    ctx.restore();
+  }
+
+  /* 幕六：資訊清楚、服務安心 — 三個器官合體成 AI Agent 助理，以光流輔助專業人員服務客戶 */
   function actResolve(p, alpha, t) {
     ctx.save();
-    var Xc = 3200, cy = AXIS_Y; // 終幕構圖中心
+    var Xc = 3100, cy = AXIS_Y;          // 終幕構圖中心
+    var agentX = Xc - 300;               // AI Agent 助理（左）
+    var proX = Xc + 20;                  // 專業人員（中）
+    var custX = Xc + 320;                // 客戶（右）
+
+    // ── AI Agent 助理：由眼/腦/耳口三元件飛回組裝（boot-up） ──
+    var asm = smoothstep(p / 0.32);
+    // 組裝中的元件火花（合成）
+    if (asm < 1) {
+      var comps = [
+        { col: C.cyan,   ty: cy - 88 },  // 眼 → visor
+        { col: C.violet, ty: cy + 40 },  // 腦 → 胸核
+        { col: C.amber,  ty: cy - 40 }   // 耳口 → 頭部
+      ];
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      for (var ci = 0; ci < comps.length; ci++) {
+        var sp2 = clamp((asm - ci * 0.12) / 0.55, 0, 1);
+        if (sp2 <= 0 || sp2 >= 1) continue;
+        var e2 = easeInOut(sp2);
+        var sx = lerp(agentX - 820 - ci * 120, agentX, e2);
+        var sy = lerp(cy + (ci - 1) * 80, comps[ci].ty, e2);
+        glow(sx, sy, 22, comps[ci].col, alpha * (0.55 + 0.35 * Math.sin(sp2 * 5)));
+      }
+      ctx.restore();
+    }
+    drawAgent(agentX, cy - 6, alpha * 0.66, asm, t);
+
+    // ── 知識光流：助理 → 專業人員（取代遞交手勢；持續輔助） ──
+    var beam = smoothstep((p - 0.36) / 0.22);
+    if (beam > 0.01) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = rgba(C.cyan, alpha * beam * 0.5);
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([3, 10]); ctx.lineDashOffset = -t * 60;
+      ctx.beginPath(); ctx.moveTo(agentX + 70, cy + 30); ctx.lineTo(proX - 40, cy - 10); ctx.stroke();
+      ctx.restore();
+    }
 
     // 專業人員（掌握整理後的資訊）
-    var proX = Xc - 150;
-    drawPerson(proX, cy + 10, 1.25, C.cyan, alpha);
-    // 乾淨卷宗（整齊資訊）
-    var folderA = alpha * smoothstep(p / 0.4);
+    drawPerson(proX, cy + 10, 1.2, C.cyan, alpha);
+    // 乾淨卷宗（整齊資訊；接收光流後浮現）
+    var folderA = alpha * smoothstep((p - 0.4) / 0.3);
     ctx.save();
-    ctx.translate(proX + 78, cy - 40);
+    ctx.translate(proX + 74, cy - 40);
     ctx.fillStyle = rgba(C.cyan, 0.12 * folderA);
     ctx.strokeStyle = rgba(C.cyan, 0.8 * folderA);
     ctx.lineWidth = 1.6;
-    roundRect(-30, -40, 60, 80, 6); ctx.fill(); ctx.stroke();
+    roundRect(-28, -38, 56, 76, 6); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = rgba(C.cyan, 0.6 * folderA);
-    for (var L = 0; L < 6; L++) { ctx.beginPath(); ctx.moveTo(-21, -28 + L * 12); ctx.lineTo(21, -28 + L * 12); ctx.stroke(); }
+    for (var L = 0; L < 6; L++) { ctx.beginPath(); ctx.moveTo(-19, -27 + L * 11); ctx.lineTo(19, -27 + L * 11); ctx.stroke(); }
     ctx.fillStyle = rgba(C.gold, 0.95 * folderA);
-    ctx.beginPath(); ctx.arc(24, -28, 3, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(22, -27, 3, 0, TAU); ctx.fill();
     ctx.restore();
 
     // 客戶（理解、安心 — 溫暖光暈 + 放射光芒，象徵安心服務的圓滿）
-    var custX = Xc + 170;
-    var calm = smoothstep((p - 0.25) / 0.4);
+    var calm = smoothstep((p - 0.55) / 0.35);
     // 放射的溫暖光芒（god-rays）
     if (calm > 0.01) {
       ctx.save();
@@ -1640,7 +1739,7 @@ html, body {
       { label: "知識結構", col: C.violet },
       { label: "安心服務", col: C.gold }
     ];
-    var stepA = alpha * smoothstep((p - 0.42) * 2.5);
+    var stepA = alpha * smoothstep((p - 0.6) * 2.6);
     if (stepA > 0.01) {
       var sp = 460, y0 = cy + 200, sc = 1.55;
       var xs = [];
@@ -1649,7 +1748,7 @@ html, body {
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
       for (var aI = 0; aI < 3; aI++) {
-        var seg = stepA * smoothstep((p - 0.5 - aI * 0.07) * 3);
+        var seg = stepA * smoothstep((p - 0.66 - aI * 0.06) * 3);
         if (seg <= 0.01) continue;
         ctx.strokeStyle = rgba(C.ink, seg * 0.4);
         ctx.lineWidth = 1.6;
@@ -1660,10 +1759,10 @@ html, body {
       }
       ctx.restore();
       for (var s = 0; s < steps.length; s++) {
-        var sa = stepA * smoothstep((p - 0.5 - s * 0.07) * 3);
+        var sa = stepA * smoothstep((p - 0.66 - s * 0.06) * 3);
         if (sa <= 0.01) continue;
         // 點亮瞬間的光暈（價值階梯依序綻放）
-        var ignite = sa * (1 - smoothstep((p - 0.52 - s * 0.07) * 2.2)); // 出現時最亮、隨後收斂
+        var ignite = sa * (1 - smoothstep((p - 0.68 - s * 0.06) * 2.2)); // 出現時最亮、隨後收斂
         ctx.save(); ctx.globalCompositeOperation = "lighter";
         glow(xs[s], y0, 70 + 70 * ignite, steps[s].col, 0.25 * sa + 0.45 * ignite);
         ctx.restore();
@@ -1783,7 +1882,7 @@ html, body {
   function actCol(id) { return id === 4 ? C.violet : id === 5 ? C.amber : id === 6 ? C.gold : id === 2 ? C.gold : C.cyan; }
   function actStationX(id) {
     return id === 1 ? STATION.intake + 120 : id === 2 ? STATION.intake : id === 3 ? STATION.eyes
-         : id === 4 ? STATION.brain : id === 5 ? STATION.mouth : 3200;
+         : id === 4 ? STATION.brain : id === 5 ? STATION.mouth : 3100;
   }
 
   // 氛圍光暈（螢幕空間，置於世界之後）：隨幕別換色，營造華麗的舞台光氛
