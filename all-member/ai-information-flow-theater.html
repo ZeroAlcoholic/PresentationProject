@@ -693,18 +693,18 @@ html, body {
   var DURATION = ACTS[ACTS.length - 1].end;
 
   // 相機關鍵影格 [t, worldX, scale]
-  // 每個站點在其幕內「停留」大部分時間，僅在交界處快速轉場 → 相機、字幕、器官同步對齊
+  // 每站點在幕內「停留」大部分時間，交界以較長（~1.3s）的平滑轉場移動 → 不會左右急甩，且與字幕同步
   var CAM_KEYS = [
     [0,    STATION.intake + 120, 0.95],
     [2.5,  STATION.intake,        1.0],
-    [5.2,  STATION.intake,        1.0],   // 停留：資料湧入
-    [6,    STATION.eyes,          1.16],  // 轉場 → 眼睛
-    [10.2, STATION.eyes,          1.16],  // 停留：眼睛
-    [11,   STATION.brain,         1.05],  // 轉場 → 大腦
-    [15.2, STATION.brain,         1.05],  // 停留：大腦
-    [16,   STATION.mouth,         1.1],   // 轉場 → 耳口
-    [20.2, STATION.mouth,         1.1],   // 停留：耳口
-    [21,   3200,                  0.95],  // 轉場 → 終幕（人＋價值階梯）
+    [4.7,  STATION.intake,        1.0],   // 停留：資料湧入
+    [6,    STATION.eyes,          1.16],  // 平滑轉場 → 眼睛
+    [9.7,  STATION.eyes,          1.16],  // 停留：眼睛
+    [11,   STATION.brain,         1.05],  // 平滑轉場 → 大腦
+    [14.7, STATION.brain,         1.05],  // 停留：大腦
+    [16,   STATION.mouth,         1.1],   // 平滑轉場 → 耳口
+    [19.7, STATION.mouth,         1.1],   // 停留：耳口
+    [21,   3200,                  0.95],  // 平滑轉場 → 終幕（人＋價值階梯）
     [23.5, 3200,                  0.86],
     [25,   3200,                  0.85]
   ];
@@ -930,10 +930,9 @@ html, body {
     // 運鏡：和緩的進場推鏡 + 停留時的緩慢推進（dolly）+ 輕微漂移（不產生彈跳閃動）
     var a = currentAct(t);
     var dt0 = t - a.start;
-    var punch = 0.028 * (1 - smoothstep(dt0 / 1.3));         // 進場推鏡（快速回穩）
+    var punch = 0.02 * (1 - smoothstep(dt0 / 1.6));          // 進場推鏡（更小、更緩）
     var dolly = 0.024 * smoothstep(dt0 / 3.5);               // 停留時持續緩推，畫面有呼吸
-    var roll = 0.008 * (1 - smoothstep(dt0 / 1.3)) * (a.id % 2 ? 1 : -1)
-             + 0.004 * Math.sin(t * 0.35);
+    var roll = 0.004 * Math.sin(t * 0.3);                    // 僅極輕微漂移，轉場不旋轉急甩
 
     drawAtmosphere(t, a.id);   // 舞台氛圍光（隨幕別換色：冷→暖）
 
