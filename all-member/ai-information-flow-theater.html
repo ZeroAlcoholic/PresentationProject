@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="企業 AI 資訊流劇場 — 三個 AI 專案如何串成一條公司資料處理與客戶服務流程" />
-<title>企業 AI 資訊流劇場</title>
+<meta name="description" content="企業 AI 資訊流 — 三個 AI 專案如何串成一條公司資料處理與客戶服務流程" />
+<title>企業 AI 資訊流</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070b14'/%3E%3Ccircle cx='8' cy='16' r='3' fill='%236fd6ff'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23b79bff'/%3E%3Ccircle cx='24' cy='16' r='3' fill='%23ffce7a'/%3E%3C/svg%3E" />
 <style>
 /* =========================================================================
-   企業 AI 資訊流劇場 — 樣式
+   企業 AI 資訊流 — 樣式
    設計語彙：深空藍底 × 精煉金/青強調色 × 玻璃質感控制列。
    舞台視覺由 canvas 渲染；本檔負責畫面氛圍、字幕清晰度與控制 UI。
    ========================================================================= */
@@ -330,7 +330,7 @@ html, body {
 </head>
 <body>
   <!-- 舞台：所有電影感視覺由 canvas 渲染 -->
-  <main id="stage" aria-label="企業 AI 資訊流劇場舞台">
+  <main id="stage" aria-label="企業 AI 資訊流">
     <canvas id="scene" aria-hidden="true"></canvas>
 
     <!-- 電影感：寬銀幕黑邊 + 底片顆粒 -->
@@ -361,13 +361,13 @@ html, body {
     <div id="sound-hint" class="sound-hint">🔊 點任意處或按任意鍵開啟聲音</div>
 
     <!-- 控制列 -->
-    <div id="controls" class="controls" role="group" aria-label="劇場控制">
+    <div id="controls" class="controls" role="group" aria-label="播放控制">
       <button id="btn-play" class="ctl" type="button" title="播放／暫停 (空白鍵)" aria-label="播放或暫停">
         <span class="ico-play">▷</span><span class="ico-pause">❚❚</span>
       </button>
       <button id="btn-replay" class="ctl" type="button" title="重播 (R)" aria-label="重播">↺</button>
 
-      <div class="progress" id="progress" role="slider" aria-label="劇場時間軸" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+      <div class="progress" id="progress" role="slider" aria-label="時間軸" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
         <div class="progress-fill" id="progress-fill"></div>
         <div class="progress-ticks" id="progress-ticks"></div>
         <div class="progress-knob" id="progress-knob"></div>
@@ -389,7 +389,7 @@ html, body {
     </div>
 
     <noscript>
-      <div class="noscript">此作品需要啟用 JavaScript 才能播放動畫劇場。</div>
+      <div class="noscript">此作品需要啟用 JavaScript 才能播放動畫。</div>
     </noscript>
   </main>
 
@@ -582,13 +582,13 @@ html, body {
 </script>
   <script>
 /* =========================================================================
-   企業 AI 資訊流劇場 — 主程式
+   企業 AI 資訊流 — 主程式
    架構：
      · 單一虛擬世界座標（worldH=1080），相機沿水平資訊流軸平移／縮放，
        讓三個站點（眼睛 / 大腦 / 嘴與耳）成為「一條連貫流程」上的節點，
        而非三張獨立卡片。
      · 時間軸（director）以 requestAnimationFrame 推進，rate 影響整體時間，
-       所有動態皆由劇場時間 t 推導，故暫停＝凍結、可任意 seek。
+       所有動態皆由時間軸 t 推導，故暫停＝凍結、可任意 seek。
      · canvas 負責電影感視覺；HTML 負責清晰中文字幕與控制 UI。
    ========================================================================= */
 (function () {
@@ -672,7 +672,7 @@ html, body {
 
   var ACTS = [
     { id: 1, start: 0,   end: 2.5, pos: "center",
-      title: "企業 AI 資訊流劇場",
+      title: "企業 AI 資訊流",
       sub: "三個 AI 專案 · 一條從資料到服務的流程" },
     { id: 2, start: 2.5, end: 6,   pos: "lower",
       title: "混亂的起點",
@@ -694,19 +694,20 @@ html, body {
 
   // 相機關鍵影格 [t, worldX, scale]
   // 每站點在幕內「停留」大部分時間，交界以較長（~1.3s）的平滑轉場移動 → 不會左右急甩，且與字幕同步
+  // 較長（~1.5s）且縮放更接近的平滑轉場，避免左右急甩與忽遠忽近的「縮放抽動」
   var CAM_KEYS = [
-    [0,    STATION.intake + 120, 0.95],
+    [0,    STATION.intake + 120, 0.96],
     [2.5,  STATION.intake,        1.0],
-    [4.7,  STATION.intake,        1.0],   // 停留：資料湧入
-    [6,    STATION.eyes,          1.16],  // 平滑轉場 → 眼睛
-    [9.7,  STATION.eyes,          1.16],  // 停留：眼睛
-    [11,   STATION.brain,         1.05],  // 平滑轉場 → 大腦
-    [14.7, STATION.brain,         1.05],  // 停留：大腦
-    [16,   STATION.mouth,         1.1],   // 平滑轉場 → 耳口
-    [19.7, STATION.mouth,         1.1],   // 停留：耳口
+    [4.5,  STATION.intake,        1.0],   // 停留：資料湧入
+    [6,    STATION.eyes,          1.1],   // 平滑轉場 → 眼睛
+    [9.5,  STATION.eyes,          1.1],   // 停留：眼睛
+    [11,   STATION.brain,         1.07],  // 平滑轉場 → 大腦
+    [14.5, STATION.brain,         1.07],  // 停留：大腦
+    [16,   STATION.mouth,         1.09],  // 平滑轉場 → 耳口
+    [19.5, STATION.mouth,         1.09],  // 停留：耳口
     [21,   3200,                  0.95],  // 平滑轉場 → 終幕（人＋價值階梯）
-    [23.5, 3200,                  0.86],
-    [25,   3200,                  0.85]
+    [23.5, 3200,                  0.9],
+    [25,   3200,                  0.88]
   ];
   function camAt(t) {
     var k = CAM_KEYS;
@@ -930,14 +931,15 @@ html, body {
     // 運鏡：和緩的進場推鏡 + 停留時的緩慢推進（dolly）+ 輕微漂移（不產生彈跳閃動）
     var a = currentAct(t);
     var dt0 = t - a.start;
-    var punch = 0.02 * (1 - smoothstep(dt0 / 1.6));          // 進場推鏡（更小、更緩）
-    var dolly = 0.024 * smoothstep(dt0 / 3.5);               // 停留時持續緩推，畫面有呼吸
+    // 進場推鏡用「兩端為 0」的鐘形曲線（交界處不跳動）＋ 連續呼吸縮放（跨幕不重置）→ 全程無縮放抽動
+    var arrive = 0.016 * Math.sin(clamp(dt0 / 1.4, 0, 1) * Math.PI);
+    var breathe = 0.012 * (0.5 + 0.5 * Math.sin(t * 0.22));
     var roll = 0.004 * Math.sin(t * 0.3);                    // 僅極輕微漂移，轉場不旋轉急甩
 
     drawAtmosphere(t, a.id);   // 舞台氛圍光（隨幕別換色：冷→暖）
 
     // 套用相機（世界 → 螢幕）
-    var zoom = (CH / WORLD_H) * cam.scale * (1 + punch + dolly);
+    var zoom = (CH / WORLD_H) * cam.scale * (1 + arrive + breathe);
     ctx.save();
     ctx.translate(CW / 2, CH / 2);
     ctx.rotate(roll);
@@ -972,8 +974,7 @@ html, body {
 
     ctx.restore();
 
-    drawCut(dt0);   // 切換光條（螢幕空間）
-    drawVignette();
+    drawVignette();   // 已移除換幕掃光：平滑運鏡本身即為轉場，畫面更乾淨順暢
   }
 
   // 換幕時極輕柔的掃光（僅一道淡光緩緩掠過，不做全螢幕閃亮，避免閃現感）
@@ -1751,7 +1752,7 @@ html, body {
     return _font;
   }
 
-  // 舞台聚光燈：自上而下的柔光錐，賦予劇場感與空間深度
+  // 舞台聚光燈：自上而下的柔光錐，賦予舞台感與空間深度
   function spotlight(cx, col, a) {
     if (a <= 0.01) return;
     ctx.save();
