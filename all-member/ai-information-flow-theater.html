@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="企業 AI 資訊流劇場 — 三個 AI 專案如何串成一條公司資料處理與客戶服務流程" />
+<title>企業 AI 資訊流劇場</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070b14'/%3E%3Ccircle cx='8' cy='16' r='3' fill='%236fd6ff'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23b79bff'/%3E%3Ccircle cx='24' cy='16' r='3' fill='%23ffce7a'/%3E%3C/svg%3E" />
+<style>
+/* =========================================================================
+   企業 AI 資訊流劇場 — 樣式
+   設計語彙：深空藍底 × 精煉金/青強調色 × 玻璃質感控制列。
+   舞台視覺由 canvas 渲染；本檔負責畫面氛圍、字幕清晰度與控制 UI。
+   ========================================================================= */
+
+:root {
+  --bg-0: #05070e;
+  --bg-1: #0a1020;
+  --ink: #eaf1ff;
+  --ink-soft: rgba(234, 241, 255, 0.66);
+  --ink-faint: rgba(234, 241, 255, 0.34);
+  --cyan: #6fd6ff;   /* 牌卡三 · 眼睛 */
+  --violet: #b79bff; /* 牌卡四 · 大腦 */
+  --amber: #ffce7a;  /* 牌卡六 · 嘴與耳 */
+  --gold: #e9c46a;
+  --line: rgba(255, 255, 255, 0.10);
+  --glass: rgba(12, 18, 34, 0.55);
+  --font: "Segoe UI", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC",
+          "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg-0);
+  color: var(--ink);
+  font-family: var(--font);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 8%, #101a32 0%, var(--bg-1) 42%, var(--bg-0) 100%);
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ----------------------------- 電影感外框 ----------------------------- */
+.letterbox {
+  position: absolute;
+  left: 0; right: 0;
+  height: 0;
+  background: #000;
+  z-index: 5;
+  pointer-events: none;
+  transition: height 0.8s cubic-bezier(.7,0,.2,1);
+}
+.lb-top { top: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
+.lb-bottom { bottom: 0; box-shadow: 0 -8px 24px rgba(0,0,0,0.6); }
+.started .letterbox { height: 6.2vh; }
+
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: overlay;
+  transition: opacity 0.8s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+.started .grain { opacity: 0.06; }
+
+/* ----------------------------- 字幕 / 旁白 ----------------------------- */
+.captions {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 13.5%;
+  text-align: center;
+  padding: 0 6vw;
+  pointer-events: none;
+  z-index: 6;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.captions.is-center {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+.cap-title {
+  margin: 0;
+  font-size: clamp(28px, 4.4vw, 64px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-shadow: 0 2px 40px rgba(0, 0, 0, 0.85), 0 0 1px rgba(0,0,0,0.9);
+}
+.cap-sub {
+  margin: 0.7em auto 0;
+  max-width: 56ch;
+  font-size: clamp(14px, 1.7vw, 23px);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.9);
+}
+/* 動感標題進場（每幕切換時重新觸發） */
+.captions.kin .cap-title { animation: capIn 0.75s cubic-bezier(.18,.8,.2,1) both; }
+.captions.kin .cap-sub   { animation: capIn 0.75s 0.12s cubic-bezier(.18,.8,.2,1) both; }
+@keyframes capIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.965); filter: blur(7px); letter-spacing: 0.16em; }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* ----------------------------- 流程定位列 ----------------------------- */
+.flowmap {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-size: clamp(11px, 1.15vw, 14px);
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  z-index: 6;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.flowmap.is-visible { opacity: 1; }
+.fm-item { display: inline-flex; align-items: center; gap: 7px; transition: color 0.4s ease; }
+.fm-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ink-faint);
+  box-shadow: 0 0 0 0 rgba(111, 214, 255, 0);
+  transition: all 0.4s ease;
+}
+.fm-item.is-active { color: var(--ink); }
+.fm-item.is-active .fm-dot {
+  background: var(--cyan);
+  box-shadow: 0 0 14px 2px rgba(111, 214, 255, 0.8);
+}
+.fm-arrow { color: var(--ink-faint); opacity: 0.5; }
+
+/* ----------------------------- 聲音提示 ----------------------------- */
+.sound-hint {
+  position: absolute;
+  top: 26px; right: 28px;
+  z-index: 12;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: clamp(11px, 1.1vw, 13px);
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  opacity: 0;
+  animation: hintIn 0.6s 0.8s ease forwards, hintPulse 2.4s 1.4s ease-in-out infinite;
+  transition: opacity 0.5s ease;
+}
+.sound-hint.is-hidden { opacity: 0 !important; animation: none; pointer-events: none; }
+@keyframes hintIn { to { opacity: 0.85; } }
+@keyframes hintPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 0.9; } }
+
+/* ----------------------------- 控制列 ----------------------------- */
+.controls {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  width: min(880px, 92vw);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--glass);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.controls.is-visible { opacity: 1; }
+
+.ctl {
+  flex: 0 0 auto;
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  font-size: 15px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease, color 0.2s ease;
+}
+.ctl:hover { background: rgba(255, 255, 255, 0.13); transform: translateY(-1px); }
+.ctl:active { transform: translateY(0); }
+
+/* play/pause 與 sound/mute 的圖示切換 */
+.ico-pause, .ico-mute { display: none; }
+.is-playing .ico-play { display: none; }
+.is-playing .ico-pause { display: inline; }
+.is-muted .ico-sound { display: none; }
+.is-muted .ico-mute { display: inline; color: var(--amber); }
+
+.progress {
+  position: relative;
+  flex: 1 1 auto;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  outline: none;
+}
+.progress::before {
+  content: "";
+  position: absolute; left: 0; right: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.progress-fill {
+  position: absolute; left: 0;
+  height: 4px;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cyan), var(--violet) 55%, var(--amber));
+  box-shadow: 0 0 14px rgba(111, 214, 255, 0.5);
+}
+.progress-ticks { position: absolute; left: 0; right: 0; height: 22px; pointer-events: none; }
+.progress-tick {
+  position: absolute;
+  top: 50%; transform: translate(-50%, -50%);
+  width: 2px; height: 11px;
+  background: rgba(255, 255, 255, 0.32);
+  border-radius: 2px;
+}
+.progress-knob {
+  position: absolute;
+  top: 50%; left: 0;
+  width: 13px; height: 13px;
+  margin-left: -6.5px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.18), 0 2px 8px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.progress:focus-visible::before { box-shadow: 0 0 0 2px var(--cyan); }
+
+.time {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  min-width: 96px;
+  text-align: center;
+}
+
+.rate { display: inline-flex; gap: 4px; flex: 0 0 auto; }
+.rate-btn {
+  min-width: 38px;
+  padding: 8px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.rate-btn:hover { background: rgba(255, 255, 255, 0.12); color: var(--ink); }
+.rate-btn.is-active {
+  color: #06101f;
+  background: linear-gradient(180deg, #cfe9ff, var(--cyan));
+  border-color: transparent;
+}
+
+.noscript {
+  position: absolute; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  font-size: 20px; color: var(--ink);
+  background: var(--bg-0);
+  text-align: center; padding: 0 10vw;
+}
+
+/* ----------------------------- 響應式 ----------------------------- */
+@media (max-width: 720px) {
+  .flowmap { gap: 7px; padding: 7px 12px; }
+  .fm-item span:not(.fm-dot) { display: none; }
+  .controls { gap: 9px; padding: 10px 12px; }
+  .time { display: none; }
+  .rate-btn { min-width: 32px; padding: 7px 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poster-inner { animation: none; }
+}
+
+</style>
+</head>
+<body>
+  <!-- 舞台：所有電影感視覺由 canvas 渲染 -->
+  <main id="stage" aria-label="企業 AI 資訊流劇場舞台">
+    <canvas id="scene" aria-hidden="true"></canvas>
+
+    <!-- 電影感：寬銀幕黑邊 + 底片顆粒 -->
+    <div class="letterbox lb-top"></div>
+    <div class="letterbox lb-bottom"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <!-- 字幕層：使用 HTML 以確保中文在投影時清晰可讀 -->
+    <div id="captions" class="captions" aria-live="polite">
+      <h1 id="cap-title" class="cap-title"></h1>
+      <p id="cap-sub" class="cap-sub"></p>
+    </div>
+
+    <!-- 流程定位列：讓觀眾隨時看見「一條流程」的三個站點 -->
+    <nav id="flowmap" class="flowmap" aria-label="資訊流程站點">
+      <span class="fm-item" data-act="2"><span class="fm-dot"></span>資料湧入</span>
+      <span class="fm-arrow">›</span>
+      <span class="fm-item" data-act="3"><span class="fm-dot"></span>牌卡三 · 眼睛</span>
+      <span class="fm-arrow">›</span>
+      <span class="fm-item" data-act="4"><span class="fm-dot"></span>牌卡四 · 大腦</span>
+      <span class="fm-arrow">›</span>
+      <span class="fm-item" data-act="5"><span class="fm-dot"></span>牌卡六 · 嘴與耳</span>
+      <span class="fm-arrow">›</span>
+      <span class="fm-item" data-act="6"><span class="fm-dot"></span>安心服務</span>
+    </nav>
+
+    <!-- 自動開場：聲音待使用者首次互動後才啟用（互動前不播放聲音） -->
+    <div id="sound-hint" class="sound-hint">🔊 點任意處或按任意鍵開啟聲音</div>
+
+    <!-- 控制列 -->
+    <div id="controls" class="controls" role="group" aria-label="劇場控制">
+      <button id="btn-play" class="ctl" type="button" title="播放／暫停 (空白鍵)" aria-label="播放或暫停">
+        <span class="ico-play">▷</span><span class="ico-pause">❚❚</span>
+      </button>
+      <button id="btn-replay" class="ctl" type="button" title="重播 (R)" aria-label="重播">↺</button>
+
+      <div class="progress" id="progress" role="slider" aria-label="劇場時間軸" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+        <div class="progress-fill" id="progress-fill"></div>
+        <div class="progress-ticks" id="progress-ticks"></div>
+        <div class="progress-knob" id="progress-knob"></div>
+      </div>
+
+      <span class="time" id="time-label">00:00 / 00:00</span>
+
+      <div class="rate" role="group" aria-label="播放速率">
+        <button class="rate-btn" data-rate="0.5" type="button">0.5×</button>
+        <button class="rate-btn is-active" data-rate="1" type="button">1×</button>
+        <button class="rate-btn" data-rate="1.5" type="button">1.5×</button>
+        <button class="rate-btn" data-rate="2" type="button">2×</button>
+      </div>
+
+      <button id="btn-mute" class="ctl" type="button" title="靜音 (M)" aria-label="靜音">
+        <span class="ico-sound">♪</span><span class="ico-mute">⨯</span>
+      </button>
+      <button id="btn-full" class="ctl" type="button" title="全螢幕 (F)" aria-label="全螢幕">⛶</button>
+    </div>
+
+    <noscript>
+      <div class="noscript">此作品需要啟用 JavaScript 才能播放動畫劇場。</div>
+    </noscript>
+  </main>
+
+  <script>
+/* =========================================================================
+   AudioEngine — 純程序化聲音設計（Web Audio API，無外部音檔）
+   - 不在使用者互動前建立或播放任何聲音（AudioContext 於 init() 才建立）。
+   - 提供：環境襯底音、各幕情緒動機（motif）、混亂質地、靜音與速率耦合。
+   設計取向：克制、溫潤、企業可信賴感，服務敘事而非炫技。
+   ========================================================================= */
+(function (global) {
+  "use strict";
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  function AudioEngine() {
+    this.ctx = null;
+    this.master = null;
+    this.muted = false;
+    this.ready = false;
+    this._ambientNodes = [];
+    this._chaos = null;     // 混亂質地節點
+    this._chaosGain = null;
+  }
+
+  /* 於使用者手勢中呼叫：建立 AudioContext 與環境襯底 */
+  AudioEngine.prototype.init = function () {
+    if (this.ready) {
+      if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+      return;
+    }
+    var AC = global.AudioContext || global.webkitAudioContext;
+    if (!AC) { this.ready = false; return; } // 環境不支援時靜默降級
+    try {
+      this.ctx = new AC();
+    } catch (e) {
+      this.ready = false;
+      return;
+    }
+    var ctx = this.ctx;
+
+    this.master = ctx.createGain();
+    this.master.gain.value = this.muted ? 0 : 0.0001;
+    this.master.connect(ctx.destination);
+    // 開場淡入
+    this.master.gain.linearRampToValueAtTime(this.muted ? 0 : 0.55, ctx.currentTime + 2.2);
+
+    this._buildAmbient();
+    this._buildChaos();
+    this.ready = true;
+  };
+
+  /* 緩慢演進的環境襯底：兩顆微失諧振盪器 + 低通 + 緩 LFO，極低音量 */
+  AudioEngine.prototype._buildAmbient = function () {
+    var ctx = this.ctx;
+    var bus = ctx.createGain();
+    bus.gain.value = 0.16;
+    bus.connect(this.master);
+
+    var lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 620;
+    lp.Q.value = 0.6;
+    lp.connect(bus);
+
+    var freqs = [55, 82.5, 110, 164.81]; // A1 / E2 / A2 / E3 鋪底
+    for (var i = 0; i < freqs.length; i++) {
+      var o = ctx.createOscillator();
+      o.type = i % 2 ? "sine" : "triangle";
+      o.frequency.value = freqs[i];
+      o.detune.value = (i - 1.5) * 4;
+      var g = ctx.createGain();
+      g.gain.value = i === 0 ? 0.5 : 0.22;
+      o.connect(g); g.connect(lp);
+      o.start();
+      this._ambientNodes.push(o);
+    }
+
+    // 緩慢 LFO 讓襯底「呼吸」
+    var lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.06;
+    var lfoGain = ctx.createGain();
+    lfoGain.gain.value = 140;
+    lfo.connect(lfoGain); lfoGain.connect(lp.frequency);
+    lfo.start();
+    this._ambientNodes.push(lfo);
+    this._ambientLP = lp;
+  };
+
+  /* 混亂質地：帶通濾過的白噪，用於「資料湧入」一幕 */
+  AudioEngine.prototype._buildChaos = function () {
+    var ctx = this.ctx;
+    var len = Math.floor(ctx.sampleRate * 2.2);
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.5;
+
+    var src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+
+    var bp = ctx.createBiquadFilter();
+    bp.type = "bandpass"; bp.frequency.value = 1400; bp.Q.value = 0.7;
+
+    var g = ctx.createGain();
+    g.gain.value = 0.0001;
+
+    src.connect(bp); bp.connect(g); g.connect(this.master);
+    src.start();
+    this._chaos = src;
+    this._chaosGain = g;
+    this._chaosBP = bp;
+  };
+
+  /* 單音包絡：用於各幕動機 */
+  AudioEngine.prototype._note = function (freq, t0, dur, peak, type) {
+    if (!this.ready) return;
+    var ctx = this.ctx;
+    var o = ctx.createOscillator();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    var g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(this.master);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  };
+
+  /* 設定混亂質地強度（0..1），平滑過渡 */
+  AudioEngine.prototype.setChaos = function (level) {
+    if (!this.ready || !this._chaosGain) return;
+    var t = this.ctx.currentTime;
+    var target = clamp(level, 0, 1) * 0.07 + 0.0001;
+    this._chaosGain.gain.cancelScheduledValues(t);
+    this._chaosGain.gain.linearRampToValueAtTime(target, t + 0.4);
+  };
+
+  /* 進入某一幕時觸發對應情緒動機 */
+  AudioEngine.prototype.cue = function (actId) {
+    if (!this.ready) return;
+    var t = this.ctx.currentTime + 0.02;
+    switch (actId) {
+      case 2: // 資料湧入：低沉脈動
+        this._note(110, t, 1.6, 0.18, "sawtooth");
+        this._note(146.83, t + 0.08, 1.4, 0.10, "triangle");
+        break;
+      case 3: // 眼睛：清亮上行掃描三音
+        this._note(587.33, t, 0.5, 0.12, "sine");
+        this._note(783.99, t + 0.14, 0.5, 0.11, "sine");
+        this._note(1046.5, t + 0.28, 0.7, 0.12, "sine");
+        break;
+      case 4: { // 大腦：知識結晶的琶音鐘聲
+        var chord = [392, 493.88, 587.33, 783.99, 987.77];
+        for (var i = 0; i < chord.length; i++)
+          this._note(chord[i], t + i * 0.12, 1.6, 0.085, "triangle");
+        break;
+      }
+      case 5: // 嘴與耳：溫暖對話的兩音呼應
+        this._note(440, t, 0.6, 0.12, "sine");
+        this._note(659.25, t + 0.22, 0.8, 0.11, "sine");
+        break;
+      case 6: { // 安心服務：溫暖大調和弦
+        var maj = [261.63, 329.63, 392, 523.25];
+        for (var j = 0; j < maj.length; j++)
+          this._note(maj[j], t + j * 0.05, 3.4, 0.11, "sine");
+        break;
+      }
+    }
+  };
+
+  /* 速率耦合：略微調整襯底亮度，讓快轉時聲音更具能量 */
+  AudioEngine.prototype.setRate = function (rate) {
+    if (!this.ready || !this._ambientLP) return;
+    var t = this.ctx.currentTime;
+    this._ambientLP.frequency.cancelScheduledValues(t);
+    this._ambientLP.frequency.linearRampToValueAtTime(420 + rate * 240, t + 0.3);
+  };
+
+  AudioEngine.prototype.setMuted = function (m) {
+    this.muted = m;
+    if (!this.ready) return;
+    var t = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(t);
+    this.master.gain.linearRampToValueAtTime(m ? 0 : 0.55, t + 0.25);
+  };
+
+  global.AudioEngine = AudioEngine;
+})(window);
+
+</script>
+  <script>
+/* =========================================================================
+   企業 AI 資訊流劇場 — 主程式
+   架構：
+     · 單一虛擬世界座標（worldH=1080），相機沿水平資訊流軸平移／縮放，
+       讓三個站點（眼睛 / 大腦 / 嘴與耳）成為「一條連貫流程」上的節點，
+       而非三張獨立卡片。
+     · 時間軸（director）以 requestAnimationFrame 推進，rate 影響整體時間，
+       所有動態皆由劇場時間 t 推導，故暫停＝凍結、可任意 seek。
+     · canvas 負責電影感視覺；HTML 負責清晰中文字幕與控制 UI。
+   ========================================================================= */
+(function () {
+  "use strict";
+
+  /* ----------------------------- 工具函式 ----------------------------- */
+  var TAU = Math.PI * 2;
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function smoothstep(t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+  function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function fade(local, inDur, outStart, total) {
+    // 在區間內計算淡入淡出 alpha（local 與各時間皆為秒）
+    var fin = smoothstep(local / inDur);
+    var fout = 1 - smoothstep((local - outStart) / (total - outStart));
+    return clamp(Math.min(fin, fout), 0, 1);
+  }
+  // 以索引產生穩定偽隨機（避免每幀跳動）
+  function rnd(i, s) { var x = Math.sin(i * 127.1 + (s || 0) * 311.7) * 43758.5453; return x - Math.floor(x); }
+
+  // 簡易 3D：繞 Y（yaw）、X（pitch）旋轉後做透視投影，供旋轉雲與運鏡使用
+  function rot3(x, y, z, yaw, pitch) {
+    var cy = Math.cos(yaw), sy = Math.sin(yaw);
+    var x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+    var cp = Math.cos(pitch), sp = Math.sin(pitch);
+    var y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    return [x1, y1, z2];
+  }
+  function proj3(p, focal) {
+    var denom = focal + p[2];
+    if (denom < 1) denom = 1;           // 防止位於相機後方造成負縮放（負半徑會丟例外卡住畫面）
+    var s = focal / denom;
+    return { x: p[0] * s, y: p[1] * s, z: p[2], s: s };
+  }
+
+  /* ----------------------------- 調色盤 ----------------------------- */
+  var C = {
+    cyan: [111, 214, 255],
+    violet: [183, 155, 255],
+    amber: [255, 206, 122],
+    gold: [233, 196, 106],
+    paper: [206, 216, 235],
+    warn: [255, 138, 128],
+    ink: [234, 241, 255]
+  };
+  function rgba(c, a) { return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // 預先渲染的光暈精靈：以 drawImage 取代每幀大量 createRadialGradient（效能關鍵，避免卡頓）
+  function makeGlow(col) {
+    var c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    var g = c.getContext("2d");
+    var rg = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    rg.addColorStop(0, rgba(col, 1));
+    rg.addColorStop(0.45, rgba(col, 0.45));
+    rg.addColorStop(1, rgba(col, 0));
+    g.fillStyle = rg; g.beginPath(); g.arc(32, 32, 32, 0, TAU); g.fill();
+    return c;
+  }
+  var GLOWS = {
+    cyan: makeGlow(C.cyan), violet: makeGlow(C.violet), amber: makeGlow(C.amber),
+    gold: makeGlow(C.gold), paper: makeGlow(C.paper), warn: makeGlow(C.warn), white: makeGlow([255, 255, 255])
+  };
+  function glowFor(col) {
+    return col === C.cyan ? GLOWS.cyan : col === C.violet ? GLOWS.violet :
+           col === C.amber ? GLOWS.amber : col === C.gold ? GLOWS.gold :
+           col === C.warn ? GLOWS.warn : col === C.paper ? GLOWS.paper : GLOWS.white;
+  }
+  // 以光暈精靈畫一個發光點（呼叫端需自行設定 globalCompositeOperation）
+  function glow(x, y, r, col, a) {
+    if (a <= 0.004) return;
+    ctx.globalAlpha = a > 1 ? 1 : a;
+    var sp = glowFor(col);
+    ctx.drawImage(sp, x - r, y - r, r * 2, r * 2);
+    ctx.globalAlpha = 1;
+  }
+
+  /* ----------------------------- 幕（Acts） ----------------------------- */
+  // 世界座標站點 X：資訊流由左至右貫穿全場
+  var STATION = { intake: 320, eyes: 1000, brain: 1900, mouth: 2800, resolve: 3560 };
+  var WORLD_H = 1080, AXIS_Y = 552;
+
+  var ACTS = [
+    { id: 1, start: 0,    end: 2,    pos: "center",
+      title: "企業 AI 資訊流劇場",
+      sub: "三個 AI 專案 · 一條從資料到服務的流程" },
+    { id: 2, start: 2,    end: 4.5,  pos: "lower",
+      title: "混亂的起點",
+      sub: "文件 · 核保資料 · 客戶問題　湧入" },
+    { id: 3, start: 4.5,  end: 8.5,  pos: "lower",
+      title: "牌卡三 · AI 的眼睛",
+      sub: "讀懂單據 — 摘要 · 翻譯 · 標記" },
+    { id: 4, start: 8.5,  end: 12.5, pos: "lower",
+      title: "牌卡四 · AI 的大腦",
+      sub: "整理核保歷史 — 分類 · 標註 · 知識結構" },
+    { id: 5, start: 12.5, end: 16.5, pos: "lower",
+      title: "牌卡六 · AI 的嘴巴與耳朵",
+      sub: "聽懂問題 · 清楚回應 · 必要時轉交專業" },
+    { id: 6, start: 16.5, end: 19.5, pos: "lower",
+      title: "資訊清楚 · 服務安心",
+      sub: "從混亂到清楚 · 專業決策由人完成，AI 全程輔助" }
+  ];
+  var DURATION = ACTS[ACTS.length - 1].end;
+
+  // 相機關鍵影格 [t, worldX, scale]
+  var CAM_KEYS = [
+    [0,    STATION.intake + 120, 0.95],
+    [2,    STATION.intake,        1.0],
+    [4.5,  STATION.eyes,          1.18],
+    [8.5,  STATION.brain,         1.05],
+    [12.5, STATION.mouth,         1.12],
+    [16.5, 3200,                  0.95],  // 聚焦專業人員與客戶
+    [18.5, 3200,                  0.86],  // 略拉遠，納入價值階梯
+    [19.5, 3200,                  0.85]
+  ];
+  function camAt(t) {
+    var k = CAM_KEYS;
+    for (var i = 0; i < k.length - 1; i++) {
+      if (t <= k[i + 1][0]) {
+        var seg = (t - k[i][0]) / (k[i + 1][0] - k[i][0]);
+        var e = easeInOut(clamp(seg, 0, 1));
+        return { x: lerp(k[i][1], k[i + 1][1], e), scale: lerp(k[i][2], k[i + 1][2], e) };
+      }
+    }
+    var last = k[k.length - 1];
+    return { x: last[1], scale: last[2] };
+  }
+
+  /* ----------------------------- 狀態 ----------------------------- */
+  var state = { t: 0, playing: false, rate: 1, muted: false, started: false };
+  var audio = new AudioEngine();
+  var lastActId = 0;
+
+  /* ----------------------------- DOM ----------------------------- */
+  var canvas = document.getElementById("scene");
+  var ctx = canvas.getContext("2d");
+  var capEl = document.getElementById("captions");
+  var capTitle = document.getElementById("cap-title");
+  var capSub = document.getElementById("cap-sub");
+  var controls = document.getElementById("controls");
+  var flowmap = document.getElementById("flowmap");
+  var btnPlay = document.getElementById("btn-play");
+  var btnReplay = document.getElementById("btn-replay");
+  var btnMute = document.getElementById("btn-mute");
+  var btnFull = document.getElementById("btn-full");
+  var progress = document.getElementById("progress");
+  var progressFill = document.getElementById("progress-fill");
+  var progressKnob = document.getElementById("progress-knob");
+  var progressTicks = document.getElementById("progress-ticks");
+  var timeLabel = document.getElementById("time-label");
+  var fmItems = flowmap.querySelectorAll(".fm-item");
+
+  /* ----------------------------- 畫布尺寸 ----------------------------- */
+  var dpr = 1, CW = 0, CH = 0;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5); // 投影機/高解析下限制填充成本
+    CW = window.innerWidth; CH = window.innerHeight;
+    canvas.width = Math.floor(CW * dpr);
+    canvas.height = Math.floor(CH * dpr);
+    canvas.style.width = CW + "px";
+    canvas.style.height = CH + "px";
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  /* ----------------------------- 預生成資料 ----------------------------- */
+  // 連續資訊流粒子（貫穿全場的「河」）
+  var FLOW = [];
+  for (var fi = 0; fi < 96; fi++) {
+    FLOW.push({
+      phase: rnd(fi, 1) * 4000,
+      speed: 80 + rnd(fi, 2) * 80,
+      y: (rnd(fi, 3) - 0.5) * 150,
+      size: 1.8 + rnd(fi, 4) * 2.8,
+      bright: 0.45 + rnd(fi, 5) * 0.5
+    });
+  }
+  // 混亂紙片（資料湧入）
+  var SHARDS = [];
+  for (var si = 0; si < 46; si++) {
+    var kind = rnd(si, 9);
+    SHARDS.push({
+      bx: STATION.intake - 360 + rnd(si, 1) * 720,
+      by: (rnd(si, 2) - 0.5) * 620,
+      rot: (rnd(si, 3) - 0.5) * 1.6,
+      w: 34 + rnd(si, 4) * 40,
+      h: 44 + rnd(si, 5) * 30,
+      jit: rnd(si, 6) * TAU,
+      js: 0.5 + rnd(si, 7),
+      type: kind < 0.25 ? "q" : (kind < 0.5 ? "u" : "d") // 客戶問題 / 核保 / 文件
+    });
+  }
+  // 大腦知識節點（分群）
+  var CLUSTERS = [
+    { name: "理賠", cx: -230, cy: -120, cz: 90,  col: C.violet },
+    { name: "核保", cx: 200,  cy: -150, cz: -80, col: C.gold },
+    { name: "醫療", cx: 250,  cy: 120,  cz: 70,  col: C.cyan },
+    { name: "風險", cx: -190, cy: 150,  cz: -90, col: C.amber }
+  ];
+  var NODES = [];
+  for (var ci = 0; ci < CLUSTERS.length; ci++) {
+    var cl = CLUSTERS[ci];
+    var n = 9 + Math.floor(rnd(ci, 8) * 4);
+    for (var ni = 0; ni < n; ni++) {
+      var ang = rnd(ci * 50 + ni, 1) * TAU;
+      var rad = 24 + rnd(ci * 50 + ni, 2) * 95;
+      var zr = (rnd(ci * 50 + ni, 6) - 0.5) * 150;
+      NODES.push({
+        cluster: ci,
+        x: cl.cx + Math.cos(ang) * rad,
+        y: cl.cy + Math.sin(ang) * rad,
+        z: cl.cz + zr,
+        r: 2.5 + rnd(ci * 50 + ni, 3) * 3.5,
+        born: rnd(ci * 50 + ni, 4),     // 出生順序 0..1
+        ph: rnd(ci * 50 + ni, 5) * TAU
+      });
+    }
+  }
+
+  /* ----------------------------- 連續資料流（核心：一路變形不消失） -----------------------------
+     同一批「資料代幣」沿管線持續前進，依所在位置變形：
+       文件(雜亂) → 資訊卡(精美) → 知識節點 → 服務語言 → 匯入客戶
+     變形發生在各器官（眼/腦/口）所在位置，過程以交叉淡化＋火花呈現，全程不消失。 */
+  var PIPE_X0 = 140, PIPE_X1 = 3360;
+  var U_EYE = (STATION.eyes - PIPE_X0) / (PIPE_X1 - PIPE_X0);
+  var U_BRAIN = (STATION.brain - PIPE_X0) / (PIPE_X1 - PIPE_X0);
+  var U_MOUTH = (STATION.mouth - PIPE_X0) / (PIPE_X1 - PIPE_X0);
+  var STREAM = [];
+  for (var ki = 0; ki < 32; ki++) {
+    STREAM.push({
+      u0: ki / 32 + rnd(ki, 11) * 0.015,
+      speed: 0.052 + rnd(ki, 12) * 0.014,
+      lane: (rnd(ki, 13) - 0.5) * 90,
+      seed: rnd(ki, 14)
+    });
+  }
+
+  function gDoc(x, y, a, t, seed) {
+    var cols = [C.paper, C.warn, C.gold];
+    var col = cols[Math.floor(seed * 3) % 3];
+    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(seed * 9 + t * 0.7) * 0.16);
+    ctx.fillStyle = rgba(col, 0.12 * a); ctx.strokeStyle = rgba(col, 0.6 * a); ctx.lineWidth = 1.3;
+    roundRect(-17, -21, 34, 42, 3); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = rgba(col, 0.4 * a);
+    for (var i = 0; i < 4; i++) { var w = 24 - rnd(seed * 30 + i, 1) * 16; ctx.beginPath(); ctx.moveTo(-12, -13 + i * 8); ctx.lineTo(-12 + w, -13 + i * 8); ctx.stroke(); }
+    ctx.restore();
+  }
+  function gCard(x, y, a) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = rgba(C.cyan, 0.14 * a); ctx.strokeStyle = rgba(C.cyan, 0.85 * a); ctx.lineWidth = 1.5;
+    roundRect(-22, -26, 44, 52, 5); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = rgba(C.cyan, 0.6 * a);
+    for (var i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(-15, -13 + i * 11); ctx.lineTo(13, -13 + i * 11); ctx.stroke(); }
+    ctx.fillStyle = rgba(C.gold, 0.9 * a); ctx.beginPath(); ctx.arc(16, -16, 2.6, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  function gNode(x, y, a, t, seed) {
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    glow(x, y, 18, C.violet, a * (0.7 + 0.3 * Math.sin(t * 3 + seed * 9)));
+    ctx.strokeStyle = rgba(C.violet, 0.5 * a); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(x, y, 16, 6, Math.sin(t + seed * 6) * 0.7, 0, TAU); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = rgba([255, 255, 255], 0.9 * a); ctx.beginPath(); ctx.arc(x, y, 3.2, 0, TAU); ctx.fill();
+  }
+  function gSpeech(x, y, a, t) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = rgba(C.amber, 0.14 * a); ctx.strokeStyle = rgba(C.amber, 0.85 * a); ctx.lineWidth = 1.5;
+    roundRect(-22, -15, 44, 30, 8); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-8, 13); ctx.lineTo(-16, 24); ctx.lineTo(-1, 14); ctx.closePath(); ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = rgba(C.amber, 0.85 * a); ctx.lineWidth = 2; ctx.lineCap = "round";
+    for (var i = 0; i < 5; i++) { var bx = -14 + i * 7; var h = 3 + Math.abs(Math.sin(t * 6 + i)) * 8; ctx.beginPath(); ctx.moveTo(bx, -h); ctx.lineTo(bx, h); ctx.stroke(); }
+    ctx.restore();
+  }
+  function drawGlyph(s, x, y, a, t, seed) {
+    if (a <= 0.02) return;
+    if (s === 0) gDoc(x, y, a, t, seed);
+    else if (s === 1) gCard(x, y, a);
+    else if (s === 2) gNode(x, y, a, t, seed);
+    else gSpeech(x, y, a, t);
+  }
+  // 形態維持「進入形」直到抵達器官，才在離開時變形＝器官精準處理後才改變
+  function drawToken(u, x, y, seed, t, a) {
+    var W = 0.085, sA = 0, sB = 0, mix = 0;
+    if (u < U_EYE) { sA = 0; sB = 0; }
+    else if (u < U_EYE + W) { sA = 0; sB = 1; mix = (u - U_EYE) / W; }
+    else if (u < U_BRAIN) { sA = 1; sB = 1; }
+    else if (u < U_BRAIN + W) { sA = 1; sB = 2; mix = (u - U_BRAIN) / W; }
+    else if (u < U_MOUTH) { sA = 2; sB = 2; }
+    else if (u < U_MOUTH + W) { sA = 2; sB = 3; mix = (u - U_MOUTH) / W; }
+    else { sA = 3; sB = 3; }
+    mix = smoothstep(mix);
+    drawGlyph(sA, x, y, a * (1 - mix), t, seed);
+    if (sB !== sA) {
+      drawGlyph(sB, x, y, a * mix, t, seed);
+      var flash = Math.sin(mix * Math.PI);
+      var col = sB === 1 ? C.cyan : sB === 2 ? C.violet : C.amber;
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      glow(x, y, 12 + 36 * flash, col, a * flash * 0.9);
+      ctx.restore();
+    }
+  }
+  function bump(u, us, w) { var d = (u - us) / w; return (d > -1 && d < 1) ? 1 - d * d : 0; }
+  function drawStream(t, camX, worldHalf) {
+    for (var i = 0; i < STREAM.length; i++) {
+      var k = STREAM[i];
+      var u = (k.u0 + t * k.speed) % 1;
+      var x = lerp(PIPE_X0, PIPE_X1, u);
+      if (x < camX - worldHalf - 110 || x > camX + worldHalf + 110) continue;
+      // 自由漂流的基礎軌跡
+      var laneY = k.lane * (0.45 + 0.55 * Math.sin(x * 0.004 + k.seed * 6)) + Math.sin(t * 1.2 + k.seed * 9) * 4;
+      // 接近器官時「收斂進入」：眼睛升入瞳孔、大腦匯入核心、先升入耳（聽）再降出口（說）
+      var eB = bump(u, U_EYE, 0.07), bB = bump(u, U_BRAIN, 0.08);
+      var earB = bump(u, U_MOUTH - 0.034, 0.05), mouthB = bump(u, U_MOUTH + 0.03, 0.055);
+      var conv = Math.max(eB, bB, earB, mouthB);
+      var y = AXIS_Y + laneY * (1 - conv);
+      y += eB * (-58);                                   // 升入眼睛瞳孔
+      y += earB * (-82) + mouthB * (58);                 // 上升入耳（聽）→ 下降出口（說）
+      var a = smoothstep(u / 0.04) * (1 - smoothstep((u - 0.92) / 0.08)); // 起點淡入、終點匯入客戶淡出
+      if (a <= 0.02) continue;
+      drawToken(u, x, y, k.seed, t, a);
+    }
+  }
+
+  /* =======================================================================
+     渲染主流程
+     ======================================================================= */
+  function render(t) {
+    var cam = camAt(t);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, CW, CH);
+
+    drawBackground(t);
+
+    // 運鏡：切換瞬間的「推鏡」與輕微側傾，營造特別節目的鏡頭能量
+    var a = currentAct(t);
+    var dt0 = t - a.start;
+    var punch = 0.075 * (1 - smoothstep(dt0 / 0.7));         // 進場推鏡
+    var roll = 0.022 * (1 - smoothstep(dt0 / 0.8)) * (a.id % 2 ? 1 : -1) // 進場側傾
+             + 0.006 * Math.sin(t * 0.4);                    // 緩慢漂移
+
+    // 套用相機（世界 → 螢幕）
+    var zoom = (CH / WORLD_H) * cam.scale * (1 + punch);
+    ctx.save();
+    ctx.translate(CW / 2, CH / 2);
+    ctx.rotate(roll);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-cam.x, -AXIS_Y);
+
+    drawRiver(t);
+    drawStationMarkers(t);
+    drawFlow(t);
+
+    // 各幕場景：含「提前淡入」與「延後淡出」，使相鄰幕真正交叉重疊（不會先消失再出現）
+    var LEAD = 1.1, TAIL = 0.9;
+    for (var i = 0; i < ACTS.length; i++) {
+      var ac = ACTS[i];
+      var span = ac.end - ac.start;
+      var local = t - ac.start;
+      if (local < -LEAD || local > span + TAIL) continue;
+      var isLast = (i === ACTS.length - 1);
+      var fin = smoothstep((local + LEAD) / LEAD);                 // [start-LEAD, start] 漸顯
+      var fout = isLast ? 1 : (1 - smoothstep((local - span) / TAIL)); // [end, end+TAIL] 漸隱
+      var alpha = clamp(Math.min(fin, fout), 0, 1);
+      if (alpha <= 0.001) continue;
+      var p = clamp(local / span, 0, 1);
+      ctx.globalAlpha = 1;
+      drawAct(ac.id, p, alpha, t);
+    }
+    ctx.globalAlpha = 1;
+
+    // 連續資料流疊於器官之上：資料一路穿過眼/腦/口並變形，全程不消失
+    drawStream(t, cam.x, (CW / 2) / zoom + 140);
+
+    ctx.restore();
+
+    drawCut(dt0);   // 切換光條（螢幕空間）
+    drawVignette();
+  }
+
+  // 換幕時掃過的光條（電視特別節目式硬切能量）
+  function drawCut(dt0) {
+    var prog = dt0 / 0.5;
+    if (prog < 0 || prog > 1) return;
+    var a = (1 - prog);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var x = lerp(-CW * 0.3, CW * 1.3, easeInOut(prog));
+    var w = CW * 0.5;
+    var g = ctx.createLinearGradient(x - w, 0, x + w, 0);
+    g.addColorStop(0, "rgba(255,255,255,0)");
+    g.addColorStop(0.5, "rgba(210,235,255," + (0.22 * a) + ")");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - w, 0, w * 2, CH);
+    // 進場整體微亮
+    ctx.fillStyle = "rgba(180,210,255," + (0.05 * a) + ")";
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.restore();
+  }
+
+  /* ----------------------------- 背景 ----------------------------- */
+  function drawBackground(t) {
+    // 深空漸層已由 CSS 提供；此處加上極遠處緩慢漂移的資料微塵（視差）
+    ctx.save();
+    var n = 70;
+    for (var i = 0; i < n; i++) {
+      var sx = (rnd(i, 1) * CW + t * (4 + rnd(i, 2) * 8)) % (CW + 60) - 30;
+      var sy = rnd(i, 3) * CH;
+      var a = 0.05 + rnd(i, 4) * 0.12;
+      ctx.fillStyle = rgba(C.ink, a);
+      ctx.fillRect(sx, sy, 1.3, 1.3);
+    }
+    ctx.restore();
+  }
+
+  /* ----------------------------- 資訊流主脊（河） ----------------------------- */
+  function drawRiver(t) {
+    var x0 = 60, x1 = STATION.resolve + 220;
+    // 柔邊光帶（垂直漸層）
+    var bandH = 190;
+    var vg = ctx.createLinearGradient(0, AXIS_Y - bandH, 0, AXIS_Y + bandH);
+    vg.addColorStop(0, "rgba(80,130,200,0)");
+    vg.addColorStop(0.5, "rgba(90,150,220,0.10)");
+    vg.addColorStop(1, "rgba(80,130,200,0)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(x0, AXIS_Y - bandH, x1 - x0, bandH * 2);
+
+    // 中央色相流（青→紫→琥珀，呼應三站點）
+    var hg = ctx.createLinearGradient(x0, 0, x1, 0);
+    hg.addColorStop(0.00, rgba(C.cyan, 0.0));
+    hg.addColorStop(0.20, rgba(C.cyan, 0.5));
+    hg.addColorStop(0.48, rgba(C.violet, 0.5));
+    hg.addColorStop(0.74, rgba(C.amber, 0.5));
+    hg.addColorStop(1.00, rgba(C.gold, 0.0));
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.strokeStyle = hg;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var x = x0; x <= x1; x += 10) {
+      var y = AXIS_Y + Math.sin(x * 0.006 + t * 0.5) * 7;
+      if (x === x0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* 連續流動粒子：強化「一條流程」的整體感（以光暈精靈繪製，效能友善） */
+  function drawFlow(t) {
+    var x0 = 80, range = STATION.resolve + 140 - x0;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < FLOW.length; i++) {
+      var f = FLOW[i];
+      var x = x0 + ((f.phase + t * f.speed) % range);
+      var frac = (x - x0) / range;
+      var col = frac < 0.4 ? C.cyan : frac < 0.66 ? C.violet : C.amber;
+      var y = AXIS_Y + f.y * (0.4 + 0.6 * Math.sin(x * 0.004 + f.phase));
+      var a = f.bright * (0.55 + 0.45 * Math.sin(t * 2 + f.phase));
+      glow(x, y, f.size * 4, col, a);
+    }
+    ctx.restore();
+  }
+
+  /* 各站點恆存光環，平移時可見＝同一條流程上的節點 */
+  function drawStationMarkers(t) {
+    var stations = [
+      { x: STATION.eyes, col: C.cyan },
+      { x: STATION.brain, col: C.violet },
+      { x: STATION.mouth, col: C.amber }
+    ];
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < stations.length; i++) {
+      var s = stations[i];
+      var pulse = 0.5 + 0.5 * Math.sin(t * 1.2 + i);
+      glow(s.x, AXIS_Y, 130, s.col, 0.12 + pulse * 0.06);
+    }
+    ctx.restore();
+  }
+
+  /* ----------------------------- 幕分派 ----------------------------- */
+  function drawAct(id, p, alpha, t) {
+    switch (id) {
+      case 1: actTitle(p, alpha, t); break;
+      case 2: actIntake(p, alpha, t); break;
+      case 3: actEyes(p, alpha, t); break;
+      case 4: actBrain(p, alpha, t); break;
+      case 5: actMouth(p, alpha, t); break;
+      case 6: actResolve(p, alpha, t); break;
+    }
+  }
+
+  /* 幕一：標題（舞台呼吸的光暈，文字由 HTML 字幕呈現） */
+  function actTitle(p, alpha, t) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var cx = STATION.intake + 120;
+    var pulse = 0.6 + 0.4 * Math.sin(t * 0.8);
+    var g = ctx.createRadialGradient(cx, AXIS_Y, 0, cx, AXIS_Y, 460);
+    g.addColorStop(0, rgba(C.cyan, 0.10 * alpha * pulse));
+    g.addColorStop(0.5, rgba(C.violet, 0.05 * alpha));
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, AXIS_Y, 460, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  /* 幕二：資料湧入 — 混亂的保險文件 / 核保資料 / 客戶問題 */
+  function actIntake(p, alpha, t) {
+    var converge = smoothstep((p - 0.45) / 0.55); // 後段被吸入流程
+    ctx.save();
+    for (var i = 0; i < SHARDS.length; i++) {
+      var s = SHARDS[i];
+      var jitter = (1 - converge);
+      var jx = Math.sin(t * s.js + s.jit) * 14 * jitter;
+      var jy = Math.cos(t * s.js * 0.8 + s.jit) * 12 * jitter;
+      // 由混亂位置 → 收斂成一束，往右「灌入眼睛瞳孔」（收斂點直抵眼睛、升到瞳孔高度後被吸收）
+      var funnelX = lerp(STATION.intake + 220, STATION.eyes, converge);
+      var tx = lerp(s.bx, funnelX, converge);
+      var ty = lerp(s.by, -50, converge);
+      var x = tx + jx, y = AXIS_Y + ty + jy;
+      var rot = s.rot * (1 - converge * 0.8) + Math.sin(t + s.jit) * 0.05 * jitter;
+
+      var col = s.type === "q" ? C.warn : s.type === "u" ? C.gold : C.paper;
+      var a = alpha * (0.5 + 0.4 * (1 - jitter * 0.4));
+
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(rot);
+      // 紙片
+      ctx.fillStyle = rgba(col, 0.13 * a);
+      ctx.strokeStyle = rgba(col, 0.6 * a);
+      ctx.lineWidth = 1.2;
+      roundRect(-s.w / 2, -s.h / 2, s.w, s.h, 4);
+      ctx.fill(); ctx.stroke();
+      // 內文線條（暗示雜亂未整理）
+      ctx.strokeStyle = rgba(col, 0.32 * a);
+      ctx.lineWidth = 1;
+      for (var L = 0; L < 4; L++) {
+        var ly = -s.h / 2 + 9 + L * 8;
+        var lw = s.w - 14 - rnd(i * 7 + L, 1) * 14;
+        ctx.beginPath(); ctx.moveTo(-s.w / 2 + 7, ly); ctx.lineTo(-s.w / 2 + 7 + lw, ly); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // 文字標籤跟著紙片（少量關鍵字）
+    drawFloatTag("客戶問題", STATION.intake - 300, AXIS_Y - 250, C.warn, alpha * (1 - converge));
+    drawFloatTag("核保資料", STATION.intake + 140, AXIS_Y - 280, C.gold, alpha * (1 - converge));
+    drawFloatTag("理賠文件", STATION.intake - 80, AXIS_Y + 250, C.paper, alpha * (1 - converge));
+    ctx.restore();
+  }
+
+  /* 幕三：AI 的眼睛 — 一隻會「閱讀」的眼睛，掃過雜亂單據變成清楚卡片 */
+  function actEyes(p, alpha, t) {
+    var cx = STATION.eyes, cy = AXIS_Y - 50; // 眼睛上移，下方留出閱讀帶
+    var laneY = AXIS_Y + 150;
+    ctx.save();
+    spotlight(cx, C.cyan, alpha * 0.7);
+
+    // 環繞眼睛的 3D 掃描環（傾斜旋轉，營造立體鏡頭感）
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var halo = 36;
+    var pts = [];
+    for (var h = 0; h < halo; h++) {
+      var ang = h / halo * TAU;
+      var rp = rot3(Math.cos(ang) * 235, Math.sin(ang) * 235, 0, t * 0.7, 1.15);
+      var pr = proj3(rp, 720);
+      pts.push({ x: cx + pr.x, y: cy + pr.y, z: rp[2], s: pr.s });
+    }
+    pts.sort(function (a, b) { return b.z - a.z; });
+    for (var hp = 0; hp < pts.length; hp++) {
+      var pt = pts[hp];
+      var da = clamp(pt.s, 0.5, 1.2);
+      ctx.fillStyle = rgba(C.cyan, 0.5 * alpha * da);
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.4 * da, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+
+    // 眼瞼開合：開場睜開、中段眨一次
+    var open = smoothstep(p / 0.1);
+    var blink = Math.max(0, 1 - Math.abs(p - 0.46) / 0.025); // p≈0.46 處眨眼
+    var lid = clamp(open * (1 - blink), 0.04, 1);
+    var ew = 200, eh = 96 * lid;
+
+    function eyePath() {
+      ctx.beginPath();
+      ctx.moveTo(cx - ew, cy);
+      ctx.quadraticCurveTo(cx, cy - eh * 1.8, cx + ew, cy);   // 上眼瞼
+      ctx.quadraticCurveTo(cx, cy + eh * 1.5, cx - ew, cy);   // 下眼瞼
+      ctx.closePath();
+    }
+
+    // 眼白柔光 + 裁切內繪虹膜
+    ctx.save();
+    eyePath();
+    ctx.save(); ctx.clip();
+    var sg = ctx.createRadialGradient(cx, cy, 0, cx, cy, ew);
+    sg.addColorStop(0, rgba(C.cyan, 0.14 * alpha));
+    sg.addColorStop(1, rgba([20, 40, 70], 0.05 * alpha));
+    ctx.fillStyle = sg; ctx.fillRect(cx - ew, cy - 200, ew * 2, 400);
+
+    // 虹膜（隨掃描左右微移，像在閱讀）
+    var ix = cx + Math.sin(p * Math.PI * 4) * 70;
+    var irisR = 80;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var ig = ctx.createRadialGradient(ix, cy, 4, ix, cy, irisR);
+    ig.addColorStop(0, rgba([180, 240, 255], 0.9 * alpha));
+    ig.addColorStop(0.5, rgba(C.cyan, 0.5 * alpha));
+    ig.addColorStop(1, rgba([40, 110, 170], 0.05 * alpha));
+    ctx.fillStyle = ig;
+    ctx.beginPath(); ctx.arc(ix, cy, irisR, 0, TAU); ctx.fill();
+    // 放射狀虹膜紋
+    ctx.strokeStyle = rgba([200, 245, 255], 0.4 * alpha);
+    ctx.lineWidth = 1;
+    for (var s = 0; s < 28; s++) {
+      var a1 = s / 28 * TAU + t * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(ix + Math.cos(a1) * 26, cy + Math.sin(a1) * 26);
+      ctx.lineTo(ix + Math.cos(a1) * (irisR - 6), cy + Math.sin(a1) * (irisR - 6));
+      ctx.stroke();
+    }
+    ctx.restore();
+    // 瞳孔（脈動）
+    var pr = 26 + Math.sin(t * 2) * 4;
+    ctx.fillStyle = rgba([4, 10, 20], 0.92 * alpha);
+    ctx.beginPath(); ctx.arc(ix, cy, pr, 0, TAU); ctx.fill();
+    ctx.fillStyle = rgba([255, 255, 255], 0.85 * alpha); // 高光
+    ctx.beginPath(); ctx.arc(ix - 9, cy - 9, 5, 0, TAU); ctx.fill();
+    ctx.restore(); // clip
+
+    // 眼眶輪廓 + 睫毛
+    ctx.globalCompositeOperation = "lighter";
+    eyePath();
+    ctx.strokeStyle = rgba(C.cyan, 0.85 * alpha);
+    ctx.lineWidth = 2.4; ctx.stroke();
+    for (var L = 0; L < 9; L++) {
+      var lt = L / 8;
+      var lx0 = cx - ew * 0.8 + lt * ew * 1.6;
+      var ly0 = cy - eh * 1.7 * Math.sin(lt * Math.PI);
+      ctx.strokeStyle = rgba(C.cyan, 0.5 * alpha * lid);
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(lx0, ly0); ctx.lineTo(lx0 + (lt - 0.5) * 14, ly0 - 18); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 閱讀光束：自瞳孔向下投射到資料流（AXIS_Y），照亮正穿過的單據→資訊卡
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var beamY = AXIS_Y + 6;
+    var bg = ctx.createLinearGradient(0, cy, 0, beamY);
+    bg.addColorStop(0, rgba(C.cyan, 0.4 * alpha * lid));
+    bg.addColorStop(1, rgba(C.cyan, 0));
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.moveTo(ix - 14, cy); ctx.lineTo(ix + 14, cy);
+    ctx.lineTo(cx + 80, beamY); ctx.lineTo(cx - 80, beamY); ctx.closePath(); ctx.fill();
+    // 掃描地帶亮線（資料流在此被讀懂）
+    var sgl = ctx.createLinearGradient(cx - 150, beamY, cx + 150, beamY);
+    sgl.addColorStop(0, rgba(C.cyan, 0));
+    sgl.addColorStop(0.5, rgba(C.cyan, 0.5 * alpha));
+    sgl.addColorStop(1, rgba(C.cyan, 0));
+    ctx.strokeStyle = sgl; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx - 150, beamY); ctx.lineTo(cx + 150, beamY); ctx.stroke();
+    ctx.restore();
+
+    // 能力標籤（眼睛兩側）
+    var sideCaps = ["摘要", "翻譯", "標記"];
+    for (var c = 0; c < sideCaps.length; c++) {
+      var ta = alpha * smoothstep((p - 0.4 - c * 0.08) * 3);
+      drawPill(sideCaps[c], cx + 320, cy - 60 + c * 56, C.cyan, ta);
+    }
+    ctx.restore();
+  }
+
+  /* 幕四：AI 的大腦 — 雜亂資料飛入腦中，組織成分類、標註與知識結構 */
+  var BRAIN_RX = 320, BRAIN_RY = 232, BRAIN_FIT = 0.78;
+  function brainPath(rx, ry) {
+    ctx.beginPath();
+    var steps = 90;
+    for (var i = 0; i <= steps; i++) {
+      var ang = i / steps * TAU;
+      // 起伏的腦回輪廓
+      var wob = 1 + 0.05 * Math.sin(ang * 7) + 0.025 * Math.sin(ang * 13);
+      var x = Math.cos(ang) * rx * wob;
+      var y = Math.sin(ang) * ry * wob * (ang > Math.PI ? 0.92 : 1); // 底部略平
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  }
+
+  function actBrain(p, alpha, t) {
+    var cx = STATION.brain, cy = AXIS_Y;
+    ctx.save();
+    spotlight(cx, C.violet, alpha * 0.7);
+    ctx.translate(cx, cy);
+
+    var form = smoothstep(p / 0.35); // 腦輪廓成形
+
+    // 腦輪廓光暈與外框
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var bg = ctx.createRadialGradient(0, 0, 30, 0, 0, BRAIN_RX);
+    bg.addColorStop(0, rgba(C.violet, 0.10 * alpha * form));
+    bg.addColorStop(1, rgba(C.violet, 0));
+    ctx.fillStyle = bg;
+    brainPath(BRAIN_RX, BRAIN_RY); ctx.fill();
+    brainPath(BRAIN_RX, BRAIN_RY);
+    ctx.strokeStyle = rgba(C.violet, 0.5 * alpha * form);
+    ctx.lineWidth = 2.2; ctx.stroke();
+    // 中央腦溝
+    ctx.strokeStyle = rgba(C.violet, 0.35 * alpha * form);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -BRAIN_RY * 0.86);
+    ctx.bezierCurveTo(34, -BRAIN_RY * 0.3, -34, BRAIN_RY * 0.3, 0, BRAIN_RY * 0.82);
+    ctx.stroke();
+    // 腦回曲線
+    ctx.strokeStyle = rgba(C.violet, 0.22 * alpha * form);
+    ctx.lineWidth = 1.3;
+    for (var gi = 0; gi < 5; gi++) {
+      var side = gi % 2 ? 1 : -1;
+      var yy = -120 + gi * 60;
+      ctx.beginPath();
+      ctx.moveTo(side * 30, yy);
+      ctx.bezierCurveTo(side * 130, yy - 36, side * 200, yy + 30, side * 250, yy - 6);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 3D 旋轉知識雲：節點自腦外飛入，於腦中緩緩旋轉成形（神經元亮起）
+    var yaw = t * 0.5, pitch = 0.22 + 0.08 * Math.sin(t * 0.35), focal = 660;
+    var FIT = BRAIN_FIT;
+    var P = new Array(NODES.length);
+    for (var n = 0; n < NODES.length; n++) {
+      var nd = NODES[n];
+      var appear = smoothstep((p - nd.born * 0.5) * 2.2);
+      if (appear <= 0.01) { P[n] = null; continue; }
+      var e = easeInOut(appear);
+      // 目標：3D 旋轉後投影；飛入則在「螢幕空間」插值，避免巨大向量被旋到相機後方
+      var rt = rot3(nd.x * FIT, nd.y * FIT, nd.z * FIT, yaw, pitch);
+      var tp = proj3(rt, focal);
+      var ox = -820 - rnd(n, 1) * 220, oy = (rnd(n, 2) - 0.5) * 150;
+      P[n] = {
+        x: lerp(ox, tp.x, e), y: lerp(oy, tp.y, e),
+        z: rt[2], s: lerp(0.55, tp.s, e), a: alpha * appear,
+        col: CLUSTERS[nd.cluster].col, r: nd.r, ph: nd.ph, cluster: nd.cluster
+      };
+    }
+
+    // 邊（同群、3D 近鄰）＋ 沿邊傳遞的突觸脈衝
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < NODES.length; i++) {
+      if (!P[i]) continue;
+      for (var j = i + 1; j < NODES.length; j++) {
+        if (!P[j] || NODES[i].cluster !== NODES[j].cluster) continue;
+        var ddx = NODES[i].x - NODES[j].x, ddy = NODES[i].y - NODES[j].y, ddz = NODES[i].z - NODES[j].z;
+        var d3 = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz) * FIT;
+        if (d3 > 125) continue;
+        var depth = clamp((P[i].s + P[j].s) * 0.5, 0.55, 1.2);
+        var ea = Math.min(P[i].a, P[j].a) * (1 - d3 / 125) * 0.5 * depth;
+        if (ea <= 0.01) continue;
+        ctx.strokeStyle = rgba(P[i].col, ea);
+        ctx.lineWidth = 0.9 * depth;
+        ctx.beginPath(); ctx.moveTo(P[i].x, P[i].y); ctx.lineTo(P[j].x, P[j].y); ctx.stroke();
+        var u = (t * 0.6 + rnd(i * 31 + j, 1)) % 1;
+        ctx.fillStyle = rgba([255, 255, 255], ea * 1.8);
+        ctx.beginPath(); ctx.arc(lerp(P[i].x, P[j].x, u), lerp(P[i].y, P[j].y, u), 1.8 * depth, 0, TAU); ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // 節點：依深度排序（遠先近後），神經元脈動發光
+    var order = [];
+    for (var o = 0; o < NODES.length; o++) if (P[o]) order.push(o);
+    order.sort(function (x1, x2) { return P[x2].z - P[x1].z; });
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (var oi = 0; oi < order.length; oi++) {
+      var q = P[order[oi]];
+      var fire = 0.6 + 0.4 * Math.sin(t * 3 + q.ph);
+      glow(q.x, q.y, q.r * q.s * 4.2, q.col, 0.95 * q.a * fire);
+      ctx.fillStyle = rgba([255, 255, 255], 0.95 * q.a * clamp(q.s, 0.5, 1.1));
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.r * q.s * 0.7, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+
+    // 分區標籤（知識結構成形）
+    for (var c = 0; c < CLUSTERS.length; c++) {
+      var cl = CLUSTERS[c];
+      var la = alpha * smoothstep((p - 0.5 - c * 0.07) * 3);
+      if (la <= 0.01) continue;
+      var lx = cl.cx * BRAIN_FIT, ly = cl.cy * BRAIN_FIT + (cl.cy < 0 ? -120 : 116);
+      drawPill(cl.name, lx, ly, cl.col, la);
+    }
+    ctx.restore();
+  }
+
+  /* 一隻耳朵（開口朝左，接收問題） */
+  function drawEar(ex, ey, col, a, sc) {
+    ctx.save();
+    ctx.translate(ex, ey); ctx.scale(sc, sc);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.strokeStyle = rgba(col, 0.9 * a);
+    ctx.lineWidth = 3; ctx.lineCap = "round";
+    // 外耳廓
+    ctx.beginPath();
+    ctx.moveTo(20, -54);
+    ctx.bezierCurveTo(-44, -64, -60, -4, -34, 44);
+    ctx.bezierCurveTo(-22, 66, 6, 64, 18, 46);
+    ctx.stroke();
+    // 對耳輪（內脊）
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(8, -30);
+    ctx.bezierCurveTo(-26, -32, -32, 6, -12, 26);
+    ctx.stroke();
+    // 耳屏小結
+    ctx.beginPath(); ctx.arc(14, 8, 6, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* AI 的嘴：唇峰上唇 + 飽滿下唇 + 口腔微光 + 內部聲音長條（清楚是「說話的嘴」） */
+  function drawMouth(mx, my, col, a, openAmt, t) {
+    ctx.save();
+    ctx.translate(mx, my);
+    var w = 56, h = 9 + openAmt * 26; // 半寬 / 張口半高
+    // 口腔內部暗區與微光
+    ctx.globalCompositeOperation = "lighter";
+    var g = ctx.createRadialGradient(0, 0, 1, 0, 0, h + 8);
+    g.addColorStop(0, rgba(col, 0.5 * a * (0.35 + openAmt * 0.65)));
+    g.addColorStop(1, rgba(col, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(0, 0, w * 0.86, h, 0, 0, TAU); ctx.fill();
+    // 內部聲音長條（AI 正在說話）
+    if (openAmt > 0.12) {
+      ctx.strokeStyle = rgba([255, 255, 255], 0.85 * a);
+      ctx.lineWidth = 3; ctx.lineCap = "round";
+      for (var b = 0; b < 5; b++) {
+        var bx = -24 + b * 12;
+        var bh = (h - 3) * (0.35 + 0.65 * Math.abs(Math.sin(t * 8 + b * 1.1)));
+        ctx.beginPath(); ctx.moveTo(bx, -bh); ctx.lineTo(bx, bh); ctx.stroke();
+      }
+    }
+    // 嘴唇：上唇含唇峰（cupid bow）、下唇飽滿
+    ctx.strokeStyle = rgba(col, 0.95 * a);
+    ctx.lineWidth = 4.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath(); // 上唇
+    ctx.moveTo(-w, -1);
+    ctx.quadraticCurveTo(-w * 0.5, -h - 6, -7, -h * 0.5 - 2);
+    ctx.quadraticCurveTo(0, -h * 0.2, 7, -h * 0.5 - 2);
+    ctx.quadraticCurveTo(w * 0.5, -h - 6, w, -1);
+    ctx.stroke();
+    ctx.beginPath(); // 下唇
+    ctx.moveTo(-w, -1);
+    ctx.quadraticCurveTo(0, h + 9, w, -1);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* 幕五：AI 的嘴巴與耳朵 — 只用「耳」與「口」兩個器官（不模擬人頭）
+     耳在上（聽進知識與客戶問題）→ 內部梳理 → 口在下（說出清楚語言）。
+     位置對齊資料流：耳 ≈ u(U_MOUTH-0.034) 上方、口 ≈ u(U_MOUTH+0.03) 下方。 */
+  function actMouth(p, alpha, t) {
+    var cx = STATION.mouth, cy = AXIS_Y;
+    var earX = cx - 110, earY = cy - 82;   // 耳：上方（聽）
+    var mouX = cx + 96, mouY = cy + 58;    // 口：下方（說）
+    ctx.save();
+    spotlight(cx, C.amber, alpha * 0.7);
+
+    var listen = smoothstep(p / 0.3);
+    var untangle = smoothstep((p - 0.12) / 0.3);
+    var speak = smoothstep((p - 0.45) / 0.3);
+    var handoff = smoothstep((p - 0.74) / 0.26);
+
+    // 客戶（左上）提出纏繞的問題 → 飛入耳朵並被梳理
+    var custX = cx - 360, custY = cy - 130;
+    drawPerson(custX, custY, 0.8, C.paper, alpha * 0.9);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.strokeStyle = rgba(C.warn, alpha * (0.8 - untangle * 0.4));
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var s = 0; s <= 60; s++) {
+      var u = s / 60;
+      var bx = lerp(custX + 40, earX - 26, u);
+      var byBase = lerp(custY + 30, earY, u);
+      var tangle = (1 - untangle) * Math.sin(u * 22 + t * 4) * 22 + untangle * Math.sin(u * 3) * 4;
+      if (s === 0) ctx.moveTo(bx, byBase + tangle); else ctx.lineTo(bx, byBase + tangle);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // ── 耳朵（上）＋ 收進來的同心聲波（聆聽） ──
+    drawEar(earX, earY, C.amber, alpha, 1.3);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    glow(earX, earY, 56, C.amber, 0.28 * alpha * listen);
+    for (var w2 = 0; w2 < 3; w2++) {
+      var ph = (t * 0.9 + w2 / 3) % 1;
+      var rr = lerp(92, 24, ph);
+      ctx.strokeStyle = rgba(C.amber, alpha * listen * (1 - ph) * (1 - speak * 0.4));
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(earX - 34, earY - 6, rr, -1.0, 0.7); ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── 內部梳理：耳 → 口 的處理流光（聽到的內容被整理後送往口） ──
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var proc = smoothstep((p - 0.25) / 0.35);
+    ctx.strokeStyle = rgba(C.amber, alpha * proc * 0.55);
+    ctx.setLineDash([3, 9]); ctx.lineDashOffset = -t * 40; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(earX + 6, earY + 28);
+    ctx.quadraticCurveTo(cx - 6, cy, mouX - 18, mouY - 24);
+    ctx.stroke();
+    ctx.restore();
+
+    // ── 嘴巴（下）＋ 說出去的清楚聲波 ──
+    var openAmt = speak * (0.45 + 0.55 * Math.abs(Math.sin(t * 7)));
+    drawMouth(mouX, mouY, C.amber, alpha * Math.max(0.3, speak), openAmt, t);
+    if (speak > 0.01) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = rgba(C.amber, alpha * speak);
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      for (var x2 = 0; x2 <= 180; x2 += 6) {
+        var env = Math.sin(x2 / 180 * Math.PI);
+        var amp = env * 22 * (0.5 + 0.5 * Math.sin(x2 * 0.2 + t * 8));
+        var xx = mouX + 64 + x2, yy = mouY + amp;
+        if (x2 === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 「耳·聽」「口·說」定位標示
+    drawPill("耳 · 聽", earX, earY - 56, C.amber, alpha * listen * 0.95, 0.8);
+    drawPill("口 · 說", mouX + 4, mouY + 50, C.amber, alpha * speak * 0.95, 0.8);
+
+    // 要點
+    var points = ["聽懂需求", "釐清重點", "清楚回應"];
+    for (var i2 = 0; i2 < points.length; i2++) {
+      var pa2 = alpha * smoothstep((p - 0.3 - i2 * 0.12) * 3);
+      drawPill(points[i2], cx - 230, cy - 150 + i2 * 44, C.amber, pa2, 0.85);
+    }
+
+    // 外撥：電話脈衝
+    var callA = alpha * smoothstep((p - 0.58) * 4) * (1 - smoothstep((p - 0.84) * 6));
+    if (callA > 0.01) drawPill("☎ 外撥確認", mouX + 20, mouY + 120, C.amber, callA, 0.85);
+
+    // 右：必要時轉交專業人員
+    var proX = cx + 380;
+    drawPerson(proX, cy + 20, 1.05, C.cyan, alpha * handoff);
+    if (handoff > 0.01) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = rgba(C.cyan, alpha * handoff * 0.85);
+      ctx.lineWidth = 2.2;
+      var ax0 = mouX + 140, ax1 = proX - 70, ay = cy;
+      ctx.beginPath(); ctx.moveTo(ax0, ay); ctx.lineTo(ax1, ay); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax1, ay); ctx.lineTo(ax1 - 13, ay - 7); ctx.lineTo(ax1 - 13, ay + 7); ctx.closePath();
+      ctx.fillStyle = rgba(C.cyan, alpha * handoff * 0.95); ctx.fill();
+      ctx.restore();
+      drawPill("轉交專業", proX, cy - 140, C.cyan, alpha * handoff, 0.9);
+    }
+    ctx.restore();
+  }
+
+  /* 幕六：資訊清楚、服務安心 — 聚焦人的成果，並以價值階梯收束整條流程 */
+  function actResolve(p, alpha, t) {
+    ctx.save();
+    var Xc = 3200, cy = AXIS_Y; // 終幕構圖中心
+
+    // 專業人員（掌握整理後的資訊）
+    var proX = Xc - 150;
+    drawPerson(proX, cy + 10, 1.25, C.cyan, alpha);
+    // 乾淨卷宗（整齊資訊）
+    var folderA = alpha * smoothstep(p / 0.4);
+    ctx.save();
+    ctx.translate(proX + 78, cy - 40);
+    ctx.fillStyle = rgba(C.cyan, 0.12 * folderA);
+    ctx.strokeStyle = rgba(C.cyan, 0.8 * folderA);
+    ctx.lineWidth = 1.6;
+    roundRect(-30, -40, 60, 80, 6); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = rgba(C.cyan, 0.6 * folderA);
+    for (var L = 0; L < 6; L++) { ctx.beginPath(); ctx.moveTo(-21, -28 + L * 12); ctx.lineTo(21, -28 + L * 12); ctx.stroke(); }
+    ctx.fillStyle = rgba(C.gold, 0.95 * folderA);
+    ctx.beginPath(); ctx.arc(24, -28, 3, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    // 客戶（理解、安心 — 溫暖光暈）
+    var custX = Xc + 170;
+    var calm = smoothstep((p - 0.25) / 0.4);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var wg = ctx.createRadialGradient(custX, cy - 30, 0, custX, cy - 30, 150);
+    wg.addColorStop(0, rgba(C.gold, 0.20 * alpha * calm * (0.7 + 0.3 * Math.sin(t * 1.5))));
+    wg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = wg;
+    ctx.beginPath(); ctx.arc(custX, cy - 30, 150, 0, TAU); ctx.fill();
+    ctx.restore();
+    drawPerson(custX, cy + 10, 1.05, C.gold, alpha * calm);
+
+    // 連結兩人的安心之線
+    if (calm > 0.01) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = rgba(C.gold, alpha * calm * 0.55);
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([2, 9]); ctx.lineDashOffset = -t * 30;
+      ctx.beginPath(); ctx.moveTo(proX + 55, cy - 40); ctx.lineTo(custX - 50, cy - 40); ctx.stroke();
+      ctx.restore();
+    }
+
+    // 價值總結階梯：混亂資料 → 可讀資訊 → 知識結構 → 安心服務（放大、置中、可讀）
+    var steps = [
+      { label: "混亂資料", col: C.warn },
+      { label: "可讀資訊", col: C.cyan },
+      { label: "知識結構", col: C.violet },
+      { label: "安心服務", col: C.gold }
+    ];
+    var stepA = alpha * smoothstep((p - 0.42) * 2.5);
+    if (stepA > 0.01) {
+      var sp = 460, y0 = cy + 200, sc = 1.55;
+      var xs = [];
+      for (var s0 = 0; s0 < 4; s0++) xs.push(Xc + (s0 - 1.5) * sp);
+      // 進度連線與箭頭
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (var aI = 0; aI < 3; aI++) {
+        var seg = stepA * smoothstep((p - 0.5 - aI * 0.07) * 3);
+        if (seg <= 0.01) continue;
+        ctx.strokeStyle = rgba(C.ink, seg * 0.4);
+        ctx.lineWidth = 1.6;
+        var x1 = xs[aI] + 90, x2 = xs[aI + 1] - 90;
+        ctx.beginPath(); ctx.moveTo(x1, y0); ctx.lineTo(x2, y0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x2, y0); ctx.lineTo(x2 - 12, y0 - 6); ctx.lineTo(x2 - 12, y0 + 6); ctx.closePath();
+        ctx.fillStyle = rgba(C.ink, seg * 0.5); ctx.fill();
+      }
+      ctx.restore();
+      for (var s = 0; s < steps.length; s++) {
+        var sa = stepA * smoothstep((p - 0.5 - s * 0.07) * 3);
+        drawPill(steps[s].label, xs[s], y0, steps[s].col, sa, sc);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ----------------------------- 繪圖小工具 ----------------------------- */
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // 膠囊標籤（世界座標，含中文）；sc 為尺寸倍率，供終幕價值階梯放大使用
+  function drawPill(text, x, y, col, a, sc) {
+    if (a <= 0.01) return;
+    sc = sc || 1;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.font = "600 " + (22 * sc) + "px " + getFont();
+    var w = ctx.measureText(text).width + 34 * sc;
+    var h = 38 * sc;
+    ctx.translate(x, y);
+    ctx.fillStyle = rgba([8, 14, 26], 0.7 * a);
+    ctx.strokeStyle = rgba(col, 0.85 * a);
+    ctx.lineWidth = 1.4 * sc;
+    roundRect(-w / 2, -h / 2, w, h, h / 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = rgba(C.ink, a);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(text, 0, 1);
+    // 端點光點
+    ctx.fillStyle = rgba(col, a);
+    ctx.beginPath(); ctx.arc(-w / 2 + 13 * sc, 0, 3.4 * sc, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFloatTag(text, x, y, col, a) {
+    if (a <= 0.01) return;
+    ctx.save();
+    ctx.font = "500 20px " + getFont();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = rgba(col, 0.85 * a);
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  // 抽象人物剪影（頭 + 肩）
+  function drawPerson(x, y, sc, col, a) {
+    if (a <= 0.01) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(sc, sc);
+    ctx.globalCompositeOperation = "lighter";
+    // 柔光
+    var g = ctx.createRadialGradient(0, -40, 0, 0, -40, 90);
+    g.addColorStop(0, rgba(col, 0.22 * a));
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, -40, 90, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = rgba(col, 0.9 * a);
+    ctx.strokeStyle = rgba(col, 0.9 * a);
+    // 頭
+    ctx.beginPath(); ctx.arc(0, -58, 22, 0, TAU); ctx.fill();
+    // 肩／身
+    ctx.beginPath();
+    ctx.moveTo(-46, 30);
+    ctx.quadraticCurveTo(-46, -20, 0, -20);
+    ctx.quadraticCurveTo(46, -20, 46, 30);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  var _font = null;
+  function getFont() {
+    if (_font) return _font;
+    _font = '"Segoe UI","Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif';
+    return _font;
+  }
+
+  // 舞台聚光燈：自上而下的柔光錐，賦予劇場感與空間深度
+  function spotlight(cx, col, a) {
+    if (a <= 0.01) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var topY = AXIS_Y - 560, botY = AXIS_Y + 300;
+    var g = ctx.createLinearGradient(0, topY, 0, botY);
+    g.addColorStop(0, rgba(col, 0));
+    g.addColorStop(0.45, rgba(col, 0.06 * a));
+    g.addColorStop(1, rgba(col, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(cx - 46, topY);
+    ctx.lineTo(cx + 46, topY);
+    ctx.lineTo(cx + 380, botY);
+    ctx.lineTo(cx - 380, botY);
+    ctx.closePath();
+    ctx.fill();
+    // 地面光池
+    var pg = ctx.createRadialGradient(cx, botY, 0, cx, botY, 340);
+    pg.addColorStop(0, rgba(col, 0.08 * a));
+    pg.addColorStop(1, rgba(col, 0));
+    ctx.fillStyle = pg;
+    ctx.beginPath(); ctx.ellipse(cx, botY, 340, 60, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawVignette() {
+    ctx.save();
+    var g = ctx.createRadialGradient(CW / 2, CH * 0.46, CH * 0.3, CW / 2, CH * 0.5, CH * 0.85);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.restore();
+  }
+
+  /* =======================================================================
+     字幕 / 流程列 / 控制列 更新
+     ======================================================================= */
+  function currentAct(t) {
+    for (var i = 0; i < ACTS.length; i++) {
+      if (t < ACTS[i].end) return ACTS[i];
+    }
+    return ACTS[ACTS.length - 1];
+  }
+
+  function updateCaptions(t) {
+    var a = currentAct(t);
+    if (a.id !== lastActId) {
+      capTitle.textContent = a.title;
+      capSub.textContent = a.sub;
+      capEl.classList.toggle("is-center", a.pos === "center");
+      // 重新觸發動感標題進場
+      capEl.classList.remove("kin");
+      void capEl.offsetWidth; // 強制 reflow 以重啟動畫
+      capEl.classList.add("kin");
+      // 進入新幕觸發聲音動機與混亂質地
+      audio.cue(a.id);
+      audio.setChaos(a.id === 2 ? 1 : 0);
+      // 流程列高亮
+      for (var i = 0; i < fmItems.length; i++) {
+        fmItems[i].classList.toggle("is-active", parseInt(fmItems[i].dataset.act, 10) === a.id);
+      }
+      lastActId = a.id;
+    }
+    // 幕內淡入淡出（最後一幕只淡入、不淡出）
+    var span = a.end - a.start;
+    var local = t - a.start;
+    var isLast = (a.id === ACTS[ACTS.length - 1].id);
+    var alpha = isLast ? smoothstep(local / 1.0) : fade(local, 1.0, span - 1.2, span);
+    capEl.style.opacity = alpha.toFixed(3);
+  }
+
+  function fmt(sec) {
+    var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  function updateControls(t) {
+    var pct = (t / DURATION) * 100;
+    progressFill.style.width = pct + "%";
+    progressKnob.style.left = pct + "%";
+    progress.setAttribute("aria-valuenow", Math.round(pct));
+    timeLabel.textContent = fmt(t) + " / " + fmt(DURATION);
+  }
+
+  function buildTicks() {
+    for (var i = 1; i < ACTS.length; i++) {
+      var tick = document.createElement("div");
+      tick.className = "progress-tick";
+      tick.style.left = (ACTS[i].start / DURATION * 100) + "%";
+      progressTicks.appendChild(tick);
+    }
+  }
+  buildTicks();
+
+  /* =======================================================================
+     主迴圈
+     ======================================================================= */
+  var lastTs = performance.now();
+  function loop(now) {
+    var dt = (now - lastTs) / 1000;
+    lastTs = now;
+    if (dt > 0.1) dt = 0.1; // 分頁切換回來時避免大跳；不會卡死
+    if (state.playing) {
+      state.t += dt * state.rate;
+      if (state.t >= DURATION) { state.t = DURATION; setPlaying(false); }
+    }
+    // 任一幀的繪製錯誤都不得中斷主迴圈（避免畫面當掉停住）
+    try {
+      render(state.t);
+      updateCaptions(state.t);
+      updateControls(state.t);
+    } catch (err) {
+      if (window.console && console.warn) console.warn("frame skipped:", err);
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  /* =======================================================================
+     控制邏輯
+     ======================================================================= */
+  function setPlaying(on) {
+    // 播放至結尾後再按播放＝自動重頭
+    if (on && state.t >= DURATION - 0.01) state.t = 0;
+    state.playing = on;
+    controls.classList.toggle("is-playing", on);
+    if (on && audio.ready && audio.ctx && audio.ctx.state === "suspended") audio.ctx.resume();
+  }
+
+  // 自動開場（不需點擊畫面）：直接播放畫面，聲音延後到使用者首次互動
+  function begin() {
+    state.started = true;
+    document.body.classList.add("started"); // 啟用寬銀幕黑邊與底片顆粒
+    controls.classList.add("is-visible");
+    flowmap.classList.add("is-visible");
+    state.t = 0;
+    lastActId = 0;
+    setPlaying(true);
+  }
+
+  // 首次互動才建立／啟用聲音（符合：互動前不強制播放聲音）
+  var audioArmed = false;
+  function armAudio() {
+    if (audioArmed) return;
+    audioArmed = true;
+    audio.init();
+    audio.setRate(state.rate);
+    audio.setMuted(state.muted);
+    var hint = document.getElementById("sound-hint");
+    if (hint) hint.classList.add("is-hidden");
+  }
+
+  function replay() {
+    state.t = 0;
+    lastActId = 0;
+    setPlaying(true);
+  }
+
+  function togglePlay() {
+    setPlaying(!state.playing);
+  }
+
+  function setRate(r) {
+    state.rate = r;
+    audio.setRate(r);
+    var btns = document.querySelectorAll(".rate-btn");
+    for (var i = 0; i < btns.length; i++)
+      btns[i].classList.toggle("is-active", parseFloat(btns[i].dataset.rate) === r);
+  }
+
+  function toggleMute() {
+    state.muted = !state.muted;
+    audio.setMuted(state.muted);
+    btnMute.classList.toggle("is-muted", state.muted); // class 掛在按鈕上以切換圖示
+  }
+
+  function seekToClientX(clientX) {
+    var rect = progress.getBoundingClientRect();
+    var frac = clamp((clientX - rect.left) / rect.width, 0, 1);
+    state.t = frac * DURATION;
+    // seek 可能跨越多幕：重置 lastActId 以更新字幕與流程列
+    lastActId = -1;
+  }
+
+  function toggleFullscreen() {
+    var el = document.documentElement;
+    if (!document.fullscreenElement) {
+      (el.requestFullscreen || el.webkitRequestFullscreen || function () {}).call(el);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
+    }
+  }
+
+  /* ----------------------------- 事件繫結 ----------------------------- */
+  // 任意互動（點擊或按鍵）即啟用聲音
+  window.addEventListener("pointerdown", armAudio);
+  window.addEventListener("keydown", armAudio);
+  btnPlay.addEventListener("click", togglePlay);
+  btnReplay.addEventListener("click", replay);
+  btnMute.addEventListener("click", toggleMute);
+  btnFull.addEventListener("click", toggleFullscreen);
+
+  document.querySelectorAll(".rate-btn").forEach(function (b) {
+    b.addEventListener("click", function () { setRate(parseFloat(b.dataset.rate)); });
+  });
+
+  // 進度條：點擊與拖曳 seek
+  var dragging = false;
+  progress.addEventListener("pointerdown", function (e) {
+    dragging = true; progress.setPointerCapture(e.pointerId); seekToClientX(e.clientX);
+  });
+  progress.addEventListener("pointermove", function (e) { if (dragging) seekToClientX(e.clientX); });
+  progress.addEventListener("pointerup", function () { dragging = false; });
+  progress.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") { state.t = clamp(state.t - 3, 0, DURATION); lastActId = -1; }
+    else if (e.key === "ArrowRight") { state.t = clamp(state.t + 3, 0, DURATION); lastActId = -1; }
+  });
+
+  // 鍵盤快捷鍵（簡報友善）
+  window.addEventListener("keydown", function (e) {
+    if (e.target && /input|textarea/i.test(e.target.tagName)) return;
+    switch (e.key) {
+      case " ": case "k": e.preventDefault(); togglePlay(); break;
+      case "r": case "R": replay(); break;
+      case "m": case "M": toggleMute(); break;
+      case "f": case "F": toggleFullscreen(); break;
+      case "ArrowLeft": state.t = clamp(state.t - 3, 0, DURATION); lastActId = -1; break;
+      case "ArrowRight": state.t = clamp(state.t + 3, 0, DURATION); lastActId = -1; break;
+      case "1": setRate(0.5); break;
+      case "2": setRate(1); break;
+      case "3": setRate(1.5); break;
+      case "4": setRate(2); break;
+    }
+  });
+
+  // 初始字幕，並自動開場播放
+  capTitle.textContent = ACTS[0].title;
+  capSub.textContent = ACTS[0].sub;
+  begin();
+})();
+
+</script>
+</body>
+</html>
