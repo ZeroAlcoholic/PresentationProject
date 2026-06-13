@@ -164,6 +164,8 @@
 <body>
 <div id="stage">
   <canvas id="game"></canvas>
+  <!-- hosted CC0 BGM (HydroGene, public domain); falls back to synth if it can't load -->
+  <audio id="bgm" loop preload="auto" playsinline></audio>
 
   <!-- HUD -->
   <div id="hud">
@@ -223,7 +225,7 @@
       </div>
       <div class="note" style="margin-top:4px">口訣：<b>慢慢張開＝吸</b>　·　<b>快速揮過去＝打</b></div>
       <button class="btn" id="btn-start">開始遊戲</button>
-      <div class="note" id="start-note">需要攝影機權限（影像只在本機處理，不會上傳）。<br>沒有攝影機？仍可用滑鼠 / 觸控遊玩。</div>
+      <div class="note" id="start-note">需要攝影機權限（影像只在本機處理，不會上傳）。<br>沒有攝影機？仍可用滑鼠 / 觸控遊玩。<br><span style="opacity:.55">音樂：HydroGene（CC0）· 載入失敗時自動切換合成音樂</span></div>
     </div>
   </div>
 
@@ -636,7 +638,7 @@ const Game = {
   },
   startCountdown(){ this.reset(); this.state="countdown"; this.cdNum=3; this.cdTimer=0;
     if(App.useTracking) Camera.resume();   // wake camera if it was paused on the over/pause screen
-    UI.showScreen(null); UI.countdown(3); Audio.tick(); },
+    UI.showScreen(null); UI.countdown(3); Audio.tick(); Audio.startMusic(); },
 
   update(dt){
     if(this.state==="countdown"){
@@ -650,8 +652,9 @@ const Game = {
     }
     if(this.state!=="play"){ this.stepEffects(dt); return; }
 
-    // timer
+    // timer + music tension (ramps up over the final 15s)
     this.time-=dt;
+    Audio.setMusicIntensity(this.time<15 ? (15-this.time)/15 : 0);
     if(this.time<=0){ this.time=0; this.end(); }
 
     // combo decay
@@ -742,7 +745,7 @@ const Game = {
         const dx=h.dpalm.x-s.x, dy=h.dpalm.y-s.y, d2=dx*dx+dy*dy;
         if(d2<rGrab2){                            // close enough → captured into orbit
           s.captured=true; s.capBy=h; s.capGen=h.gen; s.orbitR=orbitR*(0.82+Math.random()*0.5);
-          s.orbitAng=Math.atan2(s.y-h.dpalm.y, s.x-h.dpalm.x); break;
+          s.orbitAng=Math.atan2(s.y-h.dpalm.y, s.x-h.dpalm.x); Audio.capture(); break;
         }
         if(d2<rS*rS){
           const d=Math.sqrt(d2)||1, f=1-d/rS, ax=dx/d, ay=dy/d;
@@ -859,8 +862,8 @@ const Game = {
     this.bestCombo=Math.max(this.bestCombo,this.combo);
     if(this.score>this.best){ this.best=this.score; localStorage.setItem("starVortexBest",this.best); }
     if(App.useTracking) Camera.pause();    // stop decoding video while on results screen
+    Audio.stopMusic(); Audio.win();
     UI.gameOver(this.score,this.bestCombo,this.best);
-    Audio.go();
   }
 };
 
@@ -1149,28 +1152,113 @@ const Perf = {
 };
 
 /* ============================ AUDIO ============================== */
+/* Fully procedural (Web Audio) — zero asset files, runs on the audio thread,
+   so it never touches the 60fps render / hand-tracking budget.
+   Buses: oscillators → sfxGain / musicGain → master → out.                */
 const Audio = {
-  ctx:null, muted:false, master:null,
+  ctx:null, muted:false, master:null, sfxGain:null, musicGain:null, _lastCap:0,
+  bgm:null, bgmReady:null, bgmMode:false, BGM_URL:"star-vortex-bgm.mp3", BGM_VOL:0.42,
+  music:{ on:false, step:0, nextTime:0, timer:0, intensity:0, bpm:124 },
   init(){ if(this.ctx) return;
     try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)();
       this.master=this.ctx.createGain(); this.master.gain.value=0.5; this.master.connect(this.ctx.destination);
+      this.sfxGain=this.ctx.createGain(); this.sfxGain.gain.value=1.0; this.sfxGain.connect(this.master);
+      this.musicGain=this.ctx.createGain(); this.musicGain.gain.value=0.0001; this.musicGain.connect(this.master);
     }catch{} },
   resume(){ if(this.ctx && this.ctx.state==="suspended") this.ctx.resume(); },
+  // try to preload the hosted track; bgmReady stays false on offline / 404 / unsupported → synth fallback
+  preloadBgm(){
+    const el=document.getElementById("bgm"); if(!el) { this.bgmReady=false; return; }
+    this.bgm=el; el.volume=this.BGM_VOL;
+    el.addEventListener("canplaythrough",()=>{ if(this.bgmReady==null) this.bgmReady=true; },{once:true});
+    el.addEventListener("error",()=>{ this.bgmReady=false;
+      if(this.music.on && this.bgmMode){ this.bgmMode=false; this._startSynth(); } });   // failed mid-play → synth
+    setTimeout(()=>{ if(this.bgmReady==null) this.bgmReady=false; }, 9000);                // load timeout → synth
+    try{ el.src=this.BGM_URL; el.load(); }catch{ this.bgmReady=false; }
+  },
+
+  // one enveloped oscillator note at absolute time t, routed to a bus
+  note(freq,t,dur,type,vol,dest){
+    if(!this.ctx) return;
+    const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(dest||this.sfxGain); o.start(t); o.stop(t+dur+0.03);
+  },
   blip(freq,dur,type="sine",vol=0.3,slideTo=null){
     if(!this.ctx||this.muted) return;
     const t=this.ctx.currentTime, o=this.ctx.createOscillator(), g=this.ctx.createGain();
     o.type=type; o.frequency.setValueAtTime(freq,t);
     if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.01);
     g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g); g.connect(this.master); o.start(t); o.stop(t+dur+0.02);
+    o.connect(g); g.connect(this.sfxGain); o.start(t); o.stop(t+dur+0.02);
   },
-  pop(combo,slap){ const base=420+Math.min(combo,20)*28; this.blip(base,0.12,"triangle",slap?0.34:0.24,base*1.6); },
-  shock(){ this.blip(120,0.32,"sawtooth",0.3,40); },
-  ultimate(){ this.blip(180,0.7,"sawtooth",0.34,900); setTimeout(()=>this.blip(420,0.5,"triangle",0.3,1400),60); },
+  // --- SFX ---
+  pop(combo,cap){ const base=420+Math.min(combo,24)*26; this.blip(base,0.12,"triangle",cap?0.34:0.22,base*1.7);
+    if(cap) this.blip(base*1.5,0.10,"square",0.12,base*2.2); },
+  capture(){ if(!this.ctx||this.muted) return; const n=this.ctx.currentTime; if(n-this._lastCap<0.07) return;
+    this._lastCap=n; this.blip(880+Math.random()*260,0.05,"sine",0.10,1500); },
+  shock(){ this.blip(130,0.34,"sawtooth",0.3,38); this.blip(320,0.22,"square",0.16,90); },
+  ultimate(){ this.blip(170,0.8,"sawtooth",0.34,1000); setTimeout(()=>this.blip(440,0.5,"triangle",0.3,1500),70);
+    setTimeout(()=>this.blip(660,0.6,"square",0.22,1980),140); },
   tick(){ this.blip(660,0.08,"square",0.2); },
-  go(){ this.blip(520,0.18,"square",0.28,880); },
-  toggle(){ this.muted=!this.muted; return this.muted; }
+  go(){ this.blip(520,0.18,"square",0.28,880); setTimeout(()=>this.blip(784,0.3,"triangle",0.26,1175),90); },
+  win(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>this.blip(f,0.3,"triangle",0.3,f*1.5),i*110)); },
+
+  // --- BGM: prefer hosted file, fall back to procedural synth (offline / load fail) ---
+  startMusic(){
+    if(this.music.on) return; this.music.on=true;
+    if(this.bgmReady && this.bgm){       // hosted track
+      this.bgmMode=true;
+      try{ this.bgm.currentTime=0; this.bgm.volume=this.BGM_VOL; this.bgm.muted=this.muted;
+        this.bgm.playbackRate=1; const p=this.bgm.play();
+        if(p&&p.catch) p.catch(()=>{ if(this.music.on){ this.bgmMode=false; this._startSynth(); } });
+      }catch{ this.bgmMode=false; this._startSynth(); }
+    } else { this.bgmMode=false; this._startSynth(); }   // synth fallback
+  },
+  stopMusic(){ this.music.on=false;
+    if(this.bgmMode && this.bgm){ try{ this.bgm.pause(); }catch{} } else this._stopSynth(); },
+  suspendMusicTimer(){ if(this.bgmMode && this.bgm){ try{ this.bgm.pause(); }catch{} } else { clearInterval(this.music.timer); this.music.timer=0; } },
+  resumeMusicTimer(){ if(!this.music.on) return;
+    if(this.bgmMode && this.bgm){ const p=this.bgm.play(); if(p&&p.catch)p.catch(()=>{}); }
+    else if(!this.music.timer && this.ctx){ this.music.nextTime=this.ctx.currentTime+0.08; this.music.timer=setInterval(()=>this._sched(),40); } },
+  setMusicIntensity(x){ this.music.intensity=clamp(x,0,1);
+    if(this.bgmMode && this.bgm) this.bgm.playbackRate = 1 + 0.05*this.music.intensity; },  // subtle tension on the file
+
+  // procedural fallback: 16-step pentatonic loop, lookahead scheduler
+  _startSynth(){
+    if(!this.ctx) return;
+    this.music.step=0; this.music.nextTime=this.ctx.currentTime+0.08;
+    const g=this.musicGain.gain, t=this.ctx.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(0.0001,t); g.exponentialRampToValueAtTime(0.5,t+1.4);
+    clearInterval(this.music.timer); this.music.timer=setInterval(()=>this._sched(),40);
+  },
+  _stopSynth(){ if(!this.ctx) return;
+    clearInterval(this.music.timer); this.music.timer=0;
+    const g=this.musicGain.gain, t=this.ctx.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(Math.max(g.value,0.0001),t); g.exponentialRampToValueAtTime(0.0001,t+0.4); },
+  _sched(){
+    if(!this.ctx) return;
+    const eighth=60/this.music.bpm/2;
+    while(this.music.nextTime < this.ctx.currentTime + 0.18){
+      this._stepAt(this.music.nextTime, this.music.step);
+      this.music.nextTime += eighth; this.music.step=(this.music.step+1)%16;
+    }
+  },
+  _stepAt(t,step){
+    if(this.muted) return;
+    const mg=this.musicGain, intn=this.music.intensity;
+    const roots=[110.00,82.41,98.00,130.81];          // A2 E2 G2 C3 (one per beat-group)
+    const root=roots[(step>>2)%4];
+    if(step%4===0){ this.note(root,t,0.5,"triangle",0.34,mg); this.note(root/2,t,0.5,"sine",0.22,mg); }  // bass+kick
+    const scale=[440,523.25,587.33,659.25,783.99];    // A-minor pentatonic
+    this.note(scale[(step*3)%scale.length], t, 0.15, "square", 0.085+0.07*intn, mg);                     // arp
+    if(intn>0.45 && step%2===1) this.note(7600,t,0.025,"square",0.035+0.03*intn,mg);                     // hat (tension)
+  },
+  toggle(){ this.muted=!this.muted; if(this.master) this.master.gain.value=this.muted?0:0.5;
+    if(this.bgm) this.bgm.muted=this.muted; return this.muted; }
 };
 
 /* ============================ INPUT (fallback) =================== */
@@ -1272,7 +1360,7 @@ const App = {
   last:0, raf:0, useTracking:false, started:false,
 
   async init(){
-    Render.init(); Overlay.init(); UI.init(); Pool.initPool();
+    Render.init(); Overlay.init(); UI.init(); Pool.initPool(); Audio.preloadBgm();
     if(IS_MOBILE){ Perf.tierName="med"; Perf.tier=TIERS.med; }   // start cooler on phones/tablets
     Render.resize(); Overlay.resize();
     UI.perf(60, Perf.tierName);
@@ -1320,11 +1408,11 @@ const App = {
 
   togglePause(auto){
     if(Game.state==="play"){ Game.state="pause"; UI.showScreen("sPause");
-      if(Audio.ctx)Audio.ctx.suspend(); if(this.useTracking) Camera.pause(); }
+      Audio.suspendMusicTimer(); if(Audio.ctx)Audio.ctx.suspend(); if(this.useTracking) Camera.pause(); }
     else if(Game.state==="pause" && !auto){ this.resume(); }
   },
   resume(){ if(Game.state==="pause"){ Game.state="play"; UI.showScreen(null);
-    Audio.resume(); if(this.useTracking) Camera.resume(); } },
+    Audio.resume(); Audio.resumeMusicTimer(); if(this.useTracking) Camera.resume(); } },
 
   loop(now){
     this.raf=requestAnimationFrame(t=>this.loop(t));
