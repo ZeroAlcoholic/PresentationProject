@@ -1872,6 +1872,11 @@
       if (event.key.toLowerCase() === "p" && !pauseButton.disabled) pauseButton.click();
     });
 
+    // 運算效能優化：手機/平板（觸控）從「平衡」起跳（DPR 1.4、glow 5、粒子 520），
+    // 約省一半填色與陰影模糊成本，仍保留所有手勢與輝光；桌機維持「高」。
+    const isTouchDevice = (matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0);
+    if (isTouchDevice) qualityLevel = 1;
+    qualityBadge.textContent = `效果：${QUALITY[qualityLevel].name}`;
     buildSparkSprites();
     resize();
     burst(W * .5, H * .5, .5, .7);
