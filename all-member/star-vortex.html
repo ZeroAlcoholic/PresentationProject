@@ -164,7 +164,8 @@
 <body>
 <div id="stage">
   <canvas id="game"></canvas>
-  <!-- hosted CC0 BGM (HydroGene, public domain); falls back to synth if it can't load -->
+  <!-- streamed CC0 BGM from the network (HydroGene @ OpenGameArt); synth fallback if unreachable.
+       no crossorigin attr on purpose: plain media playback works X-origin without CORS headers -->
   <audio id="bgm" loop preload="auto" playsinline></audio>
 
   <!-- HUD -->
@@ -1157,7 +1158,10 @@ const Perf = {
    Buses: oscillators → sfxGain / musicGain → master → out.                */
 const Audio = {
   ctx:null, muted:false, master:null, sfxGain:null, musicGain:null, _lastCap:0,
-  bgm:null, bgmReady:null, bgmMode:false, BGM_URL:"star-vortex-bgm.mp3", BGM_VOL:0.42,
+  bgm:null, bgmReady:null, bgmMode:false, BGM_VOL:0.42,
+  // streamed from the network (CC0, HydroGene @ OpenGameArt) — nothing self-hosted;
+  // falls back to the synth if it can't load (offline / blocked / slow)
+  BGM_URL:"https://opengameart.org/sites/default/files/8bit-spaceshooter.mp3",
   music:{ on:false, step:0, nextTime:0, timer:0, intensity:0, bpm:124 },
   init(){ if(this.ctx) return;
     try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)();
