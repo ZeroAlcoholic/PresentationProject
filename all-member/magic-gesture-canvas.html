@@ -589,9 +589,6 @@
           <button class="icon-button" id="clearButton" type="button" aria-label="清除畫布" title="清除畫布">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
           </button>
-          <button class="icon-button" id="ecoButton" type="button" aria-label="切換省電模式" title="省電模式（平板建議開啟）">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3C8 7 6 10 6 14a6 6 0 0 0 12 0c0-4-2-7-6-11Z"/><path d="M12 21v-7"/></svg>
-          </button>
         </div>
       </div>
 
@@ -678,38 +675,12 @@
     const pauseButton = document.getElementById("pauseButton");
     const clearButton = document.getElementById("clearButton");
     const soundButton = document.getElementById("soundButton");
-    const ecoButton = document.getElementById("ecoButton");
     const status = document.getElementById("status");
     const statusText = document.getElementById("statusText");
     const modeName = document.getElementById("modeName");
     const fpsText = document.getElementById("fpsText");
     const toast = document.getElementById("toast");
     const flash = document.getElementById("flash");
-
-    // 觸控/平板：平板常被誤判為桌機而跑在最重畫質（DPR2），在記憶體較吃緊的平板上易當機 → 一律降規 + 限 DPR
-    const isTouchDevice = (matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0);
-    const TOUCH_DPR_CAP = 1.5;
-
-    // 極簡省電模式：真正砍掉重負載（MediaPipe 推論才是平板當機主因，自適應畫質只降畫布、砍不到它）
-    // 預設在觸控/平板開啟；可用網址 ?eco=1 強制開、?eco=0 強制關來 A/B 測試。
-    const ecoParam = new URLSearchParams(location.search).get("eco");
-    const ecoMode = ecoParam === "1" ? true : ecoParam === "0" ? false : isTouchDevice;
-
-    // 診斷：捕捉未預期錯誤並顯示（方便回報），同時不讓單一錯誤永久凍結畫面
-    const errBox = document.createElement("div");
-    errBox.style.cssText = "position:fixed;z-index:99;left:50%;bottom:84px;transform:translateX(-50%);max-width:min(92vw,540px);padding:10px 14px;border:1px solid rgba(255,90,130,.55);border-radius:12px;background:rgba(20,4,12,.94);color:#ffd7e0;font:11px/1.55 ui-monospace,monospace;white-space:pre-wrap;display:none;pointer-events:auto;box-shadow:0 12px 44px rgba(0,0,0,.55)";
-    errBox.addEventListener("click", () => { errBox.style.display = "none"; });
-    if (document.body) document.body.appendChild(errBox);
-    let errShown = 0;
-    function reportError(label, info) {
-      console.error("[ARCANA]", label, info);
-      if (errShown++ < 4) {
-        errBox.textContent = `⚠ ${label}（已自動嘗試復原，請截圖回報此訊息）\n${info}`.slice(0, 600);
-        errBox.style.display = "block";
-      }
-    }
-    addEventListener("error", e => reportError("執行錯誤", `${e.message || ""} @${e.lineno || "?"}:${e.colno || "?"}\n${(e.error && e.error.stack || "").slice(0, 320)}`));
-    addEventListener("unhandledrejection", e => reportError("未處理的 Promise", String(e.reason && (e.reason.stack || e.reason.message) || e.reason).slice(0, 320)));
 
     const TAU = Math.PI * 2;
     const trails = [];
@@ -743,12 +714,6 @@
     let drawingPaused = false;
     let soundOn = true;
     let audio = null;
-    let masterGain = null, musicGain = null, sfxGain = null;
-    let ambientSource = null;
-    let audioAssetsRequested = false;
-    const audioBuffers = {};
-    const AUDIO_BASE = "assets/audio/";
-    const AMBIENT_LEVEL = 0.32;
     let lastPalmBurst = [0, 0];
     let fistSince = [0, 0];
     let fistTriggered = [false, false];
@@ -763,9 +728,9 @@
     let qualityLevel = 2;
 
     const QUALITY = [
-      { name: "省電", particles: 260, trails: 180, detectMs: 66, dpr: 1, glow: 0 },
-      { name: "平衡", particles: 520, trails: 300, detectMs: 44, dpr: 1.4, glow: 5 },
-      { name: "高", particles: 820, trails: 420, detectMs: 40, dpr: 2, glow: 9 }
+      { name: "省電", particles: 260, trails: 180, detectMs: 50, dpr: 1, glow: 0 },
+      { name: "平衡", particles: 520, trails: 300, detectMs: 50, dpr: 1.4, glow: 5 },
+      { name: "高", particles: 820, trails: 420, detectMs: 50, dpr: 2, glow: 9 }
     ];
 
     const palette = [
@@ -775,80 +740,9 @@
       [255, 209, 102]
     ];
 
-    // —— 反應速度核心：One Euro 濾波 + 60Hz 補間繪製 + 自適應畫質 ——
-    // One Euro Filter：靜止時強力抑制抖動、快速移動時降低延遲（minCutoff / beta 可調）
-    class OneEuro {
-      constructor(minCutoff = 1.5, beta = 0.03, dCutoff = 1) {
-        this.minCutoff = minCutoff; this.beta = beta; this.dCutoff = dCutoff;
-        this.x = null; this.dx = 0; this.t = null;
-      }
-      static alpha(cutoff, dt) { const r = TAU * cutoff * dt; return r / (r + 1); }
-      filter(value, t) {
-        if (this.x === null || this.t === null) { this.x = value; this.t = t; return value; }
-        let dt = (t - this.t) / 1000;
-        if (!(dt > 0) || dt > 0.2) dt = 1 / 60;
-        this.t = t;
-        const dxRaw = (value - this.x) / dt;
-        this.dx += OneEuro.alpha(this.dCutoff, dt) * (dxRaw - this.dx);
-        const cutoff = this.minCutoff + this.beta * Math.abs(this.dx);
-        this.x += OneEuro.alpha(cutoff, dt) * (value - this.x);
-        return this.x;
-      }
-      reset() { this.x = null; this.dx = 0; this.t = null; }
-    }
-    function makeFilterBank() {
-      return Array.from({ length: 21 }, () => ({ x: new OneEuro(), y: new OneEuro() }));
-    }
-    const handFilters = [makeFilterBank(), makeFilterBank()];
-    function filterHand(slot, hand, t) {
-      const bank = handFilters[slot];
-      const out = new Array(hand.length);
-      for (let i = 0; i < hand.length; i++) {
-        out[i] = { x: bank[i].x.filter(hand[i].x, t), y: bank[i].y.filter(hand[i].y, t), z: hand[i].z };
-      }
-      return out;
-    }
-    function resetFilterBank(slot) {
-      for (const f of handFilters[slot]) { f.x.reset(); f.y.reset(); }
-    }
-
-    // 補間繪製：偵測 ~30Hz、繪製 60Hz，指尖以緩動逼近濾波後目標 → 光軌滑順無斷點
-    const TRAIL_EASE = 0.4;
-    let frameCount = 0;
-    const handDraw = [
-      { active: false, x: 0, y: 0, tx: 0, ty: 0, force: 1 },
-      { active: false, x: 0, y: 0, tx: 0, ty: 0, force: 1 }
-    ];
-    function setDrawTarget(slot, x, y, force) {
-      const d = handDraw[slot];
-      d.tx = x; d.ty = y; d.force = force;
-      if (!d.active) { d.x = x; d.y = y; d.active = true; }
-    }
-    function clearDrawTarget(slot) { handDraw[slot].active = false; }
-
-    // 偵測迴圈：以 requestVideoFrameCallback 驅動（僅處理新影格、時間戳單調遞增）
-    // detectGen 為「世代代幣」：暫停/停止時遞增使所有在途回呼失效，杜絕快速暫停/恢復造成死迴圈或雙迴圈
-    const rvfcSupported = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
-    let detectGen = 0;
-    let lastRecognizeTs = 0;
-    let detectFailures = 0;
-    let inferAvg = 16; // 單次推論耗時的滑動平均（ms），驅動偵測看門狗
-    let qualityCheckAt = 0;
-    let qualityRaiseStreak = 0;
-    let previewW = 0, previewH = 0;
-
-    function resize(preserve = false) {
-      // 自適應畫質會改變 dpr → 重新配置畫布會清空；preserve 時先快照再貼回，保留既有光軌與餘暉
-      let snap = null;
-      if (preserve && canvas.width > 0 && canvas.height > 0) {
-        snap = document.createElement("canvas");
-        snap.width = canvas.width;
-        snap.height = canvas.height;
-        snap.getContext("2d").drawImage(canvas, 0, 0);
-      }
+    function resize() {
       W = innerWidth; H = innerHeight;
-      const dprCap = isTouchDevice ? Math.min(QUALITY[qualityLevel].dpr, TOUCH_DPR_CAP) : QUALITY[qualityLevel].dpr;
-      dpr = Math.min(devicePixelRatio || 1, dprCap);
+      dpr = Math.min(devicePixelRatio || 1, QUALITY[qualityLevel].dpr);
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
       canvas.style.width = W + "px";
@@ -867,10 +761,6 @@
       drawStaticStars();
       resizeHandOverlay();
       drawHandPreview();
-      if (snap) {
-        ctx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, W, H);
-        snap.width = snap.height = 0; // 立即釋放快照畫布記憶體（平板尤其重要）
-      }
     }
 
     function drawStaticStars() {
@@ -902,8 +792,6 @@
 
     function resizeHandOverlay() {
       const rect = handOverlay.getBoundingClientRect();
-      previewW = rect.width;
-      previewH = rect.height;
       const ratio = Math.min(devicePixelRatio || 1, 2);
       handOverlay.width = Math.max(1, Math.round(rect.width * ratio));
       handOverlay.height = Math.max(1, Math.round(rect.height * ratio));
@@ -936,7 +824,7 @@
       return particle;
     }
 
-    function addTrail(x, y, source = 0, force = 1, emitSparks = true) {
+    function addTrail(x, y, source = 0, force = 1) {
       if (drawingPaused) return;
       const prev = trails.length ? trails[trails.length - 1] : null;
       trails.push({
@@ -950,7 +838,6 @@
       });
       const maxTrails = QUALITY[qualityLevel].trails;
       if (trails.length > maxTrails) trails.splice(0, trails.length - maxTrails);
-      if (!emitSparks) return;
       const sparkCount = qualityLevel === 0 ? 1 : Math.round(1 + force * qualityLevel);
       for (let i = 0; i < sparkCount; i++) {
         emitSpark({
@@ -999,8 +886,8 @@
       flash.classList.remove("fire");
       void flash.offsetWidth;
       flash.classList.add("fire");
-      if (playSfx("eclipse", 1)) duckAmbient();
-      else { tone(72, .85, "sawtooth"); setTimeout(() => tone(145, .55, "sine"), 110); }
+      tone(72, .85, "sawtooth");
+      setTimeout(() => tone(145, .55, "sine"), 110);
       if (navigator.vibrate) navigator.vibrate([40, 30, 90]);
       modeName.textContent = "日蝕・解放";
       showToast("✦ 日蝕共鳴 ✦");
@@ -1040,7 +927,7 @@
           addGlyph("SUN", point.x, point.y, { size: 86, life: 1.3, hue: 3 });
           burst(point.x, point.y, .7, 3);
           showToast("日輪升起・太陽軌道");
-          sfx("chime", .7, 520, .35, "sine");
+          tone(520, .35, "sine");
         },
         THUMB_DOWN: () => {
           addGlyph("VORTEX", point.x, point.y, { size: 105, life: 1.35, hue: 1.2, speed: -.035 });
@@ -1051,24 +938,24 @@
           addGlyph("PRISM", point.x, point.y, { size: 115, life: 1.15, hue: .2 });
           burst(point.x, point.y, .55, .5);
           showToast("勝利稜鏡・光束分裂");
-          sfx("shimmer", .7, 660, .25, "triangle");
+          tone(660, .25, "triangle");
         },
         ILY: () => {
           addGlyph("AURORA", point.x, point.y, { size: 150, life: 1.45, hue: 1.6 });
           showToast("極光幕・愛與共鳴");
-          sfx("shimmer", .6, 390, .45, "sine");
+          tone(390, .45, "sine");
         },
         THREE: () => {
           addGlyph("TRIANGLE", point.x, point.y, { size: 105, life: 1.25, hue: 2.5 });
           burst(point.x, point.y, .45, 2.5);
           showToast("三相法陣・結界生成");
-          sfx("chime", .6, 330, .32, "triangle");
+          tone(330, .32, "triangle");
         },
         HORNS: () => {
           addGlyph("LIGHTNING", point.x, point.y, { size: 150, life: 1.05, hue: .05 });
           burst(point.x, point.y, .65, .05);
           showToast("雷角風暴・電弧降臨");
-          sfx("zap", .9, 120, .4, "square");
+          tone(120, .4, "square");
         }
       };
       if (spells[gesture]) triggerOnce(key, 1150, spells[gesture]);
@@ -1082,7 +969,7 @@
           modeName.textContent = "畫圓・傳送門";
           gestureReadout.textContent = "畫圓・傳送門";
           showToast("圓環完成・傳送門開啟");
-          sfx("shimmer", .8, 210, .65, "sine");
+          tone(210, .65, "sine");
         } else {
           const speed = 10;
           addGlyph("WAVE", point.x, point.y, {
@@ -1093,7 +980,7 @@
           modeName.textContent = "揮動・風刃";
           gestureReadout.textContent = "揮動・風刃";
           showToast(Math.abs(vector.x) > Math.abs(vector.y) ? "橫向風刃" : vector.y < 0 ? "昇空氣流" : "墜落衝擊");
-          sfx("whoosh", .9, 280, .22, "sawtooth");
+          tone(280, .22, "sawtooth");
         }
       });
     }
@@ -1248,18 +1135,12 @@
     }
 
     function processHands(results, now) {
-      // 依手腕水平位置排出穩定槽位（畫面左側→0），使濾波與每手狀態跨影格對應到同一隻手。
-      // MediaPipe 雙手偵測不保證陣列順序固定；改用空間排序比慣用手標籤更穩（不受 Left/Right 抖動影響），
-      // 僅在兩手水平交越的瞬間才會短暫互換，屬可接受邊界情況。
-      const paired = (results?.landmarks || []).slice(0, 2).map((hand, idx) => {
-        const category = results?.gestures?.[idx]?.[0];
-        return { hand, official: category ? { name: category.categoryName, score: category.score } : null };
+      const hands = results?.landmarks || [];
+      latestHands = hands.slice(0, 2);
+      latestOfficialGestures = latestHands.map((_, index) => {
+        const category = results?.gestures?.[index]?.[0];
+        return category ? { name: category.categoryName, score: category.score } : null;
       });
-      if (paired.length === 2) paired.sort((a, b) => a.hand[0].x - b.hand[0].x);
-      latestHands = paired.map((p, index) => filterHand(index, p.hand, now));
-      for (let s = paired.length; s < 2; s++) resetFilterBank(s);
-      const hands = latestHands;
-      latestOfficialGestures = paired.map(p => p.official);
       latestGestures = latestHands.map((hand, index) =>
         stabilizeGesture(index, classifyGesture(hand, latestOfficialGestures[index]))
       );
@@ -1276,8 +1157,6 @@
         fistTriggered = [false, false];
         gestureStability = [{ name: "", count: 0, stable: "" }, { name: "", count: 0, stable: "" }];
         handHistory = [[], []];
-        clearDrawTarget(0);
-        clearDrawTarget(1);
         spellbook.dataset.active = "";
         ultimateCharge = Math.max(0, ultimateCharge - .04);
         drawHandPreview();
@@ -1291,8 +1170,7 @@
         const gesture = latestGestures[i];
         centers.push(palm);
         trackMotion(hand, gesture, i, now);
-        if (gesture === "POINT" || gesture === "MOVE") setDrawTarget(i, tip.x, tip.y, gesture === "POINT" ? 1.25 : .65);
-        else if (gesture !== "PINCH") clearDrawTarget(i);
+        if (gesture === "POINT" || gesture === "MOVE") addTrail(tip.x, tip.y, i, gesture === "POINT" ? 1.25 : .65);
 
         if (gesture === "PINCH") {
           const pinch = mapPoint({
@@ -1300,7 +1178,7 @@
             y: (hand[4].y + hand[8].y) / 2
           });
           const pinchDistance = Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y);
-          setDrawTarget(i, pinch.x, pinch.y, .5 + Math.min(1.4, pinchDistance * 8));
+          addTrail(pinch.x, pinch.y, i, .5 + Math.min(1.4, pinchDistance * 8));
           if (now - lastPinchPulse[i] > 110) {
             lastPinchPulse[i] = now;
             addGlyph("ORB", pinch.x, pinch.y, { size: 26 + pinchDistance * 180, life: .32, hue: i ? 2 : 0 });
@@ -1331,7 +1209,6 @@
           modeName.textContent = gestureLabel(gesture);
         }
       });
-      for (let s = hands.length; s < 2; s++) clearDrawTarget(s);
 
       if (centers.length === 2) {
         const distance = Math.hypot(centers[0].x - centers[1].x, centers[0].y - centers[1].y);
@@ -1384,8 +1261,9 @@
     }
 
     function drawHandPreview() {
-      const width = previewW;
-      const height = previewH;
+      const rect = handOverlay.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
       handCtx.clearRect(0, 0, width, height);
       if (!latestHands.length) return;
 
@@ -1418,21 +1296,9 @@
       handCtx.globalCompositeOperation = "source-over";
     }
 
-    // —— 音訊：原創程序生成素材（CC0／公眾領域），按 Start 後延遲載入；缺檔自動退回合成音 ——
     function initAudio() {
       if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
       if (audio.state === "suspended") audio.resume();
-      if (!masterGain) {
-        masterGain = audio.createGain();
-        masterGain.gain.value = soundOn ? 1 : 0;
-        masterGain.connect(audio.destination);
-        musicGain = audio.createGain();
-        musicGain.gain.value = 0; // 由 startAmbient 緩升
-        musicGain.connect(masterGain);
-        sfxGain = audio.createGain();
-        sfxGain.gain.value = 0.9;
-        sfxGain.connect(masterGain);
-      }
     }
 
     function tone(freq, duration = .2, type = "sine") {
@@ -1447,83 +1313,16 @@
         gain.gain.setValueAtTime(.0001, audio.currentTime);
         gain.gain.exponentialRampToValueAtTime(.055, audio.currentTime + .02);
         gain.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + duration);
-        osc.connect(gain).connect(sfxGain || audio.destination);
+        osc.connect(gain).connect(audio.destination);
         osc.start();
         osc.stop(audio.currentTime + duration + .03);
       } catch {}
     }
 
-    // 延遲載入素材（與相機/模型並行下載，對首屏 0 衝擊）；任何檔案失敗都靜默退回合成音
-    async function loadAudioAssets() {
-      if (audioAssetsRequested) return;
-      audioAssetsRequested = true;
-      if (ecoMode) return; // 省電：不載入音樂/音效檔（省下下載、解碼與 ~9MB 記憶體），僅保留近乎免費的合成音
-      initAudio();
-      const files = { ambient: "ambient-loop.mp3", whoosh: "whoosh.mp3", shimmer: "shimmer.mp3", zap: "zap.mp3", eclipse: "eclipse.mp3", chime: "chime.mp3" };
-      await Promise.all(Object.entries(files).map(async ([key, file]) => {
-        try {
-          const res = await fetch(AUDIO_BASE + file);
-          if (!res.ok) throw new Error(String(res.status));
-          audioBuffers[key] = await audio.decodeAudioData(await res.arrayBuffer());
-        } catch {/* 留空 → 該事件改用合成音 */}
-      }));
-      startAmbient();
-    }
-
-    function startAmbient() {
-      if (!audioBuffers.ambient || ambientSource || !soundOn || !musicGain) return;
-      try {
-        ambientSource = audio.createBufferSource();
-        ambientSource.buffer = audioBuffers.ambient;
-        ambientSource.loop = true;
-        ambientSource.connect(musicGain);
-        ambientSource.start();
-        const t = audio.currentTime;
-        musicGain.gain.cancelScheduledValues(t);
-        musicGain.gain.setValueAtTime(Math.max(.0001, musicGain.gain.value), t);
-        musicGain.gain.linearRampToValueAtTime(AMBIENT_LEVEL, t + 3.5); // 低音量背景床、緩入
-      } catch {}
-    }
-
-    function duckAmbient() {
-      if (!musicGain || !ambientSource) return;
-      const t = audio.currentTime;
-      musicGain.gain.cancelScheduledValues(t);
-      musicGain.gain.setValueAtTime(musicGain.gain.value, t);
-      musicGain.gain.linearRampToValueAtTime(AMBIENT_LEVEL * .25, t + .05);
-      musicGain.gain.linearRampToValueAtTime(AMBIENT_LEVEL, t + 1.8);
-    }
-
-    function playSfx(name, gain = 1) {
-      const buf = audioBuffers[name];
-      if (!buf || !sfxGain) return false;
-      try {
-        const src = audio.createBufferSource();
-        src.buffer = buf;
-        const g = audio.createGain();
-        g.gain.value = gain;
-        src.connect(g).connect(sfxGain);
-        src.onended = () => { try { src.disconnect(); g.disconnect(); } catch {} }; // 釋放節點，避免長時間累積
-        src.start();
-        return true;
-      } catch { return false; }
-    }
-
-    // 優先放樣本，缺檔則退回原本的合成嗶聲，確保素材不存在時體驗不退化
-    function sfx(name, gain, freq, duration, type) {
-      if (!playSfx(name, gain)) tone(freq, duration, type);
-    }
-
     async function openCamera() {
       if (cameraRunning) return;
-      // 省電模式用更低解析度與更低幀率餵給 MediaPipe，大幅降低 GPU/記憶體負載
       mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: ecoMode ? {
-          facingMode: "user",
-          width: { ideal: 320, max: 480 },
-          height: { ideal: 240, max: 360 },
-          frameRate: { ideal: 24, max: 30 }
-        } : {
+        video: {
           facingMode: "user",
           width: { ideal: 640, max: 960 },
           height: { ideal: 480, max: 540 },
@@ -1537,14 +1336,10 @@
       cameraRunning = true;
       lastVideoTime = -1;
       ensureAnimation();
-      startDetectLoop();
     }
 
     function stopCamera() {
       cameraRunning = false;
-      detectGen++; // 使所有在途偵測回呼失效，恢復時由 startDetectLoop 乾淨重啟
-      resetFilterBank(0);
-      resetFilterBank(1);
       if (mediaStream) {
         for (const track of mediaStream.getTracks()) track.stop();
       }
@@ -1566,7 +1361,7 @@
           delegate: "GPU"
         },
         runningMode: "VIDEO",
-        numHands: ecoMode ? 1 : 2, // 省電：只追一隻手，約砍半 landmark 推論量
+        numHands: 2,
         minHandDetectionConfidence: .5,
         minHandPresenceConfidence: .48,
         minTrackingConfidence: .45
@@ -1585,11 +1380,10 @@
       magicStarted = true;
       document.body.classList.add("started");
       initAudio();
-      loadAudioAssets(); // 與相機/模型並行下載，不 await，缺檔自動退回合成音
       burst(W * .5, H * .52, 1.25, .7);
       modeName.textContent = "喚醒中";
       statusText.textContent = "模型・載入中";
-      showToast(ecoMode ? "省電・極簡模式（單手・無背景樂）" : "正在校準魔法視界…");
+      showToast("正在校準魔法視界…");
 
       try {
         await openCamera();
@@ -1601,7 +1395,6 @@
         trackingText.textContent = "尋找手部";
         modeName.textContent = "伸出食指";
         showToast("視界已開啟・把手放進畫面");
-        fps = 60; qualityCheckAt = performance.now();
       } catch (error) {
         console.warn(error);
         statusText.textContent = "觸控模式";
@@ -1648,14 +1441,12 @@
       trackingText.textContent = "重新連線";
       try {
         await openCamera();
-        if (audio?.state === "suspended") audio.resume(); // 恢復背景音樂與音效
         status.classList.add("live");
         statusText.textContent = "攝影機・魔法同步";
         trackingText.textContent = "尋找手部";
         gestureReadout.textContent = "尚未偵測";
         modeName.textContent = "伸出食指";
         lastFrame = performance.now();
-        fps = 60; qualityCheckAt = performance.now();
         ensureAnimation();
         showToast("魔法視界已恢復");
         pauseButton.disabled = false;
@@ -1733,25 +1524,7 @@
       if (trails.length > QUALITY[qualityLevel].trails) trails.splice(0, trails.length - QUALITY[qualityLevel].trails);
       const glyphLimit = qualityLevel === 0 ? 16 : qualityLevel === 1 ? 28 : 42;
       if (glyphs.length > glyphLimit) glyphs.splice(0, glyphs.length - glyphLimit);
-      // 桌機保留畫面（快照貼回）；觸控/平板跳過快照，避免高解析下的記憶體尖峰觸發當機
-      resize(!isTouchDevice);
-    }
-
-    // 自適應畫質：偵測到掉幀立即降級、持續流暢才緩步升級（遲滯避免抖動）
-    // 僅在實際開始互動後生效，避免閒置開場畫面或分頁節流造成誤降級
-    function adaptQuality(now) {
-      if (!magicStarted) return;
-      if (now - qualityCheckAt < 1100) return;
-      qualityCheckAt = now;
-      const maxLevel = ecoMode ? 0 : QUALITY.length - 1; // 省電模式鎖在最低畫質，不自動升級
-      if (fps < 44 && qualityLevel > 0) {
-        qualityRaiseStreak = 0;
-        setQuality(qualityLevel - 1);
-      } else if (fps > 55 && qualityLevel < maxLevel) {
-        if (++qualityRaiseStreak >= 4) { qualityRaiseStreak = 0; setQuality(qualityLevel + 1); }
-      } else {
-        qualityRaiseStreak = 0;
-      }
+      resize();
     }
 
     function drawGlyphs(time) {
@@ -1774,7 +1547,7 @@
         ctx.fillStyle = colorAt(g.hue + .22, alpha * .14);
         ctx.lineWidth = qualityLevel === 0 ? 1.5 : 2.5;
         ctx.shadowColor = colorAt(g.hue, 1);
-        ctx.shadowBlur = qualityLevel === 0 ? 0 : QUALITY[qualityLevel].glow + 8;
+        ctx.shadowBlur = QUALITY[qualityLevel].glow + 8;
 
         if (g.type === "ORB") {
           ctx.beginPath();
@@ -1939,40 +1712,33 @@
       const dt = now - lastFrame;
       lastFrame = now;
       fps += ((1000 / Math.max(1, dt)) - fps) * .06;
-      // 自我修復：任何單幀繪製例外都不該永久凍結畫面 —— 記錄、重置畫布狀態、照常排下一幀
-      try {
-        adaptQuality(now);
-        // 補間繪製：每一畫面將指尖緩動逼近濾波後目標，並按 source 排放光軌（火花隔幀排放以控量）
-        frameCount++;
-        for (let s = 0; s < 2; s++) {
-          const d = handDraw[s];
-          if (!d.active) continue;
-          d.x += (d.tx - d.x) * TRAIL_EASE;
-          d.y += (d.ty - d.y) * TRAIL_EASE;
-          addTrail(d.x, d.y, s, d.force, (frameCount & 1) === 0);
+      const detectInterval = QUALITY[qualityLevel].detectMs;
+      if (cameraRunning && modelReady && gestureRecognizer && video.readyState >= 2 &&
+          video.currentTime !== lastVideoTime && now - lastDetectAt >= detectInterval) {
+        lastDetectAt = now;
+        lastVideoTime = video.currentTime;
+        try {
+          processHands(gestureRecognizer.recognizeForVideo(video, now), now);
+        } catch (error) {
+          trackingText.textContent = "偵測重試中";
         }
-        drawBackground();
-        drawTrails();
-        drawSparks();
-        drawGlyphs(now);
-        drawRings();
-        if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
-          const roundedFps = Math.round(fps);
-          fpsText.textContent = cameraRunning ? `${roundedFps} FPS・${latestHands.length} 手` : "觸控與滑鼠已就緒";
-          previewFps.textContent = `${roundedFps} FPS`;
-          canvas.dataset.fps = String(roundedFps);
-          canvas.dataset.particles = String(sparks.length);
-          canvas.dataset.trails = String(trails.length);
-          canvas.dataset.glyphs = String(glyphs.length);
-          canvas.dataset.quality = QUALITY[qualityLevel].name;
-        }
-      } catch (err) {
-        // 還原可能被中斷而失衡的畫布狀態，避免錯誤連鎖
-        try { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1; ctx.shadowBlur = 0; } catch {}
-        reportError("動畫迴圈", `${(err && err.message) || err}\n${(err && err.stack || "").slice(0, 320)}`);
       }
-      // 無論是否發生例外都重新排程，確保畫面永不卡死
-      if (!appPaused && (cameraRunning || trails.length || sparks.length || glyphs.length || rings.length)) {
+      drawBackground();
+      drawTrails();
+      drawSparks();
+      drawGlyphs(now);
+      drawRings();
+      if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
+        const roundedFps = Math.round(fps);
+        fpsText.textContent = cameraRunning ? `${roundedFps} FPS・${latestHands.length} 手` : "觸控與滑鼠已就緒";
+        previewFps.textContent = `${roundedFps} FPS`;
+        canvas.dataset.fps = String(roundedFps);
+        canvas.dataset.particles = String(sparks.length);
+        canvas.dataset.trails = String(trails.length);
+        canvas.dataset.glyphs = String(glyphs.length);
+        canvas.dataset.quality = QUALITY[qualityLevel].name;
+      }
+      if (cameraRunning || trails.length || sparks.length || glyphs.length || rings.length) {
         animationFrameId = requestAnimationFrame(animate);
       }
     }
@@ -1981,43 +1747,6 @@
       if (appPaused || animationFrameId) return;
       lastFrame = performance.now();
       animationFrameId = requestAnimationFrame(animate);
-    }
-
-    // 偵測迴圈與繪製迴圈分離：辨識僅在新影格觸發，繪製維持 60Hz 不被推論卡住。
-    // 以 detectGen 世代代幣保證同時只有一條迴圈、且暫停後可乾淨重啟。
-    function startDetectLoop() {
-      const gen = ++detectGen;
-      scheduleDetect(gen);
-    }
-    function scheduleDetect(gen) {
-      if (gen !== detectGen || !cameraRunning || appPaused) return;
-      if (rvfcSupported) video.requestVideoFrameCallback(t => onVideoFrame(t, gen));
-      else requestAnimationFrame(t => onVideoFrame(t, gen));
-    }
-    function onVideoFrame(now, gen) {
-      if (gen !== detectGen || !cameraRunning || appPaused) return;
-      // 推論看門狗：偵測間隔不只看畫質設定，也跟著「實測單次推論耗時」放寬，
-      // 避免裝置變慢/發熱時主執行緒被連續同步推論塞爆而整頁凍結。
-      const minGap = Math.max(ecoMode ? 80 : QUALITY[qualityLevel].detectMs, inferAvg * 1.8);
-      if (modelReady && gestureRecognizer && video.readyState >= 2 &&
-          now - lastDetectAt >= minGap && video.currentTime !== lastVideoTime) {
-        // 強制單調遞增的時間戳：避免同毫秒或時鐘邊界讓 recognizeForVideo 拋錯；失敗時不消耗該影格
-        const ts = Math.max(lastRecognizeTs + 1, Math.round(now));
-        try {
-          const t0 = performance.now();
-          const result = gestureRecognizer.recognizeForVideo(video, ts);
-          inferAvg += (performance.now() - t0 - inferAvg) * 0.1;
-          lastRecognizeTs = ts;
-          lastDetectAt = now;
-          lastVideoTime = video.currentTime;
-          detectFailures = 0;
-          processHands(result, now);
-        } catch (error) {
-          trackingText.textContent = "偵測重試中";
-          if ((detectFailures++ % 60) === 0) console.warn("recognizeForVideo failed:", error);
-        }
-      }
-      scheduleDetect(gen);
     }
 
     function clearMagic(withBurst = true) {
@@ -2062,36 +1791,17 @@
 
     clearButton.addEventListener("click", () => {
       clearMagic(true);
-      sfx("chime", .5, 440, .2, "sine");
       showToast("畫布已淨化");
     });
     soundButton.addEventListener("click", () => {
       soundOn = !soundOn;
       soundButton.style.opacity = soundOn ? "1" : ".45";
-      if (masterGain) {
-        const t = audio.currentTime;
-        masterGain.gain.cancelScheduledValues(t);
-        masterGain.gain.setValueAtTime(masterGain.gain.value, t);
-        masterGain.gain.linearRampToValueAtTime(soundOn ? 1 : 0, t + .18);
-      }
-      if (soundOn) { startAmbient(); tone(440, .15); }
+      if (soundOn) tone(440, .15);
       showToast(soundOn ? "音效已開啟" : "音效已靜音");
     });
     pauseButton.addEventListener("click", () => setSystemPaused(!appPaused));
-    // 省電模式切換：以網址參數重載，確保相機解析度／numHands 等乾淨重新初始化
-    ecoButton.style.color = ecoMode ? "var(--cyan)" : "";
-    ecoButton.title = ecoMode ? "省電模式：開（點擊關閉）" : "省電模式：關（平板建議開啟）";
-    ecoButton.addEventListener("click", () => {
-      const url = new URL(location.href);
-      url.searchParams.set("eco", ecoMode ? "0" : "1");
-      location.href = url.toString();
-    });
     startButton.addEventListener("click", startMagic, { once: true });
-    let resizeTimer = 0;
-    addEventListener("resize", () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => resize(true), 150);
-    });
+    addEventListener("resize", resize);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && magicStarted && !appPaused) setSystemPaused(true, "visibility");
     });
@@ -2101,13 +1811,6 @@
       if (event.key.toLowerCase() === "p" && !pauseButton.disabled) pauseButton.click();
     });
 
-    // 依裝置能力選擇起始畫質：省電模式直接鎖最低檔；其餘觸控/弱機從「平衡」起跳（之後仍會自適應）
-    if (ecoMode) {
-      qualityLevel = 0;
-    } else if (isTouchDevice || matchMedia("(max-width: 760px)").matches || (navigator.hardwareConcurrency || 8) <= 4) {
-      qualityLevel = 1;
-    }
-    qualityBadge.textContent = ecoMode ? "省電・極簡" : `效果：${QUALITY[qualityLevel].name}`;
     buildSparkSprites();
     resize();
     burst(W * .5, H * .5, .5, .7);
