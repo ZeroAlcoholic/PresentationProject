@@ -1161,6 +1161,10 @@ const Perf = {
    Buses: oscillators → sfxGain / musicGain → master → out.                */
 const Audio = {
   ctx:null, muted:false, master:null, sfxGain:null, musicGain:null, _lastCap:0,
+  // VOICE LIMITING — the key tablet-crash guard: never let oscillator nodes pile up
+  // (a fast swipe through a star cluster used to spawn a node per star → iOS WebAudio
+  //  node-limit throw → exception into the rAF loop → freeze). Lower cap on mobile.
+  _voices:0, MAX_VOICES:(IS_MOBILE?16:40), _lastPop:0,
   bgm:null, bgmReady:null, bgmMode:false, BGM_VOL:0.42,
   // streamed from the network (CC0, HydroGene @ OpenGameArt) — nothing self-hosted;
   // falls back to the synth if it can't load (offline / blocked / slow)
@@ -1184,26 +1188,40 @@ const Audio = {
     try{ el.src=this.BGM_URL; el.load(); }catch{ this.bgmReady=false; }
   },
 
-  // one enveloped oscillator note at absolute time t, routed to a bus
+  // one enveloped oscillator note at absolute time t, routed to a bus.
+  // voice-capped + fully guarded so audio can NEVER throw into the game loop.
   note(freq,t,dur,type,vol,dest){
-    if(!this.ctx) return;
-    const o=this.ctx.createOscillator(), g=this.ctx.createGain();
-    o.type=type; o.frequency.setValueAtTime(freq,t);
-    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g); g.connect(dest||this.sfxGain); o.start(t); o.stop(t+dur+0.03);
+    if(!this.ctx || this._voices>=this.MAX_VOICES) return;
+    try{
+      const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+      o.type=type; o.frequency.setValueAtTime(freq,t);
+      g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g); g.connect(dest||this.sfxGain);
+      this._voices++; o.onended=()=>{ if(this._voices>0) this._voices--; };
+      o.start(t); o.stop(t+dur+0.03);
+    }catch(e){}
   },
   blip(freq,dur,type="sine",vol=0.3,slideTo=null){
-    if(!this.ctx||this.muted) return;
-    const t=this.ctx.currentTime, o=this.ctx.createOscillator(), g=this.ctx.createGain();
-    o.type=type; o.frequency.setValueAtTime(freq,t);
-    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
-    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g); g.connect(this.sfxGain); o.start(t); o.stop(t+dur+0.02);
+    if(!this.ctx||this.muted || this._voices>=this.MAX_VOICES) return;
+    try{
+      const t=this.ctx.currentTime, o=this.ctx.createOscillator(), g=this.ctx.createGain();
+      o.type=type; o.frequency.setValueAtTime(freq,t);
+      if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+      g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g); g.connect(this.sfxGain);
+      this._voices++; o.onended=()=>{ if(this._voices>0) this._voices--; };
+      o.start(t); o.stop(t+dur+0.02);
+    }catch(e){}
   },
   // --- SFX ---
-  pop(combo,cap){ const base=420+Math.min(combo,24)*26; this.blip(base,0.12,"triangle",cap?0.34:0.22,base*1.7);
+  // pop is the storm source (1 call per star) → coalesce rapid pops into one sound
+  pop(combo,cap){
+    if(!this.ctx||this.muted) return;
+    const n=this.ctx.currentTime; if(n-this._lastPop < (IS_MOBILE?0.04:0.022)) return;
+    this._lastPop=n;
+    const base=420+Math.min(combo,24)*26; this.blip(base,0.12,"triangle",cap?0.34:0.22,base*1.7);
     if(cap) this.blip(base*1.5,0.10,"square",0.12,base*2.2); },
   capture(){ if(!this.ctx||this.muted) return; const n=this.ctx.currentTime; if(n-this._lastCap<0.07) return;
     this._lastCap=n; this.blip(880+Math.random()*260,0.05,"sine",0.10,1500); },
@@ -1216,7 +1234,7 @@ const Audio = {
 
   // --- BGM: prefer hosted file, fall back to procedural synth (offline / load fail) ---
   startMusic(){
-    if(this.music.on) return; this.music.on=true;
+    if(this.music.on) return; this.music.on=true; this._voices=0;   // reset stale voice count each round
     if(this.bgmReady && this.bgm){       // hosted track
       this.bgmMode=true;
       try{ this.bgm.currentTime=0; this.bgm.volume=this.BGM_VOL; this.bgm.muted=this.muted;
@@ -1248,11 +1266,13 @@ const Audio = {
     g.cancelScheduledValues(t); g.setValueAtTime(Math.max(g.value,0.0001),t); g.exponentialRampToValueAtTime(0.0001,t+0.4); },
   _sched(){
     if(!this.ctx) return;
-    const eighth=60/this.music.bpm/2;
-    while(this.music.nextTime < this.ctx.currentTime + 0.18){
-      this._stepAt(this.music.nextTime, this.music.step);
-      this.music.nextTime += eighth; this.music.step=(this.music.step+1)%16;
-    }
+    try{
+      const eighth=60/this.music.bpm/2;
+      while(this.music.nextTime < this.ctx.currentTime + 0.18){
+        this._stepAt(this.music.nextTime, this.music.step);
+        this.music.nextTime += eighth; this.music.step=(this.music.step+1)%16;
+      }
+    }catch(e){}
   },
   _stepAt(t,step){
     if(this.muted) return;
