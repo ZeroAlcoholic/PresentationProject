@@ -682,6 +682,26 @@
     const toast = document.getElementById("toast");
     const flash = document.getElementById("flash");
 
+    // 觸控/平板：平板常被誤判為桌機而跑在最重畫質（DPR2），在記憶體較吃緊的平板上易當機 → 一律降規 + 限 DPR
+    const isTouchDevice = (matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0);
+    const TOUCH_DPR_CAP = 1.5;
+
+    // 診斷：捕捉未預期錯誤並顯示（方便回報），同時不讓單一錯誤永久凍結畫面
+    const errBox = document.createElement("div");
+    errBox.style.cssText = "position:fixed;z-index:99;left:50%;bottom:84px;transform:translateX(-50%);max-width:min(92vw,540px);padding:10px 14px;border:1px solid rgba(255,90,130,.55);border-radius:12px;background:rgba(20,4,12,.94);color:#ffd7e0;font:11px/1.55 ui-monospace,monospace;white-space:pre-wrap;display:none;pointer-events:auto;box-shadow:0 12px 44px rgba(0,0,0,.55)";
+    errBox.addEventListener("click", () => { errBox.style.display = "none"; });
+    if (document.body) document.body.appendChild(errBox);
+    let errShown = 0;
+    function reportError(label, info) {
+      console.error("[ARCANA]", label, info);
+      if (errShown++ < 4) {
+        errBox.textContent = `⚠ ${label}（已自動嘗試復原，請截圖回報此訊息）\n${info}`.slice(0, 600);
+        errBox.style.display = "block";
+      }
+    }
+    addEventListener("error", e => reportError("執行錯誤", `${e.message || ""} @${e.lineno || "?"}:${e.colno || "?"}\n${(e.error && e.error.stack || "").slice(0, 320)}`));
+    addEventListener("unhandledrejection", e => reportError("未處理的 Promise", String(e.reason && (e.reason.stack || e.reason.message) || e.reason).slice(0, 320)));
+
     const TAU = Math.PI * 2;
     const trails = [];
     const sparks = [];
@@ -735,8 +755,8 @@
 
     const QUALITY = [
       { name: "省電", particles: 260, trails: 180, detectMs: 66, dpr: 1, glow: 0 },
-      { name: "平衡", particles: 520, trails: 300, detectMs: 40, dpr: 1.4, glow: 5 },
-      { name: "高", particles: 820, trails: 420, detectMs: 33, dpr: 2, glow: 9 }
+      { name: "平衡", particles: 520, trails: 300, detectMs: 44, dpr: 1.4, glow: 5 },
+      { name: "高", particles: 820, trails: 420, detectMs: 40, dpr: 2, glow: 9 }
     ];
 
     const palette = [
@@ -803,6 +823,7 @@
     let detectGen = 0;
     let lastRecognizeTs = 0;
     let detectFailures = 0;
+    let inferAvg = 16; // 單次推論耗時的滑動平均（ms），驅動偵測看門狗
     let qualityCheckAt = 0;
     let qualityRaiseStreak = 0;
     let previewW = 0, previewH = 0;
@@ -817,7 +838,8 @@
         snap.getContext("2d").drawImage(canvas, 0, 0);
       }
       W = innerWidth; H = innerHeight;
-      dpr = Math.min(devicePixelRatio || 1, QUALITY[qualityLevel].dpr);
+      const dprCap = isTouchDevice ? Math.min(QUALITY[qualityLevel].dpr, TOUCH_DPR_CAP) : QUALITY[qualityLevel].dpr;
+      dpr = Math.min(devicePixelRatio || 1, dprCap);
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
       canvas.style.width = W + "px";
@@ -836,7 +858,10 @@
       drawStaticStars();
       resizeHandOverlay();
       drawHandPreview();
-      if (snap) ctx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, W, H);
+      if (snap) {
+        ctx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, W, H);
+        snap.width = snap.height = 0; // 立即釋放快照畫布記憶體（平板尤其重要）
+      }
     }
 
     function drawStaticStars() {
@@ -1468,6 +1493,7 @@
         const g = audio.createGain();
         g.gain.value = gain;
         src.connect(g).connect(sfxGain);
+        src.onended = () => { try { src.disconnect(); g.disconnect(); } catch {} }; // 釋放節點，避免長時間累積
         src.start();
         return true;
       } catch { return false; }
@@ -1691,7 +1717,8 @@
       if (trails.length > QUALITY[qualityLevel].trails) trails.splice(0, trails.length - QUALITY[qualityLevel].trails);
       const glyphLimit = qualityLevel === 0 ? 16 : qualityLevel === 1 ? 28 : 42;
       if (glyphs.length > glyphLimit) glyphs.splice(0, glyphs.length - glyphLimit);
-      resize(true); // 保留畫面內容，避免自適應換檔時整塊閃黑
+      // 桌機保留畫面（快照貼回）；觸控/平板跳過快照，避免高解析下的記憶體尖峰觸發當機
+      resize(!isTouchDevice);
     }
 
     // 自適應畫質：偵測到掉幀立即降級、持續流暢才緩步升級（遲滯避免抖動）
@@ -1895,32 +1922,40 @@
       const dt = now - lastFrame;
       lastFrame = now;
       fps += ((1000 / Math.max(1, dt)) - fps) * .06;
-      adaptQuality(now);
-      // 補間繪製：每一畫面將指尖緩動逼近濾波後目標，並按 source 排放光軌（火花隔幀排放以控量）
-      frameCount++;
-      for (let s = 0; s < 2; s++) {
-        const d = handDraw[s];
-        if (!d.active) continue;
-        d.x += (d.tx - d.x) * TRAIL_EASE;
-        d.y += (d.ty - d.y) * TRAIL_EASE;
-        addTrail(d.x, d.y, s, d.force, (frameCount & 1) === 0);
+      // 自我修復：任何單幀繪製例外都不該永久凍結畫面 —— 記錄、重置畫布狀態、照常排下一幀
+      try {
+        adaptQuality(now);
+        // 補間繪製：每一畫面將指尖緩動逼近濾波後目標，並按 source 排放光軌（火花隔幀排放以控量）
+        frameCount++;
+        for (let s = 0; s < 2; s++) {
+          const d = handDraw[s];
+          if (!d.active) continue;
+          d.x += (d.tx - d.x) * TRAIL_EASE;
+          d.y += (d.ty - d.y) * TRAIL_EASE;
+          addTrail(d.x, d.y, s, d.force, (frameCount & 1) === 0);
+        }
+        drawBackground();
+        drawTrails();
+        drawSparks();
+        drawGlyphs(now);
+        drawRings();
+        if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
+          const roundedFps = Math.round(fps);
+          fpsText.textContent = cameraRunning ? `${roundedFps} FPS・${latestHands.length} 手` : "觸控與滑鼠已就緒";
+          previewFps.textContent = `${roundedFps} FPS`;
+          canvas.dataset.fps = String(roundedFps);
+          canvas.dataset.particles = String(sparks.length);
+          canvas.dataset.trails = String(trails.length);
+          canvas.dataset.glyphs = String(glyphs.length);
+          canvas.dataset.quality = QUALITY[qualityLevel].name;
+        }
+      } catch (err) {
+        // 還原可能被中斷而失衡的畫布狀態，避免錯誤連鎖
+        try { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1; ctx.shadowBlur = 0; } catch {}
+        reportError("動畫迴圈", `${(err && err.message) || err}\n${(err && err.stack || "").slice(0, 320)}`);
       }
-      drawBackground();
-      drawTrails();
-      drawSparks();
-      drawGlyphs(now);
-      drawRings();
-      if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
-        const roundedFps = Math.round(fps);
-        fpsText.textContent = cameraRunning ? `${roundedFps} FPS・${latestHands.length} 手` : "觸控與滑鼠已就緒";
-        previewFps.textContent = `${roundedFps} FPS`;
-        canvas.dataset.fps = String(roundedFps);
-        canvas.dataset.particles = String(sparks.length);
-        canvas.dataset.trails = String(trails.length);
-        canvas.dataset.glyphs = String(glyphs.length);
-        canvas.dataset.quality = QUALITY[qualityLevel].name;
-      }
-      if (cameraRunning || trails.length || sparks.length || glyphs.length || rings.length) {
+      // 無論是否發生例外都重新排程，確保畫面永不卡死
+      if (!appPaused && (cameraRunning || trails.length || sparks.length || glyphs.length || rings.length)) {
         animationFrameId = requestAnimationFrame(animate);
       }
     }
@@ -1944,12 +1979,17 @@
     }
     function onVideoFrame(now, gen) {
       if (gen !== detectGen || !cameraRunning || appPaused) return;
+      // 推論看門狗：偵測間隔不只看畫質設定，也跟著「實測單次推論耗時」放寬，
+      // 避免裝置變慢/發熱時主執行緒被連續同步推論塞爆而整頁凍結。
+      const minGap = Math.max(QUALITY[qualityLevel].detectMs, inferAvg * 1.8);
       if (modelReady && gestureRecognizer && video.readyState >= 2 &&
-          now - lastDetectAt >= QUALITY[qualityLevel].detectMs && video.currentTime !== lastVideoTime) {
+          now - lastDetectAt >= minGap && video.currentTime !== lastVideoTime) {
         // 強制單調遞增的時間戳：避免同毫秒或時鐘邊界讓 recognizeForVideo 拋錯；失敗時不消耗該影格
         const ts = Math.max(lastRecognizeTs + 1, Math.round(now));
         try {
+          const t0 = performance.now();
           const result = gestureRecognizer.recognizeForVideo(video, ts);
+          inferAvg += (performance.now() - t0 - inferAvg) * 0.1;
           lastRecognizeTs = ts;
           lastDetectAt = now;
           lastVideoTime = video.currentTime;
@@ -2036,8 +2076,8 @@
       if (event.key.toLowerCase() === "p" && !pauseButton.disabled) pauseButton.click();
     });
 
-    // 依裝置能力選擇起始畫質，弱機從「平衡」起跳避免首屏卡頓（之後仍會自適應）
-    if (matchMedia("(max-width: 760px)").matches || (navigator.hardwareConcurrency || 8) <= 4) {
+    // 依裝置能力選擇起始畫質：手機/平板（觸控）一律從「平衡」起跳，避免平板被當成桌機跑最重檔而當機（之後仍會自適應）
+    if (isTouchDevice || matchMedia("(max-width: 760px)").matches || (navigator.hardwareConcurrency || 8) <= 4) {
       qualityLevel = 1;
     }
     qualityBadge.textContent = `效果：${QUALITY[qualityLevel].name}`;
