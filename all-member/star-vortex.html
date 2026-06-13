@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Star Vortex ｜ 掌心黑洞拍星星</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cyan:#38f0ff; --magenta:#ff3df0; --violet:#9b5cff; --gold:#ffd34d;
+    --bg0:#03020a; --bg1:#0a0820; --ok:#5cff9b; --warn:#ffb454; --bad:#ff5470;
+    --glass: rgba(14,10,38,.55);
+    --stroke: rgba(120,150,255,.28);
+    --font: "Orbitron", "Segoe UI", system-ui, -apple-system, "Noto Sans TC", sans-serif;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; height:100%; overflow:hidden; background:var(--bg0); color:#eaf2ff;
+    font-family:var(--font); user-select:none; -webkit-user-select:none; touch-action:none; }
+  #stage{ position:fixed; inset:0; }
+  canvas#game{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  /* ---------- HUD ---------- */
+  #hud{ position:absolute; inset:0; pointer-events:none; z-index:5; }
+  .hud-top{ position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between;
+    align-items:flex-start; padding:14px clamp(12px,3vw,28px); gap:10px; }
+  .panel{ background:var(--glass); border:1px solid var(--stroke); border-radius:14px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding:8px 14px;
+    box-shadow:0 6px 24px rgba(0,0,0,.35), inset 0 0 22px rgba(80,120,255,.08); }
+  .label{ font-size:10px; letter-spacing:.22em; color:#9fb4ff; opacity:.85; font-weight:700; }
+  .value{ font-size:clamp(18px,4.6vw,30px); font-weight:900; line-height:1.05; }
+  #score .value{ color:var(--cyan); text-shadow:0 0 14px rgba(56,240,255,.55); }
+  #timer{ text-align:center; min-width:104px; }
+  #timer .value{ color:#fff; text-shadow:0 0 14px rgba(255,255,255,.35); }
+  #timer.low .value{ color:var(--bad); text-shadow:0 0 16px rgba(255,84,112,.7); }
+  #right-col{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  #combo{ text-align:right; }
+  #combo .value{ color:var(--gold); text-shadow:0 0 14px rgba(255,211,77,.55); transition:transform .08s; }
+  #combo.pop .value{ transform:scale(1.22); }
+  #combo.hidden{ opacity:0; }
+
+  #energy-wrap{ width:min(46vw,260px); }
+  #energy-track{ height:12px; border-radius:8px; background:rgba(255,255,255,.08);
+    border:1px solid var(--stroke); overflow:hidden; position:relative; }
+  #energy-fill{ height:100%; width:0%;
+    background:linear-gradient(90deg,var(--violet),var(--magenta),var(--cyan)); transition:width .12s linear; }
+  #energy-wrap.ready #energy-track{ box-shadow:0 0 18px rgba(255,61,240,.8); animation:pulse 1s infinite; }
+  @keyframes pulse{ 50%{ box-shadow:0 0 28px rgba(56,240,255,.95);} }
+  #energy-label{ display:flex; justify-content:space-between; }
+  #energy-label .rdy{ color:var(--magenta); opacity:0; font-weight:900; }
+  #energy-wrap.ready .rdy{ opacity:1; }
+
+  /* ---------- Center hint ---------- */
+  #hint{ position:absolute; left:50%; bottom:14%; transform:translateX(-50%);
+    text-align:center; pointer-events:none; opacity:0; transition:opacity .25s; max-width:90vw; }
+  #hint.show{ opacity:1; }
+  #hint .big{ font-size:clamp(20px,6vw,44px); font-weight:900; letter-spacing:.04em;
+    text-shadow:0 0 22px rgba(56,240,255,.6); }
+  #hint .sub{ font-size:clamp(12px,3vw,16px); color:#bcd0ff; margin-top:6px; }
+
+  /* big countdown */
+  #countdown{ position:absolute; inset:0; display:none; place-items:center; z-index:8; pointer-events:none; }
+  #countdown.show{ display:grid; }
+  #countdown b{ font-size:clamp(80px,26vw,220px); font-weight:900; color:#fff;
+    text-shadow:0 0 40px var(--cyan),0 0 80px var(--magenta); animation:cd .9s ease-out; }
+  @keyframes cd{ from{ transform:scale(2.2); opacity:0;} 30%{opacity:1;} to{ transform:scale(.7); opacity:0;} }
+
+  /* ---------- Camera preview ---------- */
+  #cam{ position:absolute; right:14px; bottom:14px; width:clamp(150px,24vw,232px); aspect-ratio:4/3;
+    border-radius:14px; overflow:hidden; border:1px solid var(--stroke); z-index:6;
+    background:#05030f; box-shadow:0 8px 30px rgba(0,0,0,.5), inset 0 0 24px rgba(80,120,255,.1);
+    transition:box-shadow .3s; }
+  #cam.tracking{ box-shadow:0 8px 30px rgba(0,0,0,.5), 0 0 18px rgba(56,240,255,.45); }
+  #cam.lost{ box-shadow:0 8px 30px rgba(0,0,0,.5), 0 0 18px rgba(255,84,112,.55); }
+  #cam video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    transform:scaleX(-1); opacity:.92; }
+  #cam canvas{ position:absolute; inset:0; width:100%; height:100%; }
+  #cam .cam-tag{ position:absolute; left:8px; top:6px; font-size:9px; letter-spacing:.18em;
+    color:#bcd0ff; background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; }
+  #cam .gtag{ position:absolute; left:8px; bottom:6px; font-size:11px; font-weight:900; letter-spacing:.1em;
+    color:var(--cyan); text-shadow:0 0 10px rgba(56,240,255,.6); }
+  #cam.fallback video{ display:none; }
+  #cam .fb-msg{ position:absolute; inset:0; display:none; place-items:center; text-align:center;
+    font-size:11px; color:#cdd9ff; padding:10px; line-height:1.5; }
+  #cam.fallback .fb-msg{ display:grid; }
+
+  /* ---------- Controls cluster ---------- */
+  #controls{ position:absolute; left:14px; bottom:14px; display:flex; gap:8px; z-index:6; }
+  .ctl{ pointer-events:auto; width:44px; height:44px; border-radius:12px; cursor:pointer;
+    background:var(--glass); border:1px solid var(--stroke); color:#dfe9ff; font-size:18px;
+    display:grid; place-items:center; backdrop-filter:blur(8px); transition:transform .1s,border-color .2s; }
+  .ctl:hover{ border-color:var(--cyan); transform:translateY(-2px); }
+  .ctl:active{ transform:scale(.94); }
+
+  /* ---------- Perf badge ---------- */
+  #perf{ position:absolute; left:14px; top:64px; font-size:10px; letter-spacing:.12em; z-index:6;
+    color:#9fb4ff; background:rgba(5,3,15,.5); border:1px solid var(--stroke); padding:5px 9px;
+    border-radius:9px; pointer-events:none; }
+  #perf b{ color:var(--ok); }
+  #perf.warn b{ color:var(--warn); }
+  #perf.bad b{ color:var(--bad); }
+
+  /* ---------- Screens ---------- */
+  .screen{ position:absolute; inset:0; z-index:20; display:none; place-items:center; padding:24px;
+    background:radial-gradient(120% 120% at 50% 0%, rgba(20,12,52,.78), rgba(3,2,10,.92));
+    backdrop-filter:blur(4px); }
+  .screen.show{ display:grid; }
+  .card{ width:min(560px,94vw); text-align:center; background:var(--glass); border:1px solid var(--stroke);
+    border-radius:22px; padding:clamp(20px,4vw,38px); box-shadow:0 20px 60px rgba(0,0,0,.55),
+    inset 0 0 40px rgba(90,130,255,.08); }
+  .title{ font-size:clamp(30px,8vw,64px); font-weight:900; letter-spacing:.02em; line-height:1;
+    background:linear-gradient(92deg,var(--cyan),var(--magenta),var(--gold));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 18px rgba(155,92,255,.5)); }
+  .subtitle{ font-size:clamp(12px,3vw,16px); color:#bcd0ff; letter-spacing:.28em; margin-top:8px; }
+  .how{ text-align:left; margin:18px auto 6px; display:grid; gap:9px; max-width:430px; }
+  .how .row{ display:flex; align-items:center; gap:11px; font-size:clamp(12px,3.2vw,15px); color:#dbe6ff; }
+  .how .ico{ flex:none; width:34px; height:34px; border-radius:10px; display:grid; place-items:center;
+    font-size:17px; background:rgba(120,150,255,.12); border:1px solid var(--stroke); }
+  .btn{ pointer-events:auto; cursor:pointer; margin-top:20px; font-family:var(--font); font-weight:900;
+    font-size:clamp(16px,4.4vw,22px); letter-spacing:.08em; color:#04030c; border:none; border-radius:14px;
+    padding:14px 30px; background:linear-gradient(92deg,var(--cyan),var(--magenta));
+    box-shadow:0 10px 30px rgba(255,61,240,.35); transition:transform .1s, filter .2s; }
+  .btn:hover{ filter:brightness(1.1); transform:translateY(-2px); }
+  .btn:active{ transform:scale(.96); }
+  .btn.ghost{ background:transparent; color:#dfe9ff; border:1px solid var(--stroke); box-shadow:none;
+    font-size:clamp(13px,3.4vw,16px); padding:11px 22px; }
+  .note{ font-size:11px; color:#8fa3d8; margin-top:14px; letter-spacing:.04em; line-height:1.6; }
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:18px 0 4px; }
+  .stat{ background:rgba(10,8,30,.5); border:1px solid var(--stroke); border-radius:14px; padding:14px; }
+  .stat .v{ font-size:clamp(24px,7vw,44px); font-weight:900; }
+  .stat.s .v{ color:var(--cyan); } .stat.c .v{ color:var(--gold); }
+  .stat .l{ font-size:10px; letter-spacing:.2em; color:#9fb4ff; }
+  .spinner{ width:44px; height:44px; border-radius:50%; border:3px solid rgba(120,150,255,.2);
+    border-top-color:var(--cyan); animation:spin 1s linear infinite; margin:18px auto 0; }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  .row-btns{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="panel" id="score"><div class="label">SCORE</div><div class="value">0</div></div>
+      <div class="panel" id="timer"><div class="label">TIME</div><div class="value">60</div></div>
+      <div id="right-col">
+        <div class="panel" id="combo"><div class="label">COMBO</div><div class="value">x1</div></div>
+        <div class="panel" id="energy-wrap">
+          <div id="energy-label"><span class="label">NEBULA</span><span class="rdy label">▲ 雙手大招就緒</span></div>
+          <div id="energy-track"><div id="energy-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="hint"><div class="big"></div><div class="sub"></div></div>
+    <div id="countdown"><b>3</b></div>
+  </div>
+
+  <div id="perf">FPS <b>60</b> · <span id="perf-tier">HIGH</span></div>
+
+  <!-- Camera preview -->
+  <div id="cam">
+    <video id="video" playsinline muted></video>
+    <canvas id="camcanvas"></canvas>
+    <div class="cam-tag">VISION</div>
+    <div class="gtag" id="gtag">—</div>
+    <div class="fb-msg" id="fbmsg"></div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <button class="ctl" id="btn-pause" title="暫停 (空白鍵)">⏸</button>
+    <button class="ctl" id="btn-mute" title="音效 (M)">🔊</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="screen" id="screen-loading">
+    <div class="card">
+      <div class="title">STAR VORTEX</div>
+      <div class="subtitle">掌心黑洞 · 拍星星</div>
+      <div class="spinner"></div>
+      <div class="note" id="loading-note">正在喚醒手部追蹤引擎…</div>
+    </div>
+  </div>
+
+  <!-- Start -->
+  <div class="screen" id="screen-start">
+    <div class="card">
+      <div class="title">STAR VORTEX</div>
+      <div class="subtitle">掌心黑洞 · 拍星星</div>
+      <div class="how">
+        <div class="row"><span class="ico">🖐</span><span>張開手掌 → 黑洞吸力變強，把星星捲進來</span></div>
+        <div class="row"><span class="ico">👆</span><span>用掌心或指尖<b>拍 / 捏</b>星星 → 爆開得分、累積連擊</span></div>
+        <div class="row"><span class="ico">✊</span><span>握拳 → 放出衝擊波，一次震爆四周星星</span></div>
+        <div class="row"><span class="ico">🙌</span><span>能量滿時雙手張開 → 星雲大招清場爆分</span></div>
+      </div>
+      <button class="btn" id="btn-start">開始遊戲</button>
+      <div class="note" id="start-note">需要攝影機權限（影像只在本機處理，不會上傳）。<br>沒有攝影機？仍可用滑鼠 / 觸控遊玩。</div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div class="screen" id="screen-pause">
+    <div class="card">
+      <div class="title" style="font-size:clamp(28px,7vw,52px)">已暫停</div>
+      <div class="subtitle">PAUSED</div>
+      <div class="row-btns" style="margin-top:22px">
+        <button class="btn" id="btn-resume">繼續</button>
+        <button class="btn ghost" id="btn-restart-p">重新開始</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game over -->
+  <div class="screen" id="screen-over">
+    <div class="card">
+      <div class="title" style="font-size:clamp(30px,7vw,56px)">時間到！</div>
+      <div class="subtitle">GAME OVER</div>
+      <div class="stat-grid">
+        <div class="stat s"><div class="v" id="final-score">0</div><div class="l">SCORE</div></div>
+        <div class="stat c"><div class="v" id="final-combo">x1</div><div class="l">BEST COMBO</div></div>
+      </div>
+      <div class="note" id="best-note"></div>
+      <button class="btn" id="btn-replay">再玩一次</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* =====================================================================
+   STAR VORTEX — 掌心黑洞拍星星
+   Single-file web hand-tracking game.
+   Layers: math · camera · tracking · gesture · entities · game · render
+           · performance · audio · ui · main loop
+   ===================================================================== */
+
+/* ----------------------------- CONFIG ----------------------------- */
+const CFG = {
+  ROUND_TIME: 60,                 // seconds
+  COMBO_WINDOW: 1.6,              // s before combo resets
+  ENERGY_PER_POP: 4,              // energy gained per star popped
+  ENERGY_MAX: 100,
+  SHOCK_COOLDOWN: 0.85,           // s between fist shockwaves
+  ULT_COOLDOWN: 0.6,
+  // radii are fractions of the smaller screen dimension (device independent)
+  R_SUCTION: 0.20,                // base suction radius
+  R_SUCTION_OPEN: 0.34,           // suction radius when hand open
+  R_CORE: 0.072,                  // black-hole "eat" radius (pop on contact)
+  R_FINGER: 0.05,                 // fingertip pop radius
+  R_SHOCK: 0.30,                  // shockwave radius
+  PULL: 1500,                     // base pull accel
+  PULL_OPEN: 3200,
+  SCORE_BASE: 10,
+  model: {
+    esm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm",
+    wasm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm",
+    task: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+  }
+};
+
+// Quality tiers — strongest perf levers first. Auto-degrades under load.
+const TIERS = {
+  high: { maxStars:26, maxParticles:340, glow:true, trails:true, renderScale:1.0,  detectMs:38, starsPerSpawn:2 },
+  med:  { maxStars:18, maxParticles:190, glow:true, trails:true, renderScale:0.85, detectMs:46, starsPerSpawn:1 },
+  low:  { maxStars:12, maxParticles:90,  glow:false,trails:false,renderScale:0.66, detectMs:60, starsPerSpawn:1 },
+};
+const TIER_ORDER = ["low","med","high"];
+
+const STAR_COLORS = ["#38f0ff","#ff3df0","#9b5cff","#ffd34d","#5cff9b","#ff8a4d"];
+
+/* ----------------------------- MATH ------------------------------- */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const rand=(a,b)=>a+Math.random()*(b-a);
+const dist2=(ax,ay,bx,by)=>{const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;};
+const dist=(ax,ay,bx,by)=>Math.hypot(ax-bx,ay-by);
+const TAU=Math.PI*2;
+// frame-rate independent smoothing factor toward a target
+const damp=(cur,target,tau,dt)=>lerp(cur,target,1-Math.exp(-dt/Math.max(tau,1e-4)));
+
+// One-Euro filter: low latency + low jitter for tracked points
+class LowPass{ constructor(){this.s=null;} filter(x,a){ this.s=(this.s==null)?x:a*x+(1-a)*this.s; return this.s; } reset(){this.s=null;} }
+class OneEuro{
+  constructor(minCut=1.3, beta=0.012, dCut=1.0){ this.minCut=minCut; this.beta=beta; this.dCut=dCut;
+    this.x=new LowPass(); this.dx=new LowPass(); this.lastT=null; this.lastX=null; }
+  _a(cut,dt){ const tau=1/(TAU*cut); return 1/(1+tau/dt); }
+  filter(v,t){
+    let dt=(this.lastT==null)?1/60:(t-this.lastT); if(dt<=0)dt=1/60; this.lastT=t;
+    const dv=(this.lastX==null)?0:(v-this.lastX)/dt; this.lastX=v;
+    const ed=this.dx.filter(dv,this._a(this.dCut,dt));
+    const cut=this.minCut+this.beta*Math.abs(ed);
+    return this.x.filter(v,this._a(cut,dt));
+  }
+  reset(){ this.x.reset(); this.dx.reset(); this.lastT=null; this.lastX=null; }
+}
+
+/* MediaPipe hand skeleton connections */
+const HAND_BONES=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+const FINGER_TIPS=[4,8,12,16,20];
+
+/* ============================ CAMERA ============================== */
+const Camera = {
+  video: document.getElementById("video"),
+  stream: null,
+  async start(){
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"user", width:{ideal:640}, height:{ideal:480}, frameRate:{ideal:30} },
+      audio:false
+    });
+    this.video.srcObject = this.stream;
+    await this.video.play();
+    await new Promise(res=>{
+      if(this.video.readyState>=2) return res();
+      this.video.onloadeddata=()=>res();
+    });
+    return true;
+  },
+  stop(){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } },
+  ready(){ return this.stream && this.video.readyState>=2; }
+};
+
+/* ============================ TRACKING ============================ */
+// Loads MediaPipe HandLandmarker; throttled detection; raw landmarks out.
+const Tracker = {
+  landmarker:null, ready:false, lastVideoTime:-1, lastDetect:0, raw:null,
+  async load(){
+    const vision = await import(CFG.model.esm);
+    const fileset = await vision.FilesetResolver.forVisionTasks(CFG.model.wasm);
+    const opts = {
+      baseOptions:{ modelAssetPath:CFG.model.task, delegate:"GPU" },
+      runningMode:"VIDEO", numHands:2,
+      minHandDetectionConfidence:.5, minHandPresenceConfidence:.5, minTrackingConfidence:.5
+    };
+    try{ this.landmarker = await vision.HandLandmarker.createFromOptions(fileset,opts); }
+    catch{ opts.baseOptions.delegate="CPU"; this.landmarker = await vision.HandLandmarker.createFromOptions(fileset,opts); }
+    this.ready = true;
+  },
+  // returns mediapipe result or null (throttled)
+  detect(now){
+    if(!this.ready || !Camera.ready()) return null;
+    if(now - this.lastDetect < Perf.tier.detectMs) return null;
+    const v = Camera.video;
+    if(v.currentTime === this.lastVideoTime) return null;
+    this.lastVideoTime = v.currentTime; this.lastDetect = now;
+    try{ this.raw = this.landmarker.detectForVideo(v, now); }
+    catch(e){ return null; }
+    return this.raw;
+  }
+};
+
+/* ============================ GESTURE ============================= */
+/* Builds per-hand state from landmarks: palm center (wrist+MCPs),
+   smoothed control points, finger openness, gesture, pinch.
+   Two stable slots keyed by handedness so filters don't swap.        */
+function makeSlot(){
+  return {
+    active:false, lost:99, gesture:"none", openAmt:0, pinch:false,
+    fx:new OneEuro(), fy:new OneEuro(),                 // filtered palm (target)
+    tfx:Array.from({length:5},()=>new OneEuro(1.6,.02)),
+    tfy:Array.from({length:5},()=>new OneEuro(1.6,.02)),
+    palm:{x:0,y:0}, dpalm:{x:0,y:0,vx:0,vy:0},          // dpalm = display (render-lerped) + velocity
+    tips:Array.from({length:5},()=>({x:0,y:0})),
+    pinchPt:{x:0,y:0},
+    fistEdge:false, prevGesture:"none",
+  };
+}
+const Gesture = {
+  slots:{ Left:makeSlot(), Right:makeSlot() },
+  hands:[],            // active hand slots this frame (for game/render)
+  anyActive:false,
+
+  // turn one raw hand (21 normalized landmarks) into geometry, mirrored to css px
+  ingest(slot, lm, tSec, W, H){
+    const px=i=>(1-lm[i].x)*W, py=i=>lm[i].y*H;   // mirror x for selfie view
+    // palm center = wrist + 4 finger MCPs (robust, not just wrist)
+    const cx=(px(0)+px(5)+px(9)+px(13)+px(17))/5;
+    const cy=(py(0)+py(5)+py(9)+py(13)+py(17))/5;
+    slot.palm.x = slot.fx.filter(cx,tSec);
+    slot.palm.y = slot.fy.filter(cy,tSec);
+    for(let f=0; f<5; f++){
+      const id=FINGER_TIPS[f];
+      slot.tips[f].x = slot.tfx[f].filter(px(id),tSec);
+      slot.tips[f].y = slot.tfy[f].filter(py(id),tSec);
+    }
+    // --- gesture from raw (normalized) landmarks: rotation invariant ---
+    const d=(a,b)=>Math.hypot(lm[a].x-lm[b].x, lm[a].y-lm[b].y);
+    const scale=Math.max(d(0,9),1e-4);
+    // a finger is extended if its tip is farther from wrist than its PIP joint
+    const ext=(tip,pip)=> d(0,tip) > d(0,pip)*1.05;
+    let count=0;
+    if(ext(8,6))count++; if(ext(12,10))count++; if(ext(16,14))count++; if(ext(20,18))count++;
+    slot.openAmt = damp(slot.openAmt, count/4, 0.06, 1/30);
+    slot.pinch = d(4,8) < scale*0.45;
+    slot.pinchPt.x = (slot.tips[0].x+slot.tips[1].x)/2;
+    slot.pinchPt.y = (slot.tips[0].y+slot.tips[1].y)/2;
+    let g="neutral";
+    if(count>=3) g="open";
+    else if(count<=1 && !slot.pinch) g="fist";
+    slot.prevGesture = slot.gesture;
+    slot.gesture = g;
+    slot.fistEdge = (g==="fist" && slot.prevGesture!=="fist");
+    slot.active=true; slot.lost=0;
+  },
+
+  // called on every detection result
+  update(result, tSec, W, H){
+    const seen={Left:false,Right:false};
+    if(result && result.landmarks){
+      for(let i=0;i<result.landmarks.length;i++){
+        let label = result.handedness?.[i]?.[0]?.categoryName || (i===0?"Right":"Left");
+        if(seen[label]) label = label==="Right"?"Left":"Right"; // avoid collision
+        seen[label]=true;
+        this.ingest(this.slots[label], result.landmarks[i], tSec, W, H);
+      }
+    }
+    for(const k of ["Left","Right"]){
+      if(!seen[k]){
+        const s=this.slots[k]; s.lost++;
+        if(s.lost>4){ s.active=false; s.gesture="none"; s.fx.reset(); s.fy.reset();
+          s.tfx.forEach(f=>f.reset()); s.tfy.forEach(f=>f.reset()); }
+      }
+    }
+  },
+
+  // per-frame: lerp display position toward filtered target (bridges detection gaps), compute velocity
+  step(dt){
+    this.hands.length=0; this.anyActive=false;
+    for(const k of ["Left","Right"]){
+      const s=this.slots[k];
+      if(!s.active) continue;
+      const dp=s.dpalm, px=dp.x, py=dp.y;
+      dp.x=damp(dp.x, s.palm.x, 0.045, dt);
+      dp.y=damp(dp.y, s.palm.y, 0.045, dt);
+      dp.vx=(dp.x-px)/Math.max(dt,1e-3);
+      dp.vy=(dp.y-py)/Math.max(dt,1e-3);
+      this.hands.push(s); this.anyActive=true;
+    }
+  },
+  reset(){ for(const k of ["Left","Right"]) this.slots[k]=makeSlot(); this.hands.length=0; }
+};
+
+/* ============================ ENTITIES =========================== */
+/* Pooled objects — never GC'd mid-round. */
+class Star{
+  constructor(){ this.reset(); }
+  reset(){ this.x=0;this.y=0;this.vx=0;this.vy=0;this.r=12;this.alive=false;
+    this.color="#38f0ff";this.spin=rand(0,TAU);this.spawn=0;this.tx=0;this.ty=0; }
+  respawn(W,H){
+    const m=40;
+    this.x=rand(m,W-m); this.y=rand(m,H-m);
+    this.vx=rand(-30,30); this.vy=rand(-30,30);
+    this.r=rand(9,15); this.color=STAR_COLORS[(Math.random()*STAR_COLORS.length)|0];
+    this.spin=rand(0,TAU); this.spawn=0; this.alive=true;
+    this.tx=this.x; this.ty=this.y;
+  }
+}
+class Particle{
+  constructor(){ this.alive=false; }
+  init(x,y,vx,vy,life,r,color){ this.x=x;this.y=y;this.vx=vx;this.vy=vy;
+    this.life=life;this.max=life;this.r=r;this.color=color;this.alive=true; }
+}
+class Floater{
+  constructor(){ this.alive=false; }
+  init(x,y,text,color,size){ this.x=x;this.y=y;this.text=text;this.color=color;
+    this.size=size;this.life=1.0;this.alive=true; }
+}
+class Shock{
+  constructor(){ this.alive=false; }
+  init(x,y,maxR,color){ this.x=x;this.y=y;this.r=10;this.maxR=maxR;this.color=color;this.alive=true; }
+}
+
+const Pool = {
+  stars:[], parts:[], floats:[], shocks:[],
+  initPool(){
+    for(let i=0;i<40;i++) this.stars.push(new Star());
+    for(let i=0;i<400;i++) this.parts.push(new Particle());
+    for(let i=0;i<40;i++) this.floats.push(new Floater());
+    for(let i=0;i<24;i++) this.shocks.push(new Shock());
+  },
+  liveStars(){ let n=0; for(const s of this.stars) if(s.alive)n++; return n; },
+  spawnStar(W,H){ for(const s of this.stars) if(!s.alive){ s.respawn(W,H); return s; }
+    const s=new Star(); s.respawn(W,H); this.stars.push(s); return s; },
+  addParticle(x,y,vx,vy,life,r,color){
+    if(this.activeParts>=Perf.tier.maxParticles) return;
+    for(const p of this.parts) if(!p.alive){ p.init(x,y,vx,vy,life,r,color); return; }
+  },
+  activeParts:0,
+  burst(x,y,n,color,power=1){
+    for(let i=0;i<n;i++){
+      const a=rand(0,TAU), sp=rand(60,420)*power;
+      this.addParticle(x,y,Math.cos(a)*sp,Math.sin(a)*sp,rand(.4,.9),rand(2,5),color);
+    }
+  },
+  float(x,y,text,color,size=26){ for(const f of this.floats) if(!f.alive){ f.init(x,y,text,color,size); return; } },
+  shock(x,y,maxR,color){ for(const s of this.shocks) if(!s.alive){ s.init(x,y,maxR,color); return; } },
+  clearAll(){ for(const a of [this.stars,this.parts,this.floats,this.shocks]) for(const o of a) o.alive=false; }
+};
+
+/* ============================ GAME =============================== */
+const Game = {
+  state:"loading",  // loading|start|countdown|play|pause|over
+  score:0, combo:1, comboTimer:0, bestCombo:1, energy:0, time:CFG.ROUND_TIME,
+  shake:0, shockCd:0, ultCd:0, spawnTimer:0, cdNum:3, cdTimer:0,
+  W:0, H:0, minDim:0,
+  best: +(localStorage.getItem("starVortexBest")||0),
+
+  reset(){
+    this.score=0; this.combo=1; this.comboTimer=0; this.bestCombo=1; this.energy=0;
+    this.time=CFG.ROUND_TIME; this.shake=0; this.shockCd=0; this.ultCd=0; this.spawnTimer=0;
+    Pool.clearAll(); Tracker.lastVideoTime=-1;
+    for(let i=0;i<10;i++) Pool.spawnStar(this.W,this.H);
+  },
+  startCountdown(){ this.reset(); this.state="countdown"; this.cdNum=3; this.cdTimer=0;
+    UI.showScreen(null); UI.countdown(3); Audio.tick(); },
+
+  update(dt){
+    if(this.state==="countdown"){
+      this.cdTimer+=dt;
+      if(this.cdTimer>=0.9){ this.cdTimer=0; this.cdNum--;
+        if(this.cdNum>0){ UI.countdown(this.cdNum); Audio.tick(); }
+        else { UI.countdown("GO"); Audio.go(); this.state="play"; this.time=CFG.ROUND_TIME;
+               setTimeout(()=>UI.countdown(null),650); }
+      }
+      this.stepEffects(dt); return;
+    }
+    if(this.state!=="play"){ this.stepEffects(dt); return; }
+
+    // timer
+    this.time-=dt;
+    if(this.time<=0){ this.time=0; this.end(); }
+
+    // combo decay
+    if(this.combo>1){ this.comboTimer-=dt; if(this.comboTimer<=0){ this.combo=1; UI.setCombo(1); } }
+
+    this.shockCd=Math.max(0,this.shockCd-dt);
+    this.ultCd=Math.max(0,this.ultCd-dt);
+
+    this.handleHands(dt);
+    this.physics(dt);
+    this.spawn(dt);
+    this.stepEffects(dt);
+
+    // ultimate readiness hint
+    UI.energyReady(this.energy>=CFG.ENERGY_MAX);
+  },
+
+  handleHands(dt){
+    const hands=Gesture.hands;
+    const twoHands = hands.length>=2;
+    let bothOpen = twoHands;
+
+    for(const h of hands){
+      const open = h.gesture==="open";
+      if(!open) bothOpen=false;
+      // fist shockwave (edge-triggered, cooldown)
+      if(h.fistEdge && this.shockCd<=0){
+        this.shockCd=CFG.SHOCK_COOLDOWN;
+        this.doShockwave(h.dpalm.x,h.dpalm.y);
+      }
+    }
+    // nebula ultimate: two open hands + full energy
+    if(twoHands && bothOpen && this.energy>=CFG.ENERGY_MAX && this.ultCd<=0){
+      this.doUltimate();
+    }
+  },
+
+  physics(dt){
+    const hands=Gesture.hands;
+    const md=this.minDim;
+    const rCore = CFG.R_CORE*md, rCore2=rCore*rCore;
+    const rFinger=CFG.R_FINGER*md, rFinger2=rFinger*rFinger;
+
+    for(const s of Pool.stars){
+      if(!s.alive) continue;
+      s.spawn=Math.min(1,s.spawn+dt*3); s.spin+=dt*1.2;
+
+      for(const h of hands){
+        if(h.gesture==="fist") continue;     // fist = punch, no suction
+        const open = h.gesture==="open";
+        const rS = (open?CFG.R_SUCTION_OPEN:CFG.R_SUCTION)*md * (0.85+0.4*h.openAmt);
+        const pull = (open?CFG.PULL_OPEN:CFG.PULL) * (0.7+0.6*h.openAmt);
+        const dx=h.dpalm.x-s.x, dy=h.dpalm.y-s.y;
+        const d2=dx*dx+dy*dy;
+        if(d2 < rS*rS){
+          const d=Math.sqrt(d2)||1;
+          const f=(1-d/rS);
+          // radial pull + slight tangential swirl for spiral feel
+          const ax=(dx/d), ay=(dy/d);
+          s.vx += (ax*pull + (-ay)*pull*0.5) * f*f * dt;
+          s.vy += (ay*pull + ( ax)*pull*0.5) * f*f * dt;
+        }
+        // pop at core
+        if(d2 < rCore2){ this.popStar(s,h,true); break; }
+      }
+      if(!s.alive) continue;
+
+      // fingertip / pinch pops (direct slap)
+      for(const h of hands){
+        let popped=false;
+        for(let f=0; f<5; f++){
+          if(dist2(s.x,s.y,h.tips[f].x,h.tips[f].y) < rFinger2){ this.popStar(s,h,false); popped=true; break; }
+        }
+        if(popped) break;
+        if(h.pinch && dist2(s.x,s.y,h.pinchPt.x,h.pinchPt.y) < rFinger2*1.4){ this.popStar(s,h,false); break; }
+      }
+      if(!s.alive) continue;
+
+      // integrate + damping
+      s.vx*=Math.pow(0.12,dt); s.vy*=Math.pow(0.12,dt);
+      s.x+=s.vx*dt; s.y+=s.vy*dt;
+      // soft bounds
+      const m=10;
+      if(s.x<m){s.x=m;s.vx=Math.abs(s.vx)*.6;} if(s.x>this.W-m){s.x=this.W-m;s.vx=-Math.abs(s.vx)*.6;}
+      if(s.y<m){s.y=m;s.vy=Math.abs(s.vy)*.6;} if(s.y>this.H-m){s.y=this.H-m;s.vy=-Math.abs(s.vy)*.6;}
+    }
+  },
+
+  popStar(s, hand, atCore){
+    s.alive=false;
+    // slap bonus: faster hand motion → more points
+    const speed=hand?Math.hypot(hand.dpalm.vx,hand.dpalm.vy):0;
+    const slap = speed>900 ? 2 : 1;
+    const gain = CFG.SCORE_BASE*this.combo*slap;
+    this.score+=gain;
+    this.bestCombo=Math.max(this.bestCombo,this.combo);
+    this.combo=Math.min(99,this.combo+1);
+    this.comboTimer=CFG.COMBO_WINDOW;
+    this.energy=Math.min(CFG.ENERGY_MAX,this.energy+CFG.ENERGY_PER_POP);
+    Pool.burst(s.x,s.y, Perf.tier.glow?14:8, s.color, slap>1?1.4:1);
+    Pool.float(s.x,s.y, "+"+gain, s.color, slap>1?34:26);
+    if(this.combo>2 && this.combo%5===0) Pool.float(s.x,s.y-30, "COMBO x"+this.combo, "#ffd34d", 30);
+    this.shake=Math.min(14, this.shake + (slap>1?6:3));
+    UI.flashScore(); UI.setCombo(this.combo);
+    Audio.pop(this.combo, slap>1);
+  },
+
+  doShockwave(x,y){
+    const R=CFG.R_SHOCK*this.minDim, R2=R*R;
+    Pool.shock(x,y,R,"#9b5cff");
+    let hit=0;
+    for(const s of Pool.stars){
+      if(!s.alive) continue;
+      const dx=s.x-x, dy=s.y-y, d2=dx*dx+dy*dy;
+      if(d2<R2){
+        const d=Math.sqrt(d2)||1;
+        if(d<R*0.55){ // inner ring pops
+          s.alive=false; hit++;
+          this.score+=CFG.SCORE_BASE*this.combo;
+          this.energy=Math.min(CFG.ENERGY_MAX,this.energy+2);
+          Pool.burst(s.x,s.y, Perf.tier.glow?12:7, s.color);
+        } else { // outer pushes outward
+          s.vx+=(dx/d)*420; s.vy+=(dy/d)*420;
+        }
+      }
+    }
+    if(hit>0){ this.combo=Math.min(99,this.combo+1); this.comboTimer=CFG.COMBO_WINDOW;
+      Pool.float(x,y-20,"BOOM +"+hit,"#9b5cff",30); UI.flashScore(); UI.setCombo(this.combo); }
+    this.shake=Math.min(20,this.shake+10);
+    Audio.shock();
+  },
+
+  doUltimate(){
+    this.ultCd=CFG.ULT_COOLDOWN; this.energy=0;
+    let n=0, total=0;
+    for(const s of Pool.stars){
+      if(!s.alive) continue;
+      s.alive=false; n++;
+      total+=CFG.SCORE_BASE*2;
+      Pool.burst(s.x,s.y, Perf.tier.glow?18:9, s.color,1.3);
+    }
+    total = Math.round(total*this.combo*0.5)+200;
+    this.score+=total;
+    this.bestCombo=Math.max(this.bestCombo,this.combo);
+    Pool.shock(this.W/2,this.H/2, this.minDim*0.9, "#ff3df0");
+    Pool.shock(this.W/2,this.H/2, this.minDim*0.7, "#38f0ff");
+    Pool.float(this.W/2,this.H/2-40,"NEBULA BURST","#ff3df0",46);
+    Pool.float(this.W/2,this.H/2+10,"+"+total,"#ffd34d",40);
+    this.shake=Math.min(30,this.shake+24);
+    this.fxNebula=1.0;
+    UI.flashScore(); UI.energyReady(false);
+    Audio.ultimate();
+  },
+
+  spawn(dt){
+    this.spawnTimer-=dt;
+    const target = Perf.tier.maxStars;
+    if(this.spawnTimer<=0 && Pool.liveStars()<target){
+      this.spawnTimer=0.55;
+      const n=Perf.tier.starsPerSpawn;
+      for(let i=0;i<n && Pool.liveStars()<target;i++){
+        const s=Pool.spawnStar(this.W,this.H);
+        Pool.burst(s.x,s.y, Perf.tier.glow?6:3, s.color,0.4);
+      }
+    }
+  },
+
+  stepEffects(dt){
+    Pool.activeParts=0;
+    for(const p of Pool.parts){ if(!p.alive) continue; Pool.activeParts++;
+      p.life-=dt; if(p.life<=0){ p.alive=false; continue; }
+      p.vx*=Math.pow(0.25,dt); p.vy*=Math.pow(0.25,dt);
+      p.x+=p.vx*dt; p.y+=p.vy*dt; }
+    for(const f of Pool.floats){ if(!f.alive) continue;
+      f.life-=dt*0.9; f.y-=dt*46; if(f.life<=0) f.alive=false; }
+    for(const s of Pool.shocks){ if(!s.alive) continue;
+      s.r+=dt*900; if(s.r>=s.maxR) s.alive=false; }
+    this.shake=damp(this.shake,0,0.08,dt);
+    if(this.fxNebula>0) this.fxNebula=Math.max(0,this.fxNebula-dt*0.8);
+  },
+  fxNebula:0,
+
+  end(){
+    this.state="over";
+    this.bestCombo=Math.max(this.bestCombo,this.combo);
+    if(this.score>this.best){ this.best=this.score; localStorage.setItem("starVortexBest",this.best); }
+    UI.gameOver(this.score,this.bestCombo,this.best);
+    Audio.go();
+  }
+};
+
+/* ============================ RENDER ============================= */
+const Render = {
+  cv:document.getElementById("game"), ctx:null, bg:null, bgctx:null, scale:1, dpr:1,
+  init(){ this.ctx=this.cv.getContext("2d",{alpha:false});
+    this.bg=document.createElement("canvas"); this.bgctx=this.bg.getContext("2d"); },
+
+  resize(){
+    const cssW=window.innerWidth, cssH=window.innerHeight;
+    this.dpr=Math.min(window.devicePixelRatio||1, 2);
+    this.scale = Perf.tier.renderScale * this.dpr;
+    this.cv.width=Math.round(cssW*this.scale); this.cv.height=Math.round(cssH*this.scale);
+    Game.W=cssW; Game.H=cssH; Game.minDim=Math.min(cssW,cssH);
+    this.buildBackground(cssW,cssH);
+  },
+
+  // pre-render starfield + nebula once → cheap blit each frame
+  buildBackground(W,H){
+    this.bg.width=Math.round(W*this.scale); this.bg.height=Math.round(H*this.scale);
+    const c=this.bgctx; c.setTransform(this.scale,0,0,this.scale,0,0);
+    const g=c.createRadialGradient(W*0.5,H*0.35,0, W*0.5,H*0.5,Math.max(W,H)*0.8);
+    g.addColorStop(0,"#0c0a26"); g.addColorStop(0.55,"#070518"); g.addColorStop(1,"#02010a");
+    c.fillStyle=g; c.fillRect(0,0,W,H);
+    // nebula blobs
+    for(const [x,y,r,col] of [[W*0.2,H*0.25,W*0.3,"rgba(155,92,255,0.16)"],
+        [W*0.82,H*0.7,W*0.32,"rgba(56,240,255,0.12)"],[W*0.6,H*0.15,W*0.25,"rgba(255,61,240,0.10)"]]){
+      const ng=c.createRadialGradient(x,y,0,x,y,r); ng.addColorStop(0,col); ng.addColorStop(1,"transparent");
+      c.fillStyle=ng; c.fillRect(0,0,W,H);
+    }
+    // distant stars
+    const n=Math.round((W*H)/9000);
+    for(let i=0;i<n;i++){ const x=Math.random()*W,y=Math.random()*H,r=Math.random()*1.4+0.2;
+      c.globalAlpha=Math.random()*0.7+0.2; c.fillStyle="#cfe0ff"; c.beginPath(); c.arc(x,y,r,0,TAU); c.fill(); }
+    c.globalAlpha=1;
+  },
+
+  frame(t){
+    const ctx=this.ctx, W=Game.W, H=Game.H, glow=Perf.tier.glow;
+    ctx.setTransform(this.scale,0,0,this.scale,0,0);
+    // screen shake
+    if(Game.shake>0.3){ ctx.translate(rand(-Game.shake,Game.shake),rand(-Game.shake,Game.shake)); }
+    ctx.drawImage(this.bg,0,0,W,H);
+
+    if(glow) ctx.globalCompositeOperation="lighter";
+
+    // shockwaves (under stars)
+    for(const s of Pool.shocks){ if(!s.alive) continue;
+      const a=clamp(1-s.r/s.maxR,0,1);
+      ctx.globalAlpha=a*0.8; ctx.strokeStyle=s.color; ctx.lineWidth=3+8*a;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,TAU); ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    if(glow) ctx.globalCompositeOperation="source-over";
+
+    // black holes at each active palm
+    for(const h of Gesture.hands) this.drawBlackHole(ctx,h,t,glow);
+
+    // stars
+    if(glow) ctx.globalCompositeOperation="lighter";
+    for(const s of Pool.stars){ if(!s.alive) continue; this.drawStar(ctx,s,glow); }
+
+    // particles
+    for(const p of Pool.parts){ if(!p.alive) continue;
+      const a=clamp(p.life/p.max,0,1);
+      ctx.globalAlpha=a; ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r*(0.4+a*0.6),0,TAU); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    if(glow) ctx.globalCompositeOperation="source-over";
+
+    // nebula ultimate flash
+    if(Game.fxNebula>0){
+      const a=Game.fxNebula*0.5;
+      const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
+      g.addColorStop(0,`rgba(255,61,240,${a})`); g.addColorStop(0.5,`rgba(56,240,255,${a*0.6})`); g.addColorStop(1,"transparent");
+      ctx.globalCompositeOperation="lighter"; ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation="source-over";
+    }
+
+    // floating texts
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    for(const f of Pool.floats){ if(!f.alive) continue;
+      const a=clamp(f.life,0,1);
+      ctx.globalAlpha=a; ctx.font=`900 ${f.size}px ${getFont()}`;
+      ctx.fillStyle=f.color; ctx.shadowColor=f.color; ctx.shadowBlur=glow?12:0;
+      ctx.fillText(f.text,f.x,f.y);
+    }
+    ctx.shadowBlur=0; ctx.globalAlpha=1;
+  },
+
+  drawBlackHole(ctx,h,t,glow){
+    const x=h.dpalm.x, y=h.dpalm.y, md=Game.minDim;
+    const fist=h.gesture==="fist";
+    const rS=(h.gesture==="open"?CFG.R_SUCTION_OPEN:CFG.R_SUCTION)*md*(0.85+0.4*h.openAmt);
+    const core=CFG.R_CORE*md;
+    // suction field
+    if(!fist){
+      const g=ctx.createRadialGradient(x,y,core*0.6,x,y,rS);
+      g.addColorStop(0,"rgba(155,92,255,0.20)"); g.addColorStop(0.7,"rgba(56,240,255,0.06)"); g.addColorStop(1,"transparent");
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,rS,0,TAU); ctx.fill();
+      // dashed reach ring
+      ctx.globalAlpha=0.35; ctx.strokeStyle="rgba(120,180,255,0.6)"; ctx.lineWidth=1.5;
+      ctx.setLineDash([6,10]); ctx.lineDashOffset=-t*0.04; ctx.beginPath(); ctx.arc(x,y,rS,0,TAU); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha=1;
+    }
+    // accretion disk
+    const ang=t*0.004;
+    if(glow){ ctx.globalCompositeOperation="lighter"; }
+    for(let i=0;i<3;i++){
+      const rr=core*(1.5+i*0.55), a=ang+i*1.1;
+      const g=ctx.createConicGradient ? ctx.createConicGradient(a,x,y) : null;
+      ctx.lineWidth=core*0.28;
+      if(g){ g.addColorStop(0,"rgba(56,240,255,0)"); g.addColorStop(0.25, i%2?"#ff3df0":"#38f0ff");
+        g.addColorStop(0.5,"rgba(155,92,255,0)"); g.addColorStop(0.75,i%2?"#38f0ff":"#ff3df0"); g.addColorStop(1,"rgba(56,240,255,0)");
+        ctx.strokeStyle=g; }
+      else ctx.strokeStyle= i%2?"rgba(255,61,240,0.6)":"rgba(56,240,255,0.6)";
+      ctx.beginPath(); ctx.arc(x,y,rr,0,TAU); ctx.stroke();
+    }
+    if(glow){ ctx.globalCompositeOperation="source-over"; }
+    // event-horizon core
+    const cg=ctx.createRadialGradient(x,y,0,x,y,core);
+    cg.addColorStop(0,"#000"); cg.addColorStop(0.8,"#05030f"); cg.addColorStop(1,fist?"#ff3df0":"#9b5cff");
+    ctx.fillStyle=cg; ctx.beginPath(); ctx.arc(x,y,core,0,TAU); ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle=fist?"#ff5470":"#7fd9ff"; ctx.beginPath(); ctx.arc(x,y,core,0,TAU); ctx.stroke();
+    // fingertip dots
+    if(glow) ctx.globalCompositeOperation="lighter";
+    for(let f=0; f<5; f++){ ctx.fillStyle="rgba(56,240,255,0.8)"; ctx.beginPath();
+      ctx.arc(h.tips[f].x,h.tips[f].y, f===1?5:3, 0,TAU); ctx.fill(); }
+    if(glow) ctx.globalCompositeOperation="source-over";
+  },
+
+  drawStar(ctx,s,glow){
+    const a=s.spawn, R=s.r*a;
+    const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,R*2.2);
+    g.addColorStop(0,"#ffffff"); g.addColorStop(0.3,s.color); g.addColorStop(1,"transparent");
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y,R*2.2,0,TAU); ctx.fill();
+    // 4-point sparkle
+    ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.spin); ctx.fillStyle="#fff"; ctx.globalAlpha=a;
+    ctx.beginPath();
+    for(let i=0;i<4;i++){ const ang=i/4*TAU; const ox=Math.cos(ang)*R, oy=Math.sin(ang)*R;
+      const mx=Math.cos(ang+Math.PI/4)*R*0.3, my=Math.sin(ang+Math.PI/4)*R*0.3;
+      if(i===0)ctx.moveTo(ox,oy); else ctx.lineTo(ox,oy); ctx.lineTo(mx,my); }
+    ctx.closePath(); ctx.fill(); ctx.restore(); ctx.globalAlpha=1;
+  }
+};
+let _font=null;
+function getFont(){ if(_font) return _font; _font="Orbitron, system-ui, sans-serif"; return _font; }
+
+/* ====================== CAMERA OVERLAY (webcam window) =========== */
+const Overlay = {
+  cv:document.getElementById("camcanvas"), ctx:null,
+  init(){ this.ctx=this.cv.getContext("2d"); },
+  resize(){ const r=this.cv.getBoundingClientRect();
+    this.cv.width=Math.round(r.width); this.cv.height=Math.round(r.height); },
+  draw(result){
+    const c=this.ctx, W=this.cv.width, H=this.cv.height;
+    c.clearRect(0,0,W,H);
+    if(!result || !result.landmarks) return;
+    for(let i=0;i<result.landmarks.length;i++){
+      const lm=result.landmarks[i];
+      const X=j=>(1-lm[j].x)*W, Y=j=>lm[j].y*H;   // mirror to match video
+      // bones
+      c.strokeStyle="rgba(56,240,255,0.85)"; c.lineWidth=2;
+      for(const [a,b] of HAND_BONES){ c.beginPath(); c.moveTo(X(a),Y(a)); c.lineTo(X(b),Y(b)); c.stroke(); }
+      // joints
+      c.fillStyle="#ff3df0";
+      for(let j=0;j<lm.length;j++){ c.beginPath(); c.arc(X(j),Y(j),2.2,0,TAU); c.fill(); }
+      // palm center
+      const cx=(X(0)+X(5)+X(9)+X(13)+X(17))/5, cy=(Y(0)+Y(5)+Y(9)+Y(13)+Y(17))/5;
+      c.fillStyle="#ffd34d"; c.beginPath(); c.arc(cx,cy,5,0,TAU); c.fill();
+      c.strokeStyle="#ffd34d"; c.lineWidth=1.5; c.beginPath(); c.arc(cx,cy,9,0,TAU); c.stroke();
+      // fingertips
+      c.fillStyle="#5cff9b";
+      for(const tip of FINGER_TIPS){ c.beginPath(); c.arc(X(tip),Y(tip),3.2,0,TAU); c.fill(); }
+    }
+  }
+};
+
+/* ============================ PERFORMANCE ======================== */
+const Perf = {
+  tier:TIERS.high, tierName:"high",
+  frames:0, acc:0, fps:60, lowFor:0, highFor:0, lastTierChange:0,
+  sample(dt){
+    this.frames++; this.acc+=dt;
+    if(this.acc>=0.5){ this.fps=Math.round(this.frames/this.acc); this.frames=0; this.acc=0; this.adapt(); UI.perf(this.fps,this.tierName); }
+  },
+  adapt(){
+    const idx=TIER_ORDER.indexOf(this.tierName);
+    if(this.fps<42){ this.lowFor+=0.5; this.highFor=0; }
+    else if(this.fps>57){ this.highFor+=0.5; this.lowFor=0; }
+    else { this.lowFor=Math.max(0,this.lowFor-0.5); this.highFor=Math.max(0,this.highFor-0.5); }
+    if(this.lowFor>=1.5 && idx>0){ this.setTier(TIER_ORDER[idx-1]); this.lowFor=0; }
+    else if(this.highFor>=6 && idx<2){ this.setTier(TIER_ORDER[idx+1]); this.highFor=0; }
+  },
+  setTier(name){ if(name===this.tierName) return; this.tierName=name; this.tier=TIERS[name];
+    Render.resize(); }
+};
+
+/* ============================ AUDIO ============================== */
+const Audio = {
+  ctx:null, muted:false, master:null,
+  init(){ if(this.ctx) return;
+    try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)();
+      this.master=this.ctx.createGain(); this.master.gain.value=0.5; this.master.connect(this.ctx.destination);
+    }catch{} },
+  resume(){ if(this.ctx && this.ctx.state==="suspended") this.ctx.resume(); },
+  blip(freq,dur,type="sine",vol=0.3,slideTo=null){
+    if(!this.ctx||this.muted) return;
+    const t=this.ctx.currentTime, o=this.ctx.createOscillator(), g=this.ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t+dur+0.02);
+  },
+  pop(combo,slap){ const base=420+Math.min(combo,20)*28; this.blip(base,0.12,"triangle",slap?0.34:0.24,base*1.6); },
+  shock(){ this.blip(120,0.32,"sawtooth",0.3,40); },
+  ultimate(){ this.blip(180,0.7,"sawtooth",0.34,900); setTimeout(()=>this.blip(420,0.5,"triangle",0.3,1400),60); },
+  tick(){ this.blip(660,0.08,"square",0.2); },
+  go(){ this.blip(520,0.18,"square",0.28,880); },
+  toggle(){ this.muted=!this.muted; return this.muted; }
+};
+
+/* ============================ INPUT (fallback) =================== */
+/* Mouse / touch control when no camera/tracking — injects a synthetic hand. */
+const Pointer = {
+  enabled:false, slot:null, down:false,
+  enable(){ if(this.enabled) return; this.enabled=true;
+    this.slot=makeSlot(); this.slot.active=true;
+    const move=e=>{ const p=(e.touches?e.touches[0]:e); this.slot.palm.x=p.clientX; this.slot.palm.y=p.clientY;
+      this.slot.tips[1].x=p.clientX; this.slot.tips[1].y=p.clientY-4; };
+    window.addEventListener("mousemove",move); window.addEventListener("touchmove",e=>{move(e);e.preventDefault();},{passive:false});
+    const setG=()=>{ this.slot.gesture=this.down?"open":"neutral"; this.slot.openAmt=this.down?1:0.3; };
+    const dn=e=>{ this.down=true; setG(); const p=(e.touches?e.touches[0]:e); this.slot.palm.x=p.clientX; this.slot.palm.y=p.clientY; };
+    const up=()=>{ this.down=false; setG(); };
+    window.addEventListener("mousedown",dn); window.addEventListener("mouseup",up);
+    window.addEventListener("touchstart",e=>{dn(e);},{passive:true}); window.addEventListener("touchend",up);
+    window.addEventListener("dblclick",()=>{ // double-click = shockwave
+      if(Game.state==="play"&&Game.shockCd<=0){ Game.shockCd=CFG.SHOCK_COOLDOWN; Game.doShockwave(this.slot.dpalm.x,this.slot.dpalm.y); } });
+    window.addEventListener("keydown",e=>{ if(e.code==="KeyF"&&Game.state==="play"&&Game.shockCd<=0){
+      Game.shockCd=CFG.SHOCK_COOLDOWN; Game.doShockwave(this.slot.dpalm.x,this.slot.dpalm.y); } });
+  },
+  // mimic Gesture.step for the synthetic hand
+  step(dt){
+    if(!this.enabled||!this.slot) return;
+    const s=this.slot, dp=s.dpalm, px=dp.x,py=dp.y;
+    if(dp.x===0&&dp.y===0){ dp.x=s.palm.x; dp.y=s.palm.y; }
+    dp.x=damp(dp.x,s.palm.x,0.03,dt); dp.y=damp(dp.y,s.palm.y,0.03,dt);
+    dp.vx=(dp.x-px)/Math.max(dt,1e-3); dp.vy=(dp.y-py)/Math.max(dt,1e-3);
+    Gesture.hands.length=0; Gesture.hands.push(s); Gesture.anyActive=true;
+  }
+};
+
+/* ============================ UI ================================= */
+const UI = {
+  el:{},
+  init(){
+    const $=id=>document.getElementById(id);
+    this.el={
+      score:$("score").querySelector(".value"), timer:$("timer"), timerV:$("timer").querySelector(".value"),
+      combo:$("combo"), comboV:$("combo").querySelector(".value"),
+      energy:$("energy-fill"), energyWrap:$("energy-wrap"),
+      hint:$("hint"), hintBig:$("hint").querySelector(".big"), hintSub:$("hint").querySelector(".sub"),
+      countdown:$("countdown"), cdB:$("countdown").querySelector("b"),
+      perf:$("perf"), perfV:$("perf").querySelector("b"), perfTier:$("perf-tier"),
+      cam:$("cam"), gtag:$("gtag"), fbmsg:$("fbmsg"),
+      sLoading:$("screen-loading"), sStart:$("screen-start"), sPause:$("screen-pause"), sOver:$("screen-over"),
+      loadingNote:$("loading-note"), startNote:$("start-note"),
+      finalScore:$("final-score"), finalCombo:$("final-combo"), bestNote:$("best-note"),
+      btnMute:$("btn-mute"), btnPause:$("btn-pause"),
+    };
+    // buttons
+    $("btn-start").onclick=()=>App.begin();
+    $("btn-replay").onclick=()=>Game.startCountdown();
+    $("btn-resume").onclick=()=>App.resume();
+    $("btn-restart-p").onclick=()=>{ App.resume(); Game.startCountdown(); };
+    this.el.btnPause.onclick=()=>App.togglePause();
+    this.el.btnMute.onclick=()=>{ const m=Audio.toggle(); this.el.btnMute.textContent=m?"🔇":"🔊"; };
+    window.addEventListener("keydown",e=>{
+      if(e.code==="Space"||e.code==="KeyP"){ e.preventDefault(); App.togglePause(); }
+      else if(e.code==="KeyM"){ const m=Audio.toggle(); this.el.btnMute.textContent=m?"🔇":"🔊"; }
+      else if(e.code==="KeyR"&&Game.state==="over"){ Game.startCountdown(); }
+    });
+  },
+  showScreen(name){
+    for(const s of ["sLoading","sStart","sPause","sOver"]) this.el[s].classList.remove("show");
+    if(name) this.el[name].classList.add("show");
+  },
+  setScore(v){ this.el.score.textContent=v; },
+  flashScore(){ this.setScore(Game.score); },
+  setCombo(c){ this.el.comboV.textContent="x"+c; this.el.combo.classList.add("pop");
+    setTimeout(()=>this.el.combo.classList.remove("pop"),90); },
+  setTime(t){ this.el.timerV.textContent=Math.ceil(t); this.el.timer.classList.toggle("low",t<=10); },
+  setEnergy(e){ this.el.energy.style.width=(e/CFG.ENERGY_MAX*100)+"%"; },
+  energyReady(r){ this.el.energyWrap.classList.toggle("ready",r); },
+  perf(fps,tier){ this.el.perfV.textContent=fps; this.el.perfTier.textContent=tier.toUpperCase();
+    this.el.perf.classList.toggle("warn",fps<45&&fps>=35); this.el.perf.classList.toggle("bad",fps<35); },
+  hint(big,sub){ if(!big){ this.el.hint.classList.remove("show"); return; }
+    this.el.hintBig.textContent=big; this.el.hintSub.textContent=sub||""; this.el.hint.classList.add("show"); },
+  countdown(n){ if(n==null){ this.el.countdown.classList.remove("show"); return; }
+    this.el.cdB.textContent=n; this.el.countdown.classList.add("show");
+    this.el.cdB.style.animation="none"; void this.el.cdB.offsetWidth; this.el.cdB.style.animation=""; },
+  gesture(label){ this.el.gtag.textContent=label; },
+  camState(s){ this.el.cam.classList.toggle("tracking",s==="track"); this.el.cam.classList.toggle("lost",s==="lost"); },
+  fallback(msg){ this.el.cam.classList.add("fallback"); this.el.fbmsg.innerHTML=msg; },
+  gameOver(score,combo,best){ this.el.finalScore.textContent=score; this.el.finalCombo.textContent="x"+combo;
+    this.el.bestNote.textContent = score>=best ? "🏆 新紀錄！" : ("最高紀錄："+best);
+    this.showScreen("sOver"); },
+};
+
+/* ============================ APP / MAIN ======================== */
+const App = {
+  last:0, raf:0, useTracking:false, started:false,
+
+  async init(){
+    Render.init(); Overlay.init(); UI.init(); Pool.initPool();
+    Render.resize(); Overlay.resize();
+    window.addEventListener("resize",()=>{ Render.resize(); Overlay.resize(); });
+    document.addEventListener("visibilitychange",()=>{ if(document.hidden && Game.state==="play") App.togglePause(true); });
+
+    UI.showScreen("sLoading");
+    // preload tracking model while showing loader
+    try{
+      await Tracker.load();
+      UI.el.loadingNote.textContent="準備就緒！";
+    }catch(e){
+      console.warn("model load failed",e);
+      UI.el.startNote.innerHTML="⚠ 手部追蹤載入失敗，將以滑鼠 / 觸控模式遊玩。";
+    }
+    Game.state="start"; UI.showScreen("sStart");
+    // start render loop now (renders idle background)
+    this.last=performance.now(); this.loop(this.last);
+  },
+
+  // user pressed Start — request camera (needs gesture) + audio
+  async begin(){
+    if(this.started) return; this.started=true;
+    Audio.init(); Audio.resume();
+    UI.showScreen(null);
+    if(Tracker.ready){
+      try{
+        await Camera.start();
+        this.useTracking=true; UI.gesture("尋找手部…");
+      }catch(e){
+        console.warn("camera failed",e); this.useTracking=false;
+        UI.fallback("攝影機無法使用<br>請允許權限或改用<br>滑鼠 / 觸控遊玩");
+        Pointer.enable();
+      }
+    } else {
+      this.useTracking=false;
+      UI.fallback("追蹤未就緒<br>使用滑鼠 / 觸控<br>移動＝黑洞・按住＝吸力<br>雙擊／F＝衝擊波");
+      Pointer.enable();
+    }
+    Game.startCountdown();
+  },
+
+  togglePause(auto){
+    if(Game.state==="play"){ Game.state="pause"; UI.showScreen("sPause"); if(Audio.ctx)Audio.ctx.suspend(); }
+    else if(Game.state==="pause" && !auto){ this.resume(); }
+  },
+  resume(){ if(Game.state==="pause"){ Game.state="play"; UI.showScreen(null); Audio.resume(); } },
+
+  loop(now){
+    this.raf=requestAnimationFrame(t=>this.loop(t));
+    let dt=(now-this.last)/1000; this.last=now;
+    if(dt>0.05) dt=0.05;            // clamp huge gaps (tab switch) so physics stays stable
+    Perf.sample(dt);
+
+    // ---- tracking (throttled) ----
+    if(this.useTracking && (Game.state==="play"||Game.state==="countdown")){
+      const res=Tracker.detect(now);
+      if(res){ Gesture.update(res, now/1000, Game.W, Game.H); Overlay.draw(res); this.updateTrackUI(); }
+      Gesture.step(dt);
+    } else if(Pointer.enabled){
+      Pointer.step(dt);
+    }
+
+    // ---- game logic ----
+    Game.update(dt);
+
+    // ---- HUD (cheap, every frame) ----
+    if(Game.state==="play"||Game.state==="countdown"){
+      UI.setScore(Game.score); UI.setTime(Game.time); UI.setEnergy(Game.energy);
+    }
+
+    // ---- render ----
+    Render.frame(now);
+  },
+
+  updateTrackUI(){
+    const hands=Gesture.hands;
+    if(hands.length===0){ UI.camState("lost"); UI.gesture("—");
+      if(Game.state==="play") UI.hint("把手放回鏡頭裡","掌心對準畫面，慢慢移動"); return; }
+    UI.camState("track"); UI.hint(null);
+    const names={open:"張手・強吸",fist:"握拳・衝擊",neutral:"掌心・吸引",none:"—"};
+    let label = hands.map(h=>names[h.gesture]).join(" + ");
+    if(hands.length>=2 && Game.energy>=CFG.ENERGY_MAX) label="🙌 雙手大招就緒！";
+    UI.gesture(label);
+  }
+};
+
+App.init();
+</script>
+</body>
+</html>
