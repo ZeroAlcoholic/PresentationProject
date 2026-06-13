@@ -235,7 +235,7 @@
       bottom: max(22px, env(safe-area-inset-bottom));
       width: min(720px, calc(100% - 220px));
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       transform: translateX(-50%);
       pointer-events: none;
       transition: opacity .4s ease;
@@ -272,6 +272,61 @@
     .gesture:nth-child(1) strong { color: #80f8ff; }
     .gesture:nth-child(2) strong { color: #ff78c2; }
     .gesture:nth-child(3) strong { color: #ffe4a2; }
+    .gesture:nth-child(4) strong { color: #a7ffcb; }
+
+    .spellbook {
+      position: fixed;
+      z-index: 4;
+      left: max(26px, env(safe-area-inset-left));
+      top: 112px;
+      width: 210px;
+      padding-left: 14px;
+      border-left: 1px solid rgba(255, 209, 102, .26);
+      opacity: 0;
+      transform: translateX(-12px);
+      transition: .6s ease .15s;
+      pointer-events: none;
+    }
+    body.started .spellbook { opacity: .78; transform: none; }
+    .spellbook-title {
+      margin: 0 0 10px;
+      color: rgba(255, 226, 164, .65);
+      font-family: Georgia, "Noto Serif TC", serif;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: .22em;
+    }
+    .spell-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px 11px;
+    }
+    .spell {
+      color: rgba(224, 220, 235, .48);
+      font-size: 9px;
+      line-height: 1.45;
+      letter-spacing: .04em;
+      transition: .2s ease;
+    }
+    .spell b {
+      display: block;
+      color: rgba(255,255,255,.72);
+      font-weight: 700;
+    }
+    .spellbook[data-active="POINT"] [data-spell="POINT"],
+    .spellbook[data-active="PINCH"] [data-spell="PINCH"],
+    .spellbook[data-active="OPEN"] [data-spell="OPEN"],
+    .spellbook[data-active="FIST"] [data-spell="FIST"],
+    .spellbook[data-active="THUMB_UP"] [data-spell="THUMB_UP"],
+    .spellbook[data-active="THUMB_DOWN"] [data-spell="THUMB_DOWN"],
+    .spellbook[data-active="VICTORY"] [data-spell="VICTORY"],
+    .spellbook[data-active="ILY"] [data-spell="ILY"],
+    .spellbook[data-active="THREE"] [data-spell="THREE"],
+    .spellbook[data-active="HORNS"] [data-spell="HORNS"] {
+      color: var(--cyan);
+      text-shadow: 0 0 12px rgba(69,246,255,.6);
+      transform: translateX(3px);
+    }
 
     .mode {
       min-width: 150px;
@@ -441,7 +496,7 @@
       .gestures {
         bottom: max(18px, env(safe-area-inset-bottom));
         width: calc(100% - 20px);
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
       .gesture { min-width: 0; padding: 0 5px; }
       .gesture strong { font-size: 10px; line-height: 1.45; letter-spacing: 0; white-space: normal; overflow-wrap: anywhere; }
@@ -458,6 +513,7 @@
       .preview-bottom { bottom: 7px; left: 8px; right: 8px; }
       .quality-badge, .preview-fps, .hand-count { display: none; }
       .gesture-readout { font-size: 12px; }
+      .spellbook { display: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -520,10 +576,27 @@
     </section>
 
     <div class="gestures" aria-hidden="true">
-      <div class="gesture"><strong>指尖・畫出光軌</strong><span>伸出食指，在空中留下魔法</span></div>
-      <div class="gesture"><strong>張掌・星火／握拳・暫停</strong><span>張掌爆發，握拳清除並暫停</span></div>
-      <div class="gesture"><strong>雙手・釋放日蝕</strong><span>雙手靠近，觸發日蝕大招</span></div>
+      <div class="gesture"><strong>指尖・光軌／畫圓・傳送門</strong><span>食指移動繪光，畫圓召喚門</span></div>
+      <div class="gesture"><strong>捏合・靈珠／揮動・風刃</strong><span>拇指食指控制能量，快速揮手</span></div>
+      <div class="gesture"><strong>姿勢・七種咒語</strong><span>讚、倒讚、勝利、三指與愛心手勢</span></div>
+      <div class="gesture"><strong>雙手・日蝕／光橋</strong><span>靠近蓄力，張掌連接星座</span></div>
     </div>
+
+    <aside class="spellbook" id="spellbook" data-active="">
+      <h2 class="spellbook-title">手勢圖鑑・GESTURE GRIMOIRE</h2>
+      <div class="spell-list">
+        <span class="spell" data-spell="POINT"><b>食指</b>霓虹光軌</span>
+        <span class="spell" data-spell="PINCH"><b>捏合</b>引力靈珠</span>
+        <span class="spell" data-spell="OPEN"><b>張掌</b>粒子星火</span>
+        <span class="spell" data-spell="FIST"><b>握拳</b>封印清除</span>
+        <span class="spell" data-spell="THUMB_UP"><b>讚</b>太陽軌道</span>
+        <span class="spell" data-spell="THUMB_DOWN"><b>倒讚</b>重力深淵</span>
+        <span class="spell" data-spell="VICTORY"><b>勝利</b>稜鏡雷射</span>
+        <span class="spell" data-spell="ILY"><b>I Love You</b>極光幕</span>
+        <span class="spell" data-spell="THREE"><b>三指</b>三角法陣</span>
+        <span class="spell" data-spell="HORNS"><b>角手勢</b>閃電風暴</span>
+      </div>
+    </aside>
 
     <aside class="camera-preview" id="cameraPreview" aria-label="攝影機手部追蹤預覽">
       <video id="camera" autoplay muted playsinline aria-hidden="true"></video>
@@ -558,6 +631,7 @@
     const previewFps = document.getElementById("previewFps");
     const previewFallback = document.getElementById("previewFallback");
     const qualityBadge = document.getElementById("qualityBadge");
+    const spellbook = document.getElementById("spellbook");
     const startButton = document.getElementById("startButton");
     const clearButton = document.getElementById("clearButton");
     const soundButton = document.getElementById("soundButton");
@@ -573,6 +647,7 @@
     const sparks = [];
     const sparkPool = [];
     const rings = [];
+    const glyphs = [];
     const stars = [];
     const pointers = new Map();
     const HAND_CONNECTIONS = [
@@ -583,11 +658,12 @@
       [13,17],[17,18],[18,19],[19,20],[0,17]
     ];
     let W = innerWidth, H = innerHeight, dpr = 1;
-    let handLandmarker = null;
+    let gestureRecognizer = null;
     let lastVideoTime = -1;
     let lastDetectAt = 0;
     let latestHands = [];
     let latestGestures = [];
+    let latestOfficialGestures = [];
     let cameraRunning = false;
     let modelReady = false;
     let drawingPaused = false;
@@ -596,7 +672,11 @@
     let lastPalmBurst = [0, 0];
     let fistSince = [0, 0];
     let fistTriggered = [false, false];
-    let lastUltimate = 0;
+    let gestureStability = [{ name: "", count: 0, stable: "" }, { name: "", count: 0, stable: "" }];
+    let handHistory = [[], []];
+    let lastPinchPulse = [0, 0];
+    const effectCooldowns = new Map();
+    let lastUltimate = -Infinity;
     let ultimateCharge = 0;
     let lastFrame = performance.now();
     let fps = 60;
@@ -649,9 +729,11 @@
     }
 
     function colorAt(t, alpha = 1) {
-      const a = palette[Math.floor(t) % palette.length];
-      const b = palette[(Math.floor(t) + 1) % palette.length];
-      const f = t % 1;
+      const normalized = ((t % palette.length) + palette.length) % palette.length;
+      const index = Math.floor(normalized);
+      const a = palette[index];
+      const b = palette[(index + 1) % palette.length];
+      const f = normalized - index;
       return `rgba(${a[0] + (b[0] - a[0]) * f},${a[1] + (b[1] - a[1]) * f},${a[2] + (b[2] - a[2]) * f},${alpha})`;
     }
 
@@ -733,6 +815,97 @@
       showToast("✦ 日蝕共鳴 ✦");
     }
 
+    function triggerOnce(key, cooldown, action) {
+      const now = performance.now();
+      const last = effectCooldowns.get(key);
+      if (last !== undefined && now - last < cooldown) return false;
+      effectCooldowns.set(key, now);
+      action();
+      return true;
+    }
+
+    function addGlyph(type, x, y, options = {}) {
+      if (glyphs.length >= (qualityLevel === 0 ? 16 : qualityLevel === 1 ? 28 : 42)) glyphs.shift();
+      glyphs.push({
+        type, x, y,
+        life: options.life ?? 1,
+        size: options.size ?? 70,
+        hue: options.hue ?? 0,
+        rotation: options.rotation ?? 0,
+        speed: options.speed ?? .02,
+        vx: options.vx ?? 0,
+        vy: options.vy ?? 0,
+        x2: options.x2 ?? x,
+        y2: options.y2 ?? y,
+        phase: Math.random() * TAU
+      });
+    }
+
+    function castPoseSpell(gesture, point, handIndex) {
+      const key = `${gesture}-${handIndex}`;
+      const spells = {
+        THUMB_UP: () => {
+          addGlyph("SUN", point.x, point.y, { size: 86, life: 1.3, hue: 3 });
+          burst(point.x, point.y, .7, 3);
+          showToast("日輪升起・太陽軌道");
+          tone(520, .35, "sine");
+        },
+        THUMB_DOWN: () => {
+          addGlyph("VORTEX", point.x, point.y, { size: 105, life: 1.35, hue: 1.2, speed: -.035 });
+          showToast("重力反轉・深淵展開");
+          tone(92, .55, "sawtooth");
+        },
+        VICTORY: () => {
+          addGlyph("PRISM", point.x, point.y, { size: 115, life: 1.15, hue: .2 });
+          burst(point.x, point.y, .55, .5);
+          showToast("勝利稜鏡・光束分裂");
+          tone(660, .25, "triangle");
+        },
+        ILY: () => {
+          addGlyph("AURORA", point.x, point.y, { size: 150, life: 1.45, hue: 1.6 });
+          showToast("極光幕・愛與共鳴");
+          tone(390, .45, "sine");
+        },
+        THREE: () => {
+          addGlyph("TRIANGLE", point.x, point.y, { size: 105, life: 1.25, hue: 2.5 });
+          burst(point.x, point.y, .45, 2.5);
+          showToast("三相法陣・結界生成");
+          tone(330, .32, "triangle");
+        },
+        HORNS: () => {
+          addGlyph("LIGHTNING", point.x, point.y, { size: 150, life: 1.05, hue: .05 });
+          burst(point.x, point.y, .65, .05);
+          showToast("雷角風暴・電弧降臨");
+          tone(120, .4, "square");
+        }
+      };
+      if (spells[gesture]) triggerOnce(key, 1150, spells[gesture]);
+    }
+
+    function castMotionSpell(type, point, vector, handIndex) {
+      triggerOnce(`${type}-${handIndex}`, type === "PORTAL" ? 1800 : 850, () => {
+        if (type === "PORTAL") {
+          addGlyph("PORTAL", point.x, point.y, { size: 125, life: 1.5, hue: 1 });
+          burst(point.x, point.y, .75, 1);
+          modeName.textContent = "畫圓・傳送門";
+          gestureReadout.textContent = "畫圓・傳送門";
+          showToast("圓環完成・傳送門開啟");
+          tone(210, .65, "sine");
+        } else {
+          const speed = 10;
+          addGlyph("WAVE", point.x, point.y, {
+            size: 130, life: 1.05, hue: vector.x > 0 ? 0 : 2,
+            rotation: Math.atan2(vector.y, vector.x),
+            vx: vector.x * speed, vy: vector.y * speed
+          });
+          modeName.textContent = "揮動・風刃";
+          gestureReadout.textContent = "揮動・風刃";
+          showToast(Math.abs(vector.x) > Math.abs(vector.y) ? "橫向風刃" : vector.y < 0 ? "昇空氣流" : "墜落衝擊");
+          tone(280, .22, "sawtooth");
+        }
+      });
+    }
+
     function extendedFingerCount(hand) {
       const wrist = hand[0];
       const tips = [4, 8, 12, 16, 20];
@@ -746,17 +919,38 @@
       return extended;
     }
 
-    function classifyGesture(hand) {
+    function classifyGesture(hand, official = null) {
       const count = extendedFingerCount(hand);
       const wrist = hand[0];
+      const palmScale = Math.max(.001, Math.hypot(hand[9].x - wrist.x, hand[9].y - wrist.y));
+      const pinchDistance = Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y) / palmScale;
       const indexExtended = Math.hypot(hand[8].x - wrist.x, hand[8].y - wrist.y) >
         Math.hypot(hand[5].x - wrist.x, hand[5].y - wrist.y) * 1.48;
+      const middleExtended = Math.hypot(hand[12].x - wrist.x, hand[12].y - wrist.y) >
+        Math.hypot(hand[9].x - wrist.x, hand[9].y - wrist.y) * 1.4;
+      const ringExtended = Math.hypot(hand[16].x - wrist.x, hand[16].y - wrist.y) >
+        Math.hypot(hand[13].x - wrist.x, hand[13].y - wrist.y) * 1.4;
+      const pinkyExtended = Math.hypot(hand[20].x - wrist.x, hand[20].y - wrist.y) >
+        Math.hypot(hand[17].x - wrist.x, hand[17].y - wrist.y) * 1.4;
       const otherTips = [12, 16, 20];
       const otherBases = [9, 13, 17];
       const othersFolded = otherTips.every((tip, i) =>
         Math.hypot(hand[tip].x - wrist.x, hand[tip].y - wrist.y) <
         Math.hypot(hand[otherBases[i]].x - wrist.x, hand[otherBases[i]].y - wrist.y) * 1.36
       );
+      const officialMap = {
+        Closed_Fist: "FIST",
+        Open_Palm: "OPEN",
+        Pointing_Up: "POINT",
+        Thumb_Up: "THUMB_UP",
+        Thumb_Down: "THUMB_DOWN",
+        Victory: "VICTORY",
+        ILoveYou: "ILY"
+      };
+      if (official?.score >= .58 && officialMap[official.name]) return officialMap[official.name];
+      if (pinchDistance < .42) return "PINCH";
+      if (indexExtended && !middleExtended && !ringExtended && pinkyExtended) return "HORNS";
+      if (count === 3) return "THREE";
       if (count >= 4) return "OPEN";
       if (count <= 1 && !indexExtended) return "FIST";
       if (indexExtended && othersFolded) return "POINT";
@@ -768,22 +962,106 @@
         OPEN: "張掌・星火",
         FIST: "握拳・暫停",
         POINT: "指尖・光軌",
+        PINCH: "捏合・靈珠",
+        THUMB_UP: "讚・太陽軌道",
+        THUMB_DOWN: "倒讚・重力深淵",
+        VICTORY: "勝利・稜鏡",
+        ILY: "I Love You・極光",
+        THREE: "三指・法陣",
+        HORNS: "角手勢・雷暴",
+        SWIPE: "揮動・風刃",
+        PORTAL: "畫圓・傳送門",
         MOVE: "手掌移動",
         DUAL: "雙手・日蝕"
       }[gesture] || "尋找手勢";
+    }
+
+    function stabilizeGesture(handIndex, candidate) {
+      const state = gestureStability[handIndex];
+      if (state.name === candidate) {
+        state.count++;
+      } else {
+        state.name = candidate;
+        state.count = 1;
+      }
+      if (["POINT", "PINCH", "MOVE"].includes(candidate) || state.count >= 2 || !state.stable) {
+        state.stable = candidate;
+      }
+      return state.stable;
     }
 
     function mapPoint(p) {
       return { x: (1 - p.x) * W, y: p.y * H };
     }
 
+    function trackMotion(hand, gesture, handIndex, now) {
+      const source = gesture === "PINCH"
+        ? { x: (hand[4].x + hand[8].x) / 2, y: (hand[4].y + hand[8].y) / 2 }
+        : gesture === "POINT" ? hand[8] : hand[9];
+      const history = handHistory[handIndex];
+      history.push({ x: 1 - source.x, y: source.y, t: now });
+      while (history.length && now - history[0].t > 850) history.shift();
+      if (history.length < 5) return;
+
+      const old = history.find(point => now - point.t > 190);
+      const current = history[history.length - 1];
+      if (old && gesture !== "POINT" && gesture !== "PINCH") {
+        const dx = current.x - old.x;
+        const dy = current.y - old.y;
+        const distance = Math.hypot(dx, dy);
+        let path = 0;
+        for (let i = 1; i < history.length; i++) {
+          path += Math.hypot(history[i].x - history[i - 1].x, history[i].y - history[i - 1].y);
+        }
+        if (distance > .2 && distance / Math.max(path, .001) > .7) {
+          const point = { x: current.x * W, y: current.y * H };
+          castMotionSpell("SWIPE", point, { x: dx / distance, y: dy / distance }, handIndex);
+          history.length = 0;
+          return;
+        }
+      }
+
+      if ((gesture === "POINT" || gesture === "PINCH") && history.length >= 12 && now - history[0].t > 480) {
+        const xs = history.map(point => point.x);
+        const ys = history.map(point => point.y);
+        const width = Math.max(...xs) - Math.min(...xs);
+        const height = Math.max(...ys) - Math.min(...ys);
+        const start = history[0];
+        const end = history[history.length - 1];
+        const closed = Math.hypot(end.x - start.x, end.y - start.y);
+        const cx = xs.reduce((sum, value) => sum + value, 0) / xs.length;
+        const cy = ys.reduce((sum, value) => sum + value, 0) / ys.length;
+        let turn = 0;
+        let previousAngle = Math.atan2(history[0].y - cy, history[0].x - cx);
+        for (let i = 1; i < history.length; i++) {
+          const angle = Math.atan2(history[i].y - cy, history[i].x - cx);
+          let delta = angle - previousAngle;
+          if (delta > Math.PI) delta -= TAU;
+          if (delta < -Math.PI) delta += TAU;
+          turn += delta;
+          previousAngle = angle;
+        }
+        if (width > .13 && height > .13 && closed < .14 && Math.abs(turn) > 4.5) {
+          castMotionSpell("PORTAL", { x: cx * W, y: cy * H }, { x: 0, y: 0 }, handIndex);
+          history.length = 0;
+        }
+      }
+    }
+
     function processHands(results, now) {
       const hands = results?.landmarks || [];
       latestHands = hands.slice(0, 2);
-      latestGestures = latestHands.map(classifyGesture);
+      latestOfficialGestures = latestHands.map((_, index) => {
+        const category = results?.gestures?.[index]?.[0];
+        return category ? { name: category.categoryName, score: category.score } : null;
+      });
+      latestGestures = latestHands.map((hand, index) =>
+        stabilizeGesture(index, classifyGesture(hand, latestOfficialGestures[index]))
+      );
       handCount.textContent = `${latestHands.length} HAND${latestHands.length === 1 ? "" : "S"}`;
       cameraPreview.classList.toggle("tracking", latestHands.length > 0);
       trackingText.textContent = latestHands.length ? "追蹤中" : "尋找手部";
+      spellbook.dataset.active = latestGestures[0] || "";
 
       if (!hands.length) {
         modeName.textContent = "尋找雙手";
@@ -791,6 +1069,9 @@
         drawingPaused = false;
         fistSince = [0, 0];
         fistTriggered = [false, false];
+        gestureStability = [{ name: "", count: 0, stable: "" }, { name: "", count: 0, stable: "" }];
+        handHistory = [[], []];
+        spellbook.dataset.active = "";
         ultimateCharge = Math.max(0, ultimateCharge - .04);
         return;
       }
@@ -801,9 +1082,22 @@
         const palm = mapPoint(hand[9]);
         const gesture = latestGestures[i];
         centers.push(palm);
+        trackMotion(hand, gesture, i, now);
         if (gesture === "POINT" || gesture === "MOVE") addTrail(tip.x, tip.y, i, gesture === "POINT" ? 1.25 : .65);
 
-        if (gesture === "OPEN" && now - lastPalmBurst[i] > 850) {
+        if (gesture === "PINCH") {
+          const pinch = mapPoint({
+            x: (hand[4].x + hand[8].x) / 2,
+            y: (hand[4].y + hand[8].y) / 2
+          });
+          const pinchDistance = Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y);
+          addTrail(pinch.x, pinch.y, i, .5 + Math.min(1.4, pinchDistance * 8));
+          if (now - lastPinchPulse[i] > 110) {
+            lastPinchPulse[i] = now;
+            addGlyph("ORB", pinch.x, pinch.y, { size: 26 + pinchDistance * 180, life: .32, hue: i ? 2 : 0 });
+          }
+          modeName.textContent = "捏合・靈珠塑形";
+        } else if (gesture === "OPEN" && now - lastPalmBurst[i] > 850) {
           lastPalmBurst[i] = now;
           burst(palm.x, palm.y, 1, i ? 2.2 : .1);
           modeName.textContent = "星火・綻放";
@@ -823,6 +1117,10 @@
           if (!latestGestures.includes("FIST")) drawingPaused = false;
           if (gesture === "POINT") modeName.textContent = "光軌・編織";
         }
+        if (["THUMB_UP", "THUMB_DOWN", "VICTORY", "ILY", "THREE", "HORNS"].includes(gesture)) {
+          castPoseSpell(gesture, palm, i);
+          modeName.textContent = gestureLabel(gesture);
+        }
       });
 
       if (centers.length === 2) {
@@ -837,6 +1135,20 @@
           modeName.textContent = `日蝕蓄力 ${Math.round(ultimateCharge * 100)}%`;
           gestureReadout.textContent = "雙手・日蝕";
           if (ultimateCharge >= 1) ultimate(x, y);
+        } else if (latestGestures.every(gesture => gesture === "OPEN")) {
+          if (glyphs.length < 42) {
+            addGlyph("BRIDGE", centers[0].x, centers[0].y, {
+              x2: centers[1].x, y2: centers[1].y, size: distance, life: .18, hue: 1.8
+            });
+          }
+          modeName.textContent = "雙掌・星座光橋";
+          gestureReadout.textContent = "雙掌・星座光橋";
+        } else if (latestGestures.every(gesture => gesture === "PINCH")) {
+          addGlyph("BEAM", centers[0].x, centers[0].y, {
+            x2: centers[1].x, y2: centers[1].y, size: distance, life: .18, hue: .4
+          });
+          modeName.textContent = "雙捏合・能量弦";
+          gestureReadout.textContent = "雙捏合・能量弦";
         } else {
           ultimateCharge = Math.max(0, ultimateCharge - .025);
           gestureReadout.textContent = latestGestures.map(gestureLabel).join(" ＋ ");
@@ -944,7 +1256,7 @@
         );
         const options = {
           baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
             delegate: "GPU"
           },
           runningMode: "VIDEO",
@@ -954,10 +1266,10 @@
           minTrackingConfidence: .45
         };
         try {
-          handLandmarker = await vision.HandLandmarker.createFromOptions(fileset, options);
+          gestureRecognizer = await vision.GestureRecognizer.createFromOptions(fileset, options);
         } catch {
           options.baseOptions.delegate = "CPU";
-          handLandmarker = await vision.HandLandmarker.createFromOptions(fileset, options);
+          gestureRecognizer = await vision.GestureRecognizer.createFromOptions(fileset, options);
         }
         modelReady = true;
         status.classList.add("live");
@@ -1046,6 +1358,8 @@
       qualityBadge.textContent = `效果：${QUALITY[qualityLevel].name}`;
       while (sparks.length > QUALITY[qualityLevel].particles) sparkPool.push(sparks.pop());
       if (trails.length > QUALITY[qualityLevel].trails) trails.splice(0, trails.length - QUALITY[qualityLevel].trails);
+      const glyphLimit = qualityLevel === 0 ? 16 : qualityLevel === 1 ? 28 : 42;
+      if (glyphs.length > glyphLimit) glyphs.splice(0, glyphs.length - glyphLimit);
       resize();
     }
 
@@ -1053,7 +1367,7 @@
       if (fps < 38) {
         lowFpsSeconds++;
         highFpsSeconds = 0;
-      } else if (fps > 54) {
+      } else if (fps > 57 && sparks.length < QUALITY[qualityLevel].particles * .25 && glyphs.length < 4) {
         highFpsSeconds++;
         lowFpsSeconds = 0;
       } else {
@@ -1064,10 +1378,160 @@
         setQuality(qualityLevel - 1);
         lowFpsSeconds = 0;
         showToast(`已自動切換${QUALITY[qualityLevel].name}效果，優先維持即時反應`);
-      } else if (highFpsSeconds >= 8 && qualityLevel < 2) {
+      } else if (highFpsSeconds >= 12 && qualityLevel < 2) {
         setQuality(qualityLevel + 1);
         highFpsSeconds = 0;
       }
+    }
+
+    function drawGlyphs(time) {
+      ctx.globalCompositeOperation = "lighter";
+      let write = 0;
+      for (let i = 0; i < glyphs.length; i++) {
+        const g = glyphs[i];
+        g.life -= g.type === "BRIDGE" || g.type === "BEAM" ? .07 : .014;
+        if (g.life <= 0) continue;
+        glyphs[write++] = g;
+        g.x += g.vx;
+        g.y += g.vy;
+        g.rotation += g.speed;
+        const alpha = Math.min(1, g.life);
+        const color = colorAt(g.hue, alpha * .8);
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        ctx.rotate(g.rotation);
+        ctx.strokeStyle = color;
+        ctx.fillStyle = colorAt(g.hue + .22, alpha * .14);
+        ctx.lineWidth = qualityLevel === 0 ? 1.5 : 2.5;
+        ctx.shadowColor = colorAt(g.hue, 1);
+        ctx.shadowBlur = QUALITY[qualityLevel].glow + 8;
+
+        if (g.type === "ORB") {
+          ctx.beginPath();
+          ctx.arc(0, 0, g.size * (.72 + Math.sin(time * .012 + g.phase) * .12), 0, TAU);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, 0, g.size * 1.35, time * .003, time * .003 + Math.PI * 1.3);
+          ctx.stroke();
+        } else if (g.type === "SUN") {
+          ctx.beginPath();
+          ctx.arc(0, 0, g.size * .28, 0, TAU);
+          ctx.fill();
+          ctx.stroke();
+          for (let ray = 0; ray < 12; ray++) {
+            const angle = ray / 12 * TAU;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(angle) * g.size * .42, Math.sin(angle) * g.size * .42);
+            ctx.lineTo(Math.cos(angle) * g.size * (.72 + Math.sin(time * .006 + ray) * .08), Math.sin(angle) * g.size * (.72 + Math.sin(time * .006 + ray) * .08));
+            ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.ellipse(0, 0, g.size, g.size * .34, time * .001, 0, TAU);
+          ctx.stroke();
+        } else if (g.type === "VORTEX") {
+          ctx.fillStyle = `rgba(0,0,0,${alpha * .7})`;
+          ctx.beginPath(); ctx.arc(0, 0, g.size * .22, 0, TAU); ctx.fill();
+          for (let arm = 0; arm < 3; arm++) {
+            ctx.beginPath();
+            for (let step = 0; step < 32; step++) {
+              const radius = step / 31 * g.size;
+              const angle = arm / 3 * TAU + step * .28;
+              const x = Math.cos(angle) * radius;
+              const y = Math.sin(angle) * radius * .62;
+              step ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+            }
+            ctx.stroke();
+          }
+        } else if (g.type === "PRISM" || g.type === "TRIANGLE") {
+          const sides = g.type === "PRISM" ? 3 : 3;
+          for (let layer = 0; layer < (g.type === "PRISM" ? 2 : 4); layer++) {
+            const radius = g.size * (1 - layer * .18);
+            ctx.beginPath();
+            for (let side = 0; side <= sides; side++) {
+              const angle = -Math.PI / 2 + side / sides * TAU;
+              const x = Math.cos(angle) * radius;
+              const y = Math.sin(angle) * radius;
+              side ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+            }
+            ctx.stroke();
+          }
+          if (g.type === "PRISM") {
+            for (let beam = -2; beam <= 2; beam++) {
+              ctx.strokeStyle = colorAt(g.hue + beam * .45, alpha * .65);
+              ctx.beginPath();
+              ctx.moveTo(0, 0);
+              ctx.lineTo(g.size * 1.8, beam * g.size * .22);
+              ctx.stroke();
+            }
+          }
+        } else if (g.type === "AURORA") {
+          for (let band = 0; band < 5; band++) {
+            ctx.strokeStyle = colorAt(g.hue + band * .38, alpha * .42);
+            ctx.lineWidth = 5 - band * .55;
+            ctx.beginPath();
+            ctx.moveTo(-g.size, band * 12 - 25);
+            ctx.bezierCurveTo(-g.size * .5, -g.size * .55 + Math.sin(time * .004 + band) * 24, g.size * .5, g.size * .55, g.size, band * 12 - 25);
+            ctx.stroke();
+          }
+        } else if (g.type === "LIGHTNING") {
+          for (let bolt = 0; bolt < 5; bolt++) {
+            ctx.strokeStyle = colorAt(g.hue + bolt * .22, alpha * .7);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let segment = 1; segment <= 7; segment++) {
+              const angle = bolt / 5 * TAU;
+              const radius = segment / 7 * g.size;
+              const jitter = Math.sin(g.phase + bolt * 2 + segment * 4.1) * 15;
+              ctx.lineTo(Math.cos(angle) * radius + Math.cos(angle + Math.PI / 2) * jitter, Math.sin(angle) * radius + Math.sin(angle + Math.PI / 2) * jitter);
+            }
+            ctx.stroke();
+          }
+        } else if (g.type === "PORTAL") {
+          for (let ring = 0; ring < 5; ring++) {
+            ctx.strokeStyle = colorAt(g.hue + ring * .24, alpha * (.75 - ring * .09));
+            ctx.beginPath();
+            ctx.arc(0, 0, g.size * (.55 + ring * .11), time * .002 * (ring % 2 ? -1 : 1) + ring, time * .002 * (ring % 2 ? -1 : 1) + ring + Math.PI * 1.55);
+            ctx.stroke();
+          }
+        } else if (g.type === "WAVE") {
+          for (let wave = 0; wave < 4; wave++) {
+            ctx.globalAlpha = alpha * (1 - wave * .18);
+            ctx.beginPath();
+            ctx.arc(0, 0, g.size * (.45 + wave * .16), -1.05, 1.05);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+        } else if (g.type === "BRIDGE" || g.type === "BEAM") {
+          const dx = g.x2 - g.x;
+          const dy = g.y2 - g.y;
+          ctx.rotate(-g.rotation);
+          ctx.lineWidth = g.type === "BEAM" ? 5 : 2;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          if (g.type === "BRIDGE") {
+            const cx = dx * .5;
+            const cy = dy * .5 - Math.min(100, Math.hypot(dx, dy) * .24);
+            ctx.quadraticCurveTo(cx, cy, dx, dy);
+          } else {
+            ctx.lineTo(dx, dy);
+          }
+          ctx.stroke();
+          if (g.type === "BRIDGE") {
+            for (let star = 1; star < 6; star++) {
+              const t = star / 6;
+              const x = (1 - t) * (1 - t) * 0 + 2 * (1 - t) * t * dx * .5 + t * t * dx;
+              const y = 2 * (1 - t) * t * (dy * .5 - Math.min(100, Math.hypot(dx, dy) * .24)) + t * t * dy;
+              ctx.fillStyle = colorAt(g.hue + star * .18, alpha);
+              ctx.beginPath(); ctx.arc(x, y, 2.8, 0, TAU); ctx.fill();
+            }
+          }
+        }
+        ctx.restore();
+      }
+      glyphs.length = write;
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
     }
 
     function drawRings() {
@@ -1104,12 +1568,12 @@
       lastFrame = now;
       fps += ((1000 / Math.max(1, dt)) - fps) * .06;
       const detectInterval = QUALITY[qualityLevel].detectMs;
-      if (cameraRunning && modelReady && handLandmarker && video.readyState >= 2 &&
+      if (cameraRunning && modelReady && gestureRecognizer && video.readyState >= 2 &&
           video.currentTime !== lastVideoTime && now - lastDetectAt >= detectInterval) {
         lastDetectAt = now;
         lastVideoTime = video.currentTime;
         try {
-          processHands(handLandmarker.detectForVideo(video, now), now);
+          processHands(gestureRecognizer.recognizeForVideo(video, now), now);
         } catch (error) {
           trackingText.textContent = "偵測重試中";
         }
@@ -1117,6 +1581,7 @@
       drawBackground(now);
       drawTrails();
       drawSparks();
+      drawGlyphs(now);
       drawRings();
       drawHandPreview();
       if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
@@ -1126,6 +1591,7 @@
         canvas.dataset.fps = String(roundedFps);
         canvas.dataset.particles = String(sparks.length);
         canvas.dataset.trails = String(trails.length);
+        canvas.dataset.glyphs = String(glyphs.length);
         canvas.dataset.quality = QUALITY[qualityLevel].name;
         updateAdaptiveQuality();
       }
@@ -1135,6 +1601,7 @@
     function clearMagic(withBurst = true) {
       trails.length = 0;
       rings.length = 0;
+      glyphs.length = 0;
       while (sparks.length) sparkPool.push(sparks.pop());
       if (withBurst) burst(W * .5, H * .5, .65, .2);
     }
