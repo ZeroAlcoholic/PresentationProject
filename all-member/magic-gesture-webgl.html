@@ -226,7 +226,7 @@
       progCopy:null, progPoint:null, progBlur:null, progComp:null,
       accum:[null,null], accumTex:[null,null], cur:0,
       bloom:[null,null], bloomTex:[null,null],
-      quadBuf:null, pointBuf:null, glowTex:null,
+      quadBuf:null, pointBuf:null, glowTex:null, bgTex:null,
       bloomOn:true
     };
 
@@ -284,6 +284,45 @@
       return tex;
     }
 
+    // 預烘焙星雲＋星空背景（只在初始化/還原時畫一次；每幀只是一張貼圖，幾乎零額外運算）
+    function buildBackgroundTexture(gl){
+      const W0 = 1280, H0 = 720, cv = document.createElement("canvas"); cv.width = W0; cv.height = H0;
+      const c = cv.getContext("2d");
+      // 底色漸層
+      const base = c.createLinearGradient(0,0,0,H0);
+      base.addColorStop(0,"#070416"); base.addColorStop(0.55,"#0a1226"); base.addColorStop(1,"#04020b");
+      c.fillStyle = base; c.fillRect(0,0,W0,H0);
+      // 星雲團（柔和大色斑，加色）
+      c.globalCompositeOperation = "lighter";
+      const nebula = [[0.30,0.36,330,[120,70,255]],[0.72,0.30,300,[40,160,255]],[0.58,0.74,340,[255,50,150]],[0.14,0.78,240,[40,210,200]]];
+      for (const [nx,ny,r,col] of nebula){
+        const g = c.createRadialGradient(nx*W0,ny*H0,0,nx*W0,ny*H0,r);
+        g.addColorStop(0,`rgba(${col[0]},${col[1]},${col[2]},0.16)`); g.addColorStop(0.5,`rgba(${col[0]},${col[1]},${col[2]},0.05)`); g.addColorStop(1,"rgba(0,0,0,0)");
+        c.fillStyle = g; c.fillRect(0,0,W0,H0);
+      }
+      // 星點（大小/亮度不一，少數帶光暈）
+      for (let i=0;i<260;i++){
+        const x=Math.random()*W0, y=Math.random()*H0, r=Math.random()*1.3+0.2, a=0.25+Math.random()*0.6;
+        c.fillStyle = `rgba(${200+Math.random()*55|0},${215+Math.random()*40|0},255,${a})`;
+        c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill();
+        if (Math.random()<0.06){ const gg=c.createRadialGradient(x,y,0,x,y,r*6); gg.addColorStop(0,`rgba(180,220,255,${a*0.5})`); gg.addColorStop(1,"rgba(0,0,0,0)"); c.fillStyle=gg; c.fillRect(x-r*6,y-r*6,r*12,r*12); }
+      }
+      c.globalCompositeOperation = "source-over";
+      // 暗角
+      const vg = c.createRadialGradient(W0/2,H0/2,Math.min(W0,H0)*0.3,W0/2,H0/2,Math.max(W0,H0)*0.62);
+      vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,0.55)");
+      c.fillStyle = vg; c.fillRect(0,0,W0,H0);
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return tex;
+    }
+
     function initGL(){
       const opts = { alpha:true, premultipliedAlpha:false, antialias:false, depth:false, stencil:false, preserveDrawingBuffer:false, powerPreference:"high-performance" };
       const gl = fxCanvas.getContext("webgl2", opts) || fxCanvas.getContext("webgl", opts) || fxCanvas.getContext("experimental-webgl", opts);
@@ -298,6 +337,7 @@
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW); // 覆蓋三角形
       GL.pointBuf = gl.createBuffer();
       GL.glowTex = buildGlowTexture(gl);
+      GL.bgTex = buildBackgroundTexture(gl);
       gl.disable(gl.DEPTH_TEST);
       GL.ok = true;
       allocTargets();
@@ -419,14 +459,14 @@
         }
       }
 
-      // ④ 合成到螢幕：累積層 + bloom（加色）
+      // ④ 合成到螢幕：星雲背景（不透明底）→ 霓虹光焰（加色）→ bloom（加色）
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0,0,GL.W,GL.H);
-      gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
       gl.disable(gl.BLEND);
+      drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.bgTex); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.0); });
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
       drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.accumTex[GL.cur]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.3); });
       if (GL.bloomOn){
-        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
         drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.bloomTex[0]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.7); });
       }
     }
