@@ -137,6 +137,28 @@
   @keyframes spin{ to{ transform:rotate(360deg);} }
   .row-btns{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
   .hidden{ display:none !important; }
+
+  /* ---------- Small phones ---------- */
+  @media (max-width:560px){
+    .hud-top{ padding:8px 9px; gap:6px; }
+    .panel{ padding:6px 9px; border-radius:11px; }
+    .label{ font-size:9px; letter-spacing:.16em; }
+    .value{ font-size:20px; }
+    #timer{ min-width:64px; }
+    #energy-wrap{ width:min(42vw,150px); }
+    #energy-label .rdy{ font-size:9px; }
+    #cam{ width:33vw; right:8px; bottom:8px; }
+    #controls{ left:8px; bottom:8px; gap:6px; }
+    .ctl{ width:38px; height:38px; font-size:16px; }
+    #perf{ top:58px; left:8px; }
+    #hint .big{ font-size:clamp(18px,7vw,30px); }
+  }
+  /* short landscape (phones held sideways) */
+  @media (max-height:430px){
+    .hud-top{ padding:6px 10px; }
+    .value{ font-size:18px; }
+    #cam{ width:20vw; }
+  }
 </style>
 </head>
 <body>
@@ -194,11 +216,12 @@
       <div class="title">STAR VORTEX</div>
       <div class="subtitle">掌心黑洞 · 拍星星</div>
       <div class="how">
-        <div class="row"><span class="ico">🖐</span><span>張開手掌 → 黑洞吸力變強，把星星捲進來</span></div>
-        <div class="row"><span class="ico">👆</span><span>用掌心或指尖<b>拍 / 捏</b>星星 → 爆開得分、累積連擊</span></div>
+        <div class="row"><span class="ico">👋</span><span><b>快速揮手</b>拍爆星星 → 得分！（最重要的動作）</span></div>
+        <div class="row"><span class="ico">🖐</span><span>另一手<b>張開</b>把星星「吸」成一團 → 再揮手一次爆超多分（×2）</span></div>
         <div class="row"><span class="ico">✊</span><span>握拳 → 放出衝擊波，一次震爆四周星星</span></div>
         <div class="row"><span class="ico">🙌</span><span>能量滿時雙手張開 → 星雲大招清場爆分</span></div>
       </div>
+      <div class="note" style="margin-top:4px">口訣：<b>慢慢張開＝吸</b>　·　<b>快速揮過去＝打</b></div>
       <button class="btn" id="btn-start">開始遊戲</button>
       <div class="note" id="start-note">需要攝影機權限（影像只在本機處理，不會上傳）。<br>沒有攝影機？仍可用滑鼠 / 觸控遊玩。</div>
     </div>
@@ -242,19 +265,27 @@
 /* ----------------------------- CONFIG ----------------------------- */
 const CFG = {
   ROUND_TIME: 60,                 // seconds
-  COMBO_WINDOW: 1.6,              // s before combo resets
-  ENERGY_PER_POP: 4,              // energy gained per star popped
+  COMBO_WINDOW: 1.8,              // s before combo resets
+  ENERGY_PER_POP: 3,              // energy gained per free star struck
+  ENERGY_PER_CAP: 6,             // energy from striking a CAPTURED (gathered) star
   ENERGY_MAX: 100,
   SHOCK_COOLDOWN: 0.85,           // s between fist shockwaves
   ULT_COOLDOWN: 0.6,
   // radii are fractions of the smaller screen dimension (device independent)
-  R_SUCTION: 0.20,                // base suction radius
-  R_SUCTION_OPEN: 0.34,           // suction radius when hand open
-  R_CORE: 0.072,                  // black-hole "eat" radius (pop on contact)
-  R_FINGER: 0.05,                 // fingertip pop radius
+  R_SUCTION: 0.20,                // base suction radius (gather pull reach)
+  R_SUCTION_OPEN: 0.34,           // suction reach when hand fully open
+  R_CORE: 0.066,                  // black-hole core visual radius
+  R_GRAB: 0.14,                   // star becomes "captured" within this of a gathering palm
+  R_ORBIT: 0.11,                  // captured stars orbit at this radius
+  R_STRIKE: 0.075,                // strike hit radius (generous, swept along motion)
   R_SHOCK: 0.30,                  // shockwave radius
-  PULL: 1500,                     // base pull accel
+  PULL: 1500,                     // base gather pull accel
   PULL_OPEN: 3200,
+  // strike = fast hand swipe. thresholds are fractions of minDim PER SECOND
+  // (screen-scaled so a swipe feels the same on phone & desktop). hysteresis: on>off.
+  STRIKE_ON: 0.62,
+  STRIKE_OFF: 0.34,
+  CAP_MULT: 2,                    // captured stars score double (reward gather→smash)
   SCORE_BASE: 10,
   model: {
     esm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm",
@@ -273,12 +304,24 @@ const TIER_ORDER = ["low","med","high"];
 
 const STAR_COLORS = ["#38f0ff","#ff3df0","#9b5cff","#ffd34d","#5cff9b","#ff8a4d"];
 
+// device class — phones/tablets start cooler & lower-res to avoid thermal throttling
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent)
+  || (matchMedia("(pointer:coarse)").matches && Math.min(innerWidth,innerHeight) < 900);
+
 /* ----------------------------- MATH ------------------------------- */
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
 const rand=(a,b)=>a+Math.random()*(b-a);
 const dist2=(ax,ay,bx,by)=>{const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;};
 const dist=(ax,ay,bx,by)=>Math.hypot(ax-bx,ay-by);
+// squared distance from point (px,py) to segment (ax,ay)-(bx,by) — for swept strike hits
+const segDist2=(px,py,ax,ay,bx,by)=>{
+  const dx=bx-ax, dy=by-ay, l2=dx*dx+dy*dy;
+  let t = l2>0 ? ((px-ax)*dx+(py-ay)*dy)/l2 : 0;
+  t = t<0?0:t>1?1:t;
+  const cx=ax+t*dx, cy=ay+t*dy;
+  return (px-cx)*(px-cx)+(py-cy)*(py-cy);
+};
 const TAU=Math.PI*2;
 // frame-rate independent smoothing factor toward a target
 const damp=(cur,target,tau,dt)=>lerp(cur,target,1-Math.exp(-dt/Math.max(tau,1e-4)));
@@ -309,8 +352,10 @@ const Camera = {
   video: document.getElementById("video"),
   stream: null,
   async start(){
+    // lower capture res/fps on mobile to cut CPU/GPU load & heat (detection is throttled anyway)
+    const w = IS_MOBILE?480:640, h = IS_MOBILE?360:480, fr = IS_MOBILE?24:30;
     this.stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:"user", width:{ideal:640}, height:{ideal:480}, frameRate:{ideal:30} },
+      video:{ facingMode:"user", width:{ideal:w}, height:{ideal:h}, frameRate:{ideal:fr} },
       audio:false
     });
     this.video.srcObject = this.stream;
@@ -322,6 +367,8 @@ const Camera = {
     return true;
   },
   stop(){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } },
+  pause(){ try{ this.video.pause(); }catch{} },
+  resume(){ if(this.stream){ this.video.play().catch(()=>{}); } },
   ready(){ return this.stream && this.video.readyState>=2; }
 };
 
@@ -335,7 +382,8 @@ const Tracker = {
     const opts = {
       baseOptions:{ modelAssetPath:CFG.model.task, delegate:"GPU" },
       runningMode:"VIDEO", numHands:2,
-      minHandDetectionConfidence:.5, minHandPresenceConfidence:.5, minTrackingConfidence:.5
+      // lower tracking/presence so a fast (motion-blurred) hand isn't dropped mid-strike
+      minHandDetectionConfidence:.5, minHandPresenceConfidence:.4, minTrackingConfidence:.35
     };
     try{ this.landmarker = await vision.HandLandmarker.createFromOptions(fileset,opts); }
     catch{ opts.baseOptions.delegate="CPU"; this.landmarker = await vision.HandLandmarker.createFromOptions(fileset,opts); }
@@ -357,7 +405,7 @@ const Tracker = {
 /* ============================ GESTURE ============================= */
 /* Builds per-hand state from landmarks: palm center (wrist+MCPs),
    smoothed control points, finger openness, gesture, pinch.
-   Two stable slots keyed by handedness so filters don't swap.        */
+   Two slots whose identity is kept by proximity (not labels); L/R by screen side. */
 function makeSlot(){
   return {
     active:false, lost:99, gesture:"none", openAmt:0, pinch:false,
@@ -368,10 +416,17 @@ function makeSlot(){
     tips:Array.from({length:5},()=>({x:0,y:0})),
     pinchPt:{x:0,y:0},
     fistEdge:false, prevGesture:"none",
+    // --- identity / recognition / role state ---
+    side:"", gen:0,                                     // "L"/"R" screen-side · identity generation (capture validity)
+    rawG:"neutral", gCand:"neutral", gCount:0,          // gesture debounce
+    speed:0, striking:false,                            // strike (fast-swipe) detection w/ hysteresis
+    seg:{x0:0,y0:0,x1:0,y1:0},                          // palm motion segment this frame (swept hit)
+    trail:[],                                           // recent display positions (strike streak)
+    role:"idle", cap:0,                                 // resolved role + captured-star count (for UI)
   };
 }
 const Gesture = {
-  slots:{ Left:makeSlot(), Right:makeSlot() },
+  slots:[ makeSlot(), makeSlot() ],   // two generic slots; identity kept by proximity, not by label
   hands:[],            // active hand slots this frame (for game/render)
   anyActive:false,
 
@@ -391,58 +446,117 @@ const Gesture = {
     // --- gesture from raw (normalized) landmarks: rotation invariant ---
     const d=(a,b)=>Math.hypot(lm[a].x-lm[b].x, lm[a].y-lm[b].y);
     const scale=Math.max(d(0,9),1e-4);
-    // a finger is extended if its tip is farther from wrist than its PIP joint
-    const ext=(tip,pip)=> d(0,tip) > d(0,pip)*1.05;
-    let count=0;
-    if(ext(8,6))count++; if(ext(12,10))count++; if(ext(16,14))count++; if(ext(20,18))count++;
-    slot.openAmt = damp(slot.openAmt, count/4, 0.06, 1/30);
+    // a finger is extended if its tip is clearly farther from the wrist than its PIP joint.
+    // ratio gives a continuous, less twitchy signal than a hard boolean.
+    const fingerExt=(tip,pip)=> clamp((d(0,tip)/d(0,pip) - 1.0)/0.35, 0, 1);
+    const e1=fingerExt(8,6), e2=fingerExt(12,10), e3=fingerExt(16,14), e4=fingerExt(20,18);
+    const openSum=e1+e2+e3+e4;                       // 0 (fist) .. 4 (open)
+    const count=(e1>0.5?1:0)+(e2>0.5?1:0)+(e3>0.5?1:0)+(e4>0.5?1:0);
+    slot.openAmt = damp(slot.openAmt, openSum/4, 0.05, 1/30);
     slot.pinch = d(4,8) < scale*0.45;
     slot.pinchPt.x = (slot.tips[0].x+slot.tips[1].x)/2;
     slot.pinchPt.y = (slot.tips[0].y+slot.tips[1].y)/2;
+    // raw classification with a neutral dead-band to avoid open/fist ambiguity
     let g="neutral";
     if(count>=3) g="open";
     else if(count<=1 && !slot.pinch) g="fist";
-    slot.prevGesture = slot.gesture;
-    slot.gesture = g;
-    slot.fistEdge = (g==="fist" && slot.prevGesture!=="fist");
+    slot.rawG=g;
+    // debounce: only commit a new gesture after 2 consistent detections (~70ms)
+    if(g===slot.gCand) slot.gCount++; else { slot.gCand=g; slot.gCount=1; }
+    if(slot.gCount>=2 && g!==slot.gesture){
+      slot.prevGesture=slot.gesture; slot.gesture=g;
+      slot.fistEdge = (g==="fist" && slot.prevGesture!=="fist");
+    } else slot.fistEdge=false;
     slot.active=true; slot.lost=0;
   },
 
-  // called on every detection result
+  // called on every detection result — associate hands to slots by PROXIMITY (stable
+  // identity through label flips / brief dropouts), then resolve L/R by screen side.
   update(result, tSec, W, H){
-    const seen={Left:false,Right:false};
+    const dets=[];
     if(result && result.landmarks){
-      for(let i=0;i<result.landmarks.length;i++){
-        let label = result.handedness?.[i]?.[0]?.categoryName || (i===0?"Right":"Left");
-        if(seen[label]) label = label==="Right"?"Left":"Right"; // avoid collision
-        seen[label]=true;
-        this.ingest(this.slots[label], result.landmarks[i], tSec, W, H);
+      for(let i=0;i<result.landmarks.length && i<2;i++){
+        const lm=result.landmarks[i];
+        const cx=(1-(lm[0].x+lm[5].x+lm[9].x+lm[13].x+lm[17].x)/5)*W;   // mirrored palm x
+        const cy=((lm[0].y+lm[5].y+lm[9].y+lm[13].y+lm[17].y)/5)*H;
+        dets.push({lm,cx,cy,used:false});
       }
     }
-    for(const k of ["Left","Right"]){
-      if(!seen[k]){
-        const s=this.slots[k]; s.lost++;
-        if(s.lost>4){ s.active=false; s.gesture="none"; s.fx.reset(); s.fy.reset();
-          s.tfx.forEach(f=>f.reset()); s.tfy.forEach(f=>f.reset()); }
+    const assign=[null,null];
+    const act=[0,1].filter(i=>this.slots[i].active);
+    if(act.length===2 && dets.length===2){
+      // 1a) optimal 2×2 match — never swaps identity when hands pass close together
+      const s0=this.slots[act[0]], s1=this.slots[act[1]];
+      const straight=dist2(dets[0].cx,dets[0].cy,s0.palm.x,s0.palm.y)+dist2(dets[1].cx,dets[1].cy,s1.palm.x,s1.palm.y);
+      const cross   =dist2(dets[1].cx,dets[1].cy,s0.palm.x,s0.palm.y)+dist2(dets[0].cx,dets[0].cy,s1.palm.x,s1.palm.y);
+      if(straight<=cross){ assign[act[0]]=dets[0]; assign[act[1]]=dets[1]; }
+      else { assign[act[0]]=dets[1]; assign[act[1]]=dets[0]; }
+      dets[0].used=dets[1].used=true;
+    } else {
+      // 1b) greedy: each active slot grabs its nearest unused detection
+      for(const si of act){
+        const s=this.slots[si]; let best=-1, bd=1e9;
+        for(let di=0;di<dets.length;di++){ if(dets[di].used) continue;
+          const d=dist2(dets[di].cx,dets[di].cy, s.palm.x,s.palm.y); if(d<bd){ bd=d; best=di; } }
+        if(best>=0){ assign[si]=dets[best]; dets[best].used=true; }
       }
+    }
+    // 2) leftover detections → free/empty slots (new hand entering = new identity gen)
+    for(let di=0;di<dets.length;di++){ if(dets[di].used) continue;
+      let idx=[0,1].find(i=>!assign[i] && !this.slots[i].active);
+      if(idx==null) idx=[0,1].find(i=>!assign[i]);
+      if(idx==null) break;
+      if(!this.slots[idx].active) this.slots[idx].gen++;
+      assign[idx]=dets[di]; dets[di].used=true;
+    }
+    // 3) ingest matched, age out unmatched
+    for(let i=0;i<2;i++){
+      if(assign[i]) this.ingest(this.slots[i], assign[i].lm, tSec, W, H);
+      else { const s=this.slots[i]; s.lost++;
+        if(s.lost>4){ s.active=false; s.gesture="none"; s.striking=false; s.speed=0; s.trail.length=0;
+          s.fx.reset(); s.fy.reset(); s.tfx.forEach(f=>f.reset()); s.tfy.forEach(f=>f.reset()); } }
+    }
+    this.resolveSides(W);
+  },
+
+  // L/R by screen position (zero classifier error); hysteresis avoids swap when hands align
+  resolveSides(W){
+    const a=[0,1].filter(i=>this.slots[i].active);
+    if(a.length>=2){
+      const s0=this.slots[a[0]], s1=this.slots[a[1]];
+      if(!s0.side || !s1.side || Math.abs(s0.palm.x-s1.palm.x) > W*0.05){
+        if(s0.palm.x<=s1.palm.x){ s0.side="L"; s1.side="R"; } else { s0.side="R"; s1.side="L"; }
+      }
+    } else if(a.length===1){
+      const s=this.slots[a[0]]; if(!s.side) s.side = s.palm.x < W*0.5 ? "L":"R";
     }
   },
 
-  // per-frame: lerp display position toward filtered target (bridges detection gaps), compute velocity
+  // per-frame: lerp display pos toward filtered target (bridges detection gaps),
+  // derive a smoothed speed, resolve strike state (hysteresis) + motion segment for swept hits
   step(dt){
     this.hands.length=0; this.anyActive=false;
-    for(const k of ["Left","Right"]){
-      const s=this.slots[k];
+    const md=Game.minDim||800, on=CFG.STRIKE_ON*md, off=CFG.STRIKE_OFF*md;
+    for(const s of this.slots){
       if(!s.active) continue;
       const dp=s.dpalm, px=dp.x, py=dp.y;
       dp.x=damp(dp.x, s.palm.x, 0.045, dt);
       dp.y=damp(dp.y, s.palm.y, 0.045, dt);
       dp.vx=(dp.x-px)/Math.max(dt,1e-3);
       dp.vy=(dp.y-py)/Math.max(dt,1e-3);
+      // motion segment this frame (for swept strike collision)
+      s.seg.x0=px; s.seg.y0=py; s.seg.x1=dp.x; s.seg.y1=dp.y;
+      // smoothed speed + hysteresis so "striking" never flickers mid-swipe
+      const inst=Math.hypot(dp.vx,dp.vy);
+      s.speed=damp(s.speed, inst, 0.05, dt);
+      if(!s.striking && s.speed>on) s.striking=true;
+      else if(s.striking && s.speed<off) s.striking=false;
+      // trail for the strike streak
+      s.trail.push(dp.x,dp.y); if(s.trail.length>20) s.trail.splice(0,2);
       this.hands.push(s); this.anyActive=true;
     }
   },
-  reset(){ for(const k of ["Left","Right"]) this.slots[k]=makeSlot(); this.hands.length=0; }
+  reset(){ this.slots=[makeSlot(),makeSlot()]; this.hands.length=0; }
 };
 
 /* ============================ ENTITIES =========================== */
@@ -450,7 +564,8 @@ const Gesture = {
 class Star{
   constructor(){ this.reset(); }
   reset(){ this.x=0;this.y=0;this.vx=0;this.vy=0;this.r=12;this.alive=false;
-    this.color="#38f0ff";this.spin=rand(0,TAU);this.spawn=0;this.tx=0;this.ty=0; }
+    this.color="#38f0ff";this.spin=rand(0,TAU);this.spawn=0;this.tx=0;this.ty=0;
+    this.captured=false;this.capBy=null;this.capGen=-1;this.orbitAng=0;this.orbitR=0; }
   respawn(W,H){
     const m=40;
     this.x=rand(m,W-m); this.y=rand(m,H-m);
@@ -458,6 +573,7 @@ class Star{
     this.r=rand(9,15); this.color=STAR_COLORS[(Math.random()*STAR_COLORS.length)|0];
     this.spin=rand(0,TAU); this.spawn=0; this.alive=true;
     this.tx=this.x; this.ty=this.y;
+    this.captured=false; this.capBy=null; this.capGen=-1; this.orbitAng=0; this.orbitR=0;
   }
 }
 class Particle{
@@ -506,17 +622,20 @@ const Pool = {
 const Game = {
   state:"loading",  // loading|start|countdown|play|pause|over
   score:0, combo:1, comboTimer:0, bestCombo:1, energy:0, time:CFG.ROUND_TIME,
-  shake:0, shockCd:0, ultCd:0, spawnTimer:0, cdNum:3, cdTimer:0,
+  shake:0, shockCd:0, ultCd:0, spawnTimer:0, cdNum:3, cdTimer:0, poppedAny:false,
   W:0, H:0, minDim:0,
   best: +(localStorage.getItem("starVortexBest")||0),
 
   reset(){
     this.score=0; this.combo=1; this.comboTimer=0; this.bestCombo=1; this.energy=0;
     this.time=CFG.ROUND_TIME; this.shake=0; this.shockCd=0; this.ultCd=0; this.spawnTimer=0;
-    Pool.clearAll(); Tracker.lastVideoTime=-1;
+    this.poppedAny=false;
+    Pool.clearAll(); Gesture.reset(); Tracker.lastVideoTime=-1;
+    UI.setEnergy(0); UI.energyReady(false); UI.setCombo(1);
     for(let i=0;i<10;i++) Pool.spawnStar(this.W,this.H);
   },
   startCountdown(){ this.reset(); this.state="countdown"; this.cdNum=3; this.cdTimer=0;
+    if(App.useTracking) Camera.resume();   // wake camera if it was paused on the over/pause screen
     UI.showScreen(null); UI.countdown(3); Audio.tick(); },
 
   update(dt){
@@ -550,94 +669,114 @@ const Game = {
     UI.energyReady(this.energy>=CFG.ENERGY_MAX);
   },
 
+  // resolve each hand's ROLE this frame, then trigger fist/ultimate
+  // role rule:  fast swipe → STRIKE (scores)   |  open & slow → GATHER (suction)
+  //             fist → shockwave               |  else → idle
   handleHands(dt){
     const hands=Gesture.hands;
-    const twoHands = hands.length>=2;
-    let bothOpen = twoHands;
-
+    const two=hands.length>=2;
+    let openGesture=0;
     for(const h of hands){
-      const open = h.gesture==="open";
-      if(!open) bothOpen=false;
-      // fist shockwave (edge-triggered, cooldown)
-      if(h.fistEdge && this.shockCd<=0){
-        this.shockCd=CFG.SHOCK_COOLDOWN;
-        this.doShockwave(h.dpalm.x,h.dpalm.y);
+      h.cap=0;                                   // recomputed in physics
+      // role permissions: two hands → 左(L)=吸, 右(R)=打 ; single hand → both (forgiving)
+      const canGather = two ? (h.side==="L") : true;
+      const canStrike = two ? (h.side==="R") : true;
+      if(h.gesture==="open") openGesture++;
+      if(h.striking && canStrike) h.role="strike";
+      else if(h.gesture==="open" && canGather) h.role="gather";
+      else if(h.gesture==="fist") h.role="fist";
+      else h.role="idle";
+      // fist shockwave — edge-triggered, not while swiping (avoids accidental fire)
+      if(h.fistEdge && this.shockCd<=0 && !h.striking){
+        this.shockCd=CFG.SHOCK_COOLDOWN; this.doShockwave(h.dpalm.x,h.dpalm.y);
       }
     }
-    // nebula ultimate: two open hands + full energy
-    if(twoHands && bothOpen && this.energy>=CFG.ENERGY_MAX && this.ultCd<=0){
-      this.doUltimate();
-    }
+    // nebula ultimate: both hands present & open + full energy
+    if(two && openGesture>=2 && this.energy>=CFG.ENERGY_MAX && this.ultCd<=0) this.doUltimate();
   },
 
   physics(dt){
-    const hands=Gesture.hands;
-    const md=this.minDim;
-    const rCore = CFG.R_CORE*md, rCore2=rCore*rCore;
-    const rFinger=CFG.R_FINGER*md, rFinger2=rFinger*rFinger;
+    const hands=Gesture.hands, md=this.minDim;
+    const rGrab=CFG.R_GRAB*md, rGrab2=rGrab*rGrab;
+    const orbitR=CFG.R_ORBIT*md, releaseR2=(orbitR*3)*(orbitR*3);
+    const rStrike=CFG.R_STRIKE*md, rStrike2=rStrike*rStrike;
 
     for(const s of Pool.stars){
       if(!s.alive) continue;
       s.spawn=Math.min(1,s.spawn+dt*3); s.spin+=dt*1.2;
 
+      // 1) STRIKE — swept hit along each strike-hand's motion segment (+ fingertips).
+      //    Swept collision reliably catches stars even between sparse detections.
+      let popped=false;
       for(const h of hands){
-        if(h.gesture==="fist") continue;     // fist = punch, no suction
-        const open = h.gesture==="open";
-        const rS = (open?CFG.R_SUCTION_OPEN:CFG.R_SUCTION)*md * (0.85+0.4*h.openAmt);
-        const pull = (open?CFG.PULL_OPEN:CFG.PULL) * (0.7+0.6*h.openAmt);
-        const dx=h.dpalm.x-s.x, dy=h.dpalm.y-s.y;
-        const d2=dx*dx+dy*dy;
-        if(d2 < rS*rS){
-          const d=Math.sqrt(d2)||1;
-          const f=(1-d/rS);
-          // radial pull + slight tangential swirl for spiral feel
-          const ax=(dx/d), ay=(dy/d);
-          s.vx += (ax*pull + (-ay)*pull*0.5) * f*f * dt;
-          s.vy += (ay*pull + ( ax)*pull*0.5) * f*f * dt;
-        }
-        // pop at core
-        if(d2 < rCore2){ this.popStar(s,h,true); break; }
-      }
-      if(!s.alive) continue;
-
-      // fingertip / pinch pops (direct slap)
-      for(const h of hands){
-        let popped=false;
-        for(let f=0; f<5; f++){
-          if(dist2(s.x,s.y,h.tips[f].x,h.tips[f].y) < rFinger2){ this.popStar(s,h,false); popped=true; break; }
-        }
+        if(h.role!=="strike") continue;
+        if(segDist2(s.x,s.y, h.seg.x0,h.seg.y0,h.seg.x1,h.seg.y1) < rStrike2){ this.popStar(s,h); popped=true; break; }
+        for(let f=0; f<5; f++){ if(dist2(s.x,s.y,h.tips[f].x,h.tips[f].y) < rStrike2){ this.popStar(s,h); popped=true; break; } }
         if(popped) break;
-        if(h.pinch && dist2(s.x,s.y,h.pinchPt.x,h.pinchPt.y) < rFinger2*1.4){ this.popStar(s,h,false); break; }
       }
-      if(!s.alive) continue;
+      if(popped) continue;
 
-      // integrate + damping
+      // 2) CAPTURED — orbit the gathering palm; release if that hand stops gathering / leaves /
+      //    its slot got reused by a different physical hand (gen mismatch → no teleport)
+      if(s.captured){
+        const h=s.capBy;
+        const valid = h && hands.includes(h) && h.gen===s.capGen && h.role==="gather"
+          && dist2(s.x,s.y,h.dpalm.x,h.dpalm.y) < releaseR2;
+        if(!valid){ s.captured=false; s.capBy=null; }
+        else {
+          h.cap++;
+          s.orbitAng += dt*2.0;
+          const tx=h.dpalm.x+Math.cos(s.orbitAng)*s.orbitR;
+          const ty=h.dpalm.y+Math.sin(s.orbitAng)*s.orbitR;
+          s.x=damp(s.x,tx,0.05,dt); s.y=damp(s.y,ty,0.05,dt);
+          s.vx=0; s.vy=0;
+          continue;                              // captured stars skip free physics
+        }
+      }
+
+      // 3) GATHER — open & slow hands pull stars in; capture when close (NO score here)
+      for(const h of hands){
+        if(h.role!=="gather") continue;
+        const rS=CFG.R_SUCTION_OPEN*md*(0.7+0.5*h.openAmt);
+        const pull=CFG.PULL_OPEN*(0.6+0.6*h.openAmt);
+        const dx=h.dpalm.x-s.x, dy=h.dpalm.y-s.y, d2=dx*dx+dy*dy;
+        if(d2<rGrab2){                            // close enough → captured into orbit
+          s.captured=true; s.capBy=h; s.capGen=h.gen; s.orbitR=orbitR*(0.82+Math.random()*0.5);
+          s.orbitAng=Math.atan2(s.y-h.dpalm.y, s.x-h.dpalm.x); break;
+        }
+        if(d2<rS*rS){
+          const d=Math.sqrt(d2)||1, f=1-d/rS, ax=dx/d, ay=dy/d;
+          s.vx += (ax*pull + (-ay)*pull*0.45)*f*f*dt;   // pull + swirl
+          s.vy += (ay*pull + ( ax)*pull*0.45)*f*f*dt;
+        }
+      }
+
+      // 4) free integrate + damping + soft bounds
       s.vx*=Math.pow(0.12,dt); s.vy*=Math.pow(0.12,dt);
       s.x+=s.vx*dt; s.y+=s.vy*dt;
-      // soft bounds
       const m=10;
       if(s.x<m){s.x=m;s.vx=Math.abs(s.vx)*.6;} if(s.x>this.W-m){s.x=this.W-m;s.vx=-Math.abs(s.vx)*.6;}
       if(s.y<m){s.y=m;s.vy=Math.abs(s.vy)*.6;} if(s.y>this.H-m){s.y=this.H-m;s.vy=-Math.abs(s.vy)*.6;}
     }
   },
 
-  popStar(s, hand, atCore){
-    s.alive=false;
-    // slap bonus: faster hand motion → more points
-    const speed=hand?Math.hypot(hand.dpalm.vx,hand.dpalm.vy):0;
-    const slap = speed>900 ? 2 : 1;
-    const gain = CFG.SCORE_BASE*this.combo*slap;
+  // scoring happens ONLY here (strike / shockwave / ultimate). captured stars score double.
+  popStar(s, hand){
+    const cap=s.captured;
+    s.alive=false; s.captured=false; s.capBy=null;
+    const gain = CFG.SCORE_BASE*this.combo*(cap?CFG.CAP_MULT:1);
     this.score+=gain;
     this.bestCombo=Math.max(this.bestCombo,this.combo);
     this.combo=Math.min(99,this.combo+1);
     this.comboTimer=CFG.COMBO_WINDOW;
-    this.energy=Math.min(CFG.ENERGY_MAX,this.energy+CFG.ENERGY_PER_POP);
-    Pool.burst(s.x,s.y, Perf.tier.glow?14:8, s.color, slap>1?1.4:1);
-    Pool.float(s.x,s.y, "+"+gain, s.color, slap>1?34:26);
-    if(this.combo>2 && this.combo%5===0) Pool.float(s.x,s.y-30, "COMBO x"+this.combo, "#ffd34d", 30);
-    this.shake=Math.min(14, this.shake + (slap>1?6:3));
+    this.energy=Math.min(CFG.ENERGY_MAX,this.energy+(cap?CFG.ENERGY_PER_CAP:CFG.ENERGY_PER_POP));
+    this.poppedAny=true;
+    Pool.burst(s.x,s.y, Perf.tier.glow?(cap?18:13):8, s.color, cap?1.5:1);
+    Pool.float(s.x,s.y, "+"+gain, cap?"#ffd34d":s.color, cap?34:26);
+    if(this.combo>2 && this.combo%5===0) Pool.float(s.x,s.y-30, "連擊 x"+this.combo, "#ffd34d", 30);
+    this.shake=Math.min(16, this.shake + (cap?6:3));
     UI.flashScore(); UI.setCombo(this.combo);
-    Audio.pop(this.combo, slap>1);
+    Audio.pop(this.combo, cap);
   },
 
   doShockwave(x,y){
@@ -650,11 +789,11 @@ const Game = {
       if(d2<R2){
         const d=Math.sqrt(d2)||1;
         if(d<R*0.55){ // inner ring pops
-          s.alive=false; hit++;
+          s.alive=false; s.captured=false; s.capBy=null; hit++;
           this.score+=CFG.SCORE_BASE*this.combo;
           this.energy=Math.min(CFG.ENERGY_MAX,this.energy+2);
           Pool.burst(s.x,s.y, Perf.tier.glow?12:7, s.color);
-        } else { // outer pushes outward
+        } else if(!s.captured){ // outer pushes free stars outward (held stars stay put)
           s.vx+=(dx/d)*420; s.vy+=(dy/d)*420;
         }
       }
@@ -670,7 +809,7 @@ const Game = {
     let n=0, total=0;
     for(const s of Pool.stars){
       if(!s.alive) continue;
-      s.alive=false; n++;
+      s.alive=false; s.captured=false; s.capBy=null; n++;
       total+=CFG.SCORE_BASE*2;
       Pool.burst(s.x,s.y, Perf.tier.glow?18:9, s.color,1.3);
     }
@@ -719,8 +858,72 @@ const Game = {
     this.state="over";
     this.bestCombo=Math.max(this.bestCombo,this.combo);
     if(this.score>this.best){ this.best=this.score; localStorage.setItem("starVortexBest",this.best); }
+    if(App.useTracking) Camera.pause();    // stop decoding video while on results screen
     UI.gameOver(this.score,this.bestCombo,this.best);
     Audio.go();
+  }
+};
+
+/* ============================ SPRITES ============================ */
+/* Bake every gradient ONCE into offscreen canvases, then drawImage
+   (scale/rotate) each frame. Eliminates per-frame gradient allocation —
+   the biggest GC/heat win on phones & tablets.                        */
+const Sprites = {
+  star:{}, glow:null, disk:null, core:null, coreFist:null, nebula:null,
+  diskRef:40, coreRef:44,
+  _cv(s){ const cv=document.createElement("canvas"); cv.width=cv.height=s; return cv; },
+  build(){
+    for(const col of STAR_COLORS) this.star[col]=this.makeStar(col);
+    this.glow=this.makeGlow();
+    this.disk=this.makeDisk();
+    this.core=this.makeCore("#9b5cff","#7fd9ff");
+    this.coreFist=this.makeCore("#ff3df0","#ff5470");
+    this.nebula=this.makeNebula();
+  },
+  makeNebula(){
+    const S=512, r=S/2, cv=this._cv(S), c=cv.getContext("2d");
+    const g=c.createRadialGradient(r,r,0,r,r,r);
+    g.addColorStop(0,"rgba(255,61,240,1)"); g.addColorStop(0.5,"rgba(56,240,255,0.6)"); g.addColorStop(1,"transparent");
+    c.fillStyle=g; c.beginPath(); c.arc(r,r,r,0,TAU); c.fill();
+    return cv;
+  },
+  makeStar(color){
+    const S=96, r=S/2, cv=this._cv(S), c=cv.getContext("2d");
+    const g=c.createRadialGradient(r,r,0,r,r,r);
+    g.addColorStop(0,"#ffffff"); g.addColorStop(0.3,color); g.addColorStop(1,"transparent");
+    c.fillStyle=g; c.beginPath(); c.arc(r,r,r,0,TAU); c.fill();
+    return cv;
+  },
+  makeGlow(){
+    const S=256, r=S/2, cv=this._cv(S), c=cv.getContext("2d");
+    const g=c.createRadialGradient(r,r,0,r,r,r);
+    g.addColorStop(0,"rgba(155,92,255,0.20)"); g.addColorStop(0.22,"rgba(155,92,255,0.17)");
+    g.addColorStop(0.7,"rgba(56,240,255,0.06)"); g.addColorStop(1,"transparent");
+    c.fillStyle=g; c.beginPath(); c.arc(r,r,r,0,TAU); c.fill();
+    return cv;
+  },
+  makeDisk(){
+    const core=this.diskRef, ext=Math.ceil(core*2.9+8), S=ext*2, cx=ext, cv=this._cv(S), c=cv.getContext("2d");
+    for(let i=0;i<3;i++){
+      const rr=core*(1.5+i*0.55), a=i*1.1;
+      c.lineWidth=core*0.28;
+      if(c.createConicGradient){
+        const g=c.createConicGradient(a,cx,cx);
+        g.addColorStop(0,"rgba(56,240,255,0)"); g.addColorStop(0.25,i%2?"#ff3df0":"#38f0ff");
+        g.addColorStop(0.5,"rgba(155,92,255,0)"); g.addColorStop(0.75,i%2?"#38f0ff":"#ff3df0"); g.addColorStop(1,"rgba(56,240,255,0)");
+        c.strokeStyle=g;
+      } else c.strokeStyle= i%2?"rgba(255,61,240,0.6)":"rgba(56,240,255,0.6)";
+      c.beginPath(); c.arc(cx,cx,rr,0,TAU); c.stroke();
+    }
+    return cv;
+  },
+  makeCore(edge,ring){
+    const r=this.coreRef, pad=4, S=(r+pad)*2, cx=S/2, cv=this._cv(S), c=cv.getContext("2d");
+    const g=c.createRadialGradient(cx,cx,0,cx,cx,r);
+    g.addColorStop(0,"#000"); g.addColorStop(0.8,"#05030f"); g.addColorStop(1,edge);
+    c.fillStyle=g; c.beginPath(); c.arc(cx,cx,r,0,TAU); c.fill();
+    c.lineWidth=2; c.strokeStyle=ring; c.beginPath(); c.arc(cx,cx,r,0,TAU); c.stroke();
+    return cv;
   }
 };
 
@@ -728,7 +931,8 @@ const Game = {
 const Render = {
   cv:document.getElementById("game"), ctx:null, bg:null, bgctx:null, scale:1, dpr:1,
   init(){ this.ctx=this.cv.getContext("2d",{alpha:false});
-    this.bg=document.createElement("canvas"); this.bgctx=this.bg.getContext("2d"); },
+    this.bg=document.createElement("canvas"); this.bgctx=this.bg.getContext("2d");
+    Sprites.build(); },
 
   resize(){
     const cssW=window.innerWidth, cssH=window.innerHeight;
@@ -793,13 +997,12 @@ const Render = {
     ctx.globalAlpha=1;
     if(glow) ctx.globalCompositeOperation="source-over";
 
-    // nebula ultimate flash
+    // nebula ultimate flash (baked sprite — no per-frame gradient)
     if(Game.fxNebula>0){
-      const a=Game.fxNebula*0.5;
-      const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
-      g.addColorStop(0,`rgba(255,61,240,${a})`); g.addColorStop(0.5,`rgba(56,240,255,${a*0.6})`); g.addColorStop(1,"transparent");
-      ctx.globalCompositeOperation="lighter"; ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-      ctx.globalCompositeOperation="source-over";
+      const R=Math.max(W,H)*0.7;
+      ctx.globalCompositeOperation="lighter"; ctx.globalAlpha=Game.fxNebula*0.5;
+      ctx.drawImage(Sprites.nebula, W/2-R, H/2-R, R*2, R*2);
+      ctx.globalAlpha=1; ctx.globalCompositeOperation="source-over";
     }
 
     // floating texts
@@ -815,51 +1018,68 @@ const Render = {
 
   drawBlackHole(ctx,h,t,glow){
     const x=h.dpalm.x, y=h.dpalm.y, md=Game.minDim;
-    const fist=h.gesture==="fist";
-    const rS=(h.gesture==="open"?CFG.R_SUCTION_OPEN:CFG.R_SUCTION)*md*(0.85+0.4*h.openAmt);
-    const core=CFG.R_CORE*md;
-    // suction field
-    if(!fist){
-      const g=ctx.createRadialGradient(x,y,core*0.6,x,y,rS);
-      g.addColorStop(0,"rgba(155,92,255,0.20)"); g.addColorStop(0.7,"rgba(56,240,255,0.06)"); g.addColorStop(1,"transparent");
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,rS,0,TAU); ctx.fill();
-      // dashed reach ring
-      ctx.globalAlpha=0.35; ctx.strokeStyle="rgba(120,180,255,0.6)"; ctx.lineWidth=1.5;
+    const role=h.role||"idle", striking=h.striking||false, core=CFG.R_CORE*md;
+
+    // STRIKE: hot motion streak so it's unmistakably "hitting"
+    if(striking && h.trail && h.trail.length>=6){
+      if(glow) ctx.globalCompositeOperation="lighter";
+      const tr=h.trail, n=tr.length>>1;
+      for(let i=0;i<n;i++){ const a=i/n;
+        ctx.globalAlpha=a*0.55; ctx.fillStyle="#aef6ff";
+        ctx.beginPath(); ctx.arc(tr[i*2],tr[i*2+1], core*0.5*a+2, 0,TAU); ctx.fill(); }
+      ctx.globalAlpha=1; if(glow) ctx.globalCompositeOperation="source-over";
+    }
+
+    // GATHER: suction field + orbit ring (where captured stars collect)
+    if(role==="gather"){
+      const rS=CFG.R_SUCTION_OPEN*md*(0.7+0.5*h.openAmt);
+      ctx.drawImage(Sprites.glow, x-rS, y-rS, rS*2, rS*2);
+      ctx.globalAlpha=0.4; ctx.strokeStyle="rgba(120,180,255,0.7)"; ctx.lineWidth=1.5;
       ctx.setLineDash([6,10]); ctx.lineDashOffset=-t*0.04; ctx.beginPath(); ctx.arc(x,y,rS,0,TAU); ctx.stroke();
       ctx.setLineDash([]); ctx.globalAlpha=1;
+      if(glow) ctx.globalCompositeOperation="lighter";
+      ctx.globalAlpha=0.55; ctx.strokeStyle="#9b5cff"; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(x,y,CFG.R_ORBIT*md*1.25,0,TAU); ctx.stroke();
+      ctx.globalAlpha=1; if(glow) ctx.globalCompositeOperation="source-over";
+    } else if(!striking){
+      const rS=CFG.R_SUCTION*md*0.8;       // idle: faint hint of reach
+      ctx.globalAlpha=0.5; ctx.drawImage(Sprites.glow, x-rS, y-rS, rS*2, rS*2); ctx.globalAlpha=1;
     }
-    // accretion disk
-    const ang=t*0.004;
-    if(glow){ ctx.globalCompositeOperation="lighter"; }
-    for(let i=0;i<3;i++){
-      const rr=core*(1.5+i*0.55), a=ang+i*1.1;
-      const g=ctx.createConicGradient ? ctx.createConicGradient(a,x,y) : null;
-      ctx.lineWidth=core*0.28;
-      if(g){ g.addColorStop(0,"rgba(56,240,255,0)"); g.addColorStop(0.25, i%2?"#ff3df0":"#38f0ff");
-        g.addColorStop(0.5,"rgba(155,92,255,0)"); g.addColorStop(0.75,i%2?"#38f0ff":"#ff3df0"); g.addColorStop(1,"rgba(56,240,255,0)");
-        ctx.strokeStyle=g; }
-      else ctx.strokeStyle= i%2?"rgba(255,61,240,0.6)":"rgba(56,240,255,0.6)";
-      ctx.beginPath(); ctx.arc(x,y,rr,0,TAU); ctx.stroke();
-    }
-    if(glow){ ctx.globalCompositeOperation="source-over"; }
-    // event-horizon core
-    const cg=ctx.createRadialGradient(x,y,0,x,y,core);
-    cg.addColorStop(0,"#000"); cg.addColorStop(0.8,"#05030f"); cg.addColorStop(1,fist?"#ff3df0":"#9b5cff");
-    ctx.fillStyle=cg; ctx.beginPath(); ctx.arc(x,y,core,0,TAU); ctx.fill();
-    ctx.lineWidth=2; ctx.strokeStyle=fist?"#ff5470":"#7fd9ff"; ctx.beginPath(); ctx.arc(x,y,core,0,TAU); ctx.stroke();
-    // fingertip dots
+
+    // accretion disk: baked sprite rotated via transform (no per-frame gradient)
     if(glow) ctx.globalCompositeOperation="lighter";
-    for(let f=0; f<5; f++){ ctx.fillStyle="rgba(56,240,255,0.8)"; ctx.beginPath();
-      ctx.arc(h.tips[f].x,h.tips[f].y, f===1?5:3, 0,TAU); ctx.fill(); }
+    const ds=Sprites.disk, dsc=core/Sprites.diskRef, dw=ds.width*dsc;
+    ctx.save(); ctx.translate(x,y); ctx.rotate(t*0.004);
+    ctx.drawImage(ds, -dw/2, -dw/2, dw, dw); ctx.restore();
+    if(glow) ctx.globalCompositeOperation="source-over";
+    // event-horizon core — hot/red when striking or fist
+    const hot=striking||role==="fist";
+    const cs=hot?Sprites.coreFist:Sprites.core, csc=core/Sprites.coreRef, cw=cs.width*csc;
+    ctx.drawImage(cs, x-cw/2, y-cw/2, cw, cw);
+
+    // captured-count badge
+    if(h.cap>0){
+      ctx.fillStyle="#ffd34d"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.font=`900 ${Math.round(core*0.7)}px ${getFont()}`;
+      ctx.fillText("×"+h.cap, x, y-core-12);
+    }
+
+    // fingertip dots (brighter while striking)
+    if(glow) ctx.globalCompositeOperation="lighter";
+    ctx.fillStyle = striking ? "rgba(174,246,255,0.95)" : "rgba(56,240,255,0.8)";
+    for(let f=0; f<5; f++){ ctx.beginPath(); ctx.arc(h.tips[f].x,h.tips[f].y, f===1?5:3, 0,TAU); ctx.fill(); }
     if(glow) ctx.globalCompositeOperation="source-over";
   },
 
   drawStar(ctx,s,glow){
-    const a=s.spawn, R=s.r*a;
-    const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,R*2.2);
-    g.addColorStop(0,"#ffffff"); g.addColorStop(0.3,s.color); g.addColorStop(1,"transparent");
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y,R*2.2,0,TAU); ctx.fill();
-    // 4-point sparkle
+    const a=s.spawn, R=s.r*a, d=R*2.2;
+    const sp=Sprites.star[s.color]||Sprites.star[STAR_COLORS[0]];
+    ctx.drawImage(sp, s.x-d, s.y-d, d*2, d*2);
+    if(s.captured){                       // gold ring marks a held/charged star
+      ctx.globalAlpha=0.85; ctx.strokeStyle="#ffd34d"; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(s.x,s.y,R*1.55,0,TAU); ctx.stroke(); ctx.globalAlpha=1;
+    }
+    // 4-point sparkle (tiny path, gives motion)
     ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.spin); ctx.fillStyle="#fff"; ctx.globalAlpha=a;
     ctx.beginPath();
     for(let i=0;i<4;i++){ const ang=i/4*TAU; const ox=Math.cos(ang)*R, oy=Math.sin(ang)*R;
@@ -881,22 +1101,29 @@ const Overlay = {
     const c=this.ctx, W=this.cv.width, H=this.cv.height;
     c.clearRect(0,0,W,H);
     if(!result || !result.landmarks) return;
+    // palm x of each hand → colour by screen side (matches gameplay L/R assignment)
+    const palmX = lm => (1-(lm[0].x+lm[5].x+lm[9].x+lm[13].x+lm[17].x)/5)*W;
+    const xs = result.landmarks.map(palmX);
+    const leftest = xs.length>=2 ? (xs[0]<=xs[1]?0:1) : -1;
     for(let i=0;i<result.landmarks.length;i++){
       const lm=result.landmarks[i];
       const X=j=>(1-lm[j].x)*W, Y=j=>lm[j].y*H;   // mirror to match video
-      // bones
-      c.strokeStyle="rgba(56,240,255,0.85)"; c.lineWidth=2;
+      const isLeft = xs.length>=2 ? (i===leftest) : (xs[i] < W*0.5);
+      const col = isLeft ? "#9b5cff" : "#38f0ff";   // 左=吸(violet) · 右=打(cyan)
+      c.strokeStyle=col; c.lineWidth=2;
       for(const [a,b] of HAND_BONES){ c.beginPath(); c.moveTo(X(a),Y(a)); c.lineTo(X(b),Y(b)); c.stroke(); }
-      // joints
-      c.fillStyle="#ff3df0";
-      for(let j=0;j<lm.length;j++){ c.beginPath(); c.arc(X(j),Y(j),2.2,0,TAU); c.fill(); }
+      c.fillStyle=col;
+      for(let j=0;j<lm.length;j++){ c.beginPath(); c.arc(X(j),Y(j),2,0,TAU); c.fill(); }
       // palm center
       const cx=(X(0)+X(5)+X(9)+X(13)+X(17))/5, cy=(Y(0)+Y(5)+Y(9)+Y(13)+Y(17))/5;
       c.fillStyle="#ffd34d"; c.beginPath(); c.arc(cx,cy,5,0,TAU); c.fill();
       c.strokeStyle="#ffd34d"; c.lineWidth=1.5; c.beginPath(); c.arc(cx,cy,9,0,TAU); c.stroke();
+      // role letter
+      c.fillStyle=col; c.font="900 11px "+getFont(); c.textAlign="center";
+      c.fillText(isLeft?"吸":"打", cx, cy-13);
       // fingertips
       c.fillStyle="#5cff9b";
-      for(const tip of FINGER_TIPS){ c.beginPath(); c.arc(X(tip),Y(tip),3.2,0,TAU); c.fill(); }
+      for(const tip of FINGER_TIPS){ c.beginPath(); c.arc(X(tip),Y(tip),3,0,TAU); c.fill(); }
     }
   }
 };
@@ -965,13 +1192,20 @@ const Pointer = {
     window.addEventListener("keydown",e=>{ if(e.code==="KeyF"&&Game.state==="play"&&Game.shockCd<=0){
       Game.shockCd=CFG.SHOCK_COOLDOWN; Game.doShockwave(this.slot.dpalm.x,this.slot.dpalm.y); } });
   },
-  // mimic Gesture.step for the synthetic hand
+  // mimic Gesture.step for the synthetic hand (slow+hold = gather, fast = strike)
   step(dt){
     if(!this.enabled||!this.slot) return;
-    const s=this.slot, dp=s.dpalm, px=dp.x,py=dp.y;
+    const s=this.slot, dp=s.dpalm, px=dp.x,py=dp.y, md=Game.minDim||800;
     if(dp.x===0&&dp.y===0){ dp.x=s.palm.x; dp.y=s.palm.y; }
     dp.x=damp(dp.x,s.palm.x,0.03,dt); dp.y=damp(dp.y,s.palm.y,0.03,dt);
     dp.vx=(dp.x-px)/Math.max(dt,1e-3); dp.vy=(dp.y-py)/Math.max(dt,1e-3);
+    s.seg.x0=px; s.seg.y0=py; s.seg.x1=dp.x; s.seg.y1=dp.y;
+    for(let f=0; f<5; f++){ s.tips[f].x=dp.x; s.tips[f].y=dp.y; }
+    const inst=Math.hypot(dp.vx,dp.vy), on=CFG.STRIKE_ON*md, off=CFG.STRIKE_OFF*md;
+    s.speed=damp(s.speed,inst,0.05,dt);
+    if(!s.striking && s.speed>on) s.striking=true; else if(s.striking && s.speed<off) s.striking=false;
+    s.trail.push(dp.x,dp.y); if(s.trail.length>20) s.trail.splice(0,2);
+    s.side = dp.x < (Game.W||800)*0.5 ? "L":"R";
     Gesture.hands.length=0; Gesture.hands.push(s); Gesture.anyActive=true;
   }
 };
@@ -1039,8 +1273,13 @@ const App = {
 
   async init(){
     Render.init(); Overlay.init(); UI.init(); Pool.initPool();
+    if(IS_MOBILE){ Perf.tierName="med"; Perf.tier=TIERS.med; }   // start cooler on phones/tablets
     Render.resize(); Overlay.resize();
-    window.addEventListener("resize",()=>{ Render.resize(); Overlay.resize(); });
+    UI.perf(60, Perf.tierName);
+    // debounce resize — mobile URL-bar show/hide fires a storm of resize events
+    let rT=0; window.addEventListener("resize",()=>{ clearTimeout(rT);
+      rT=setTimeout(()=>{ Render.resize(); Overlay.resize(); }, 150); });
+    window.addEventListener("orientationchange",()=>{ setTimeout(()=>{ Render.resize(); Overlay.resize(); },300); });
     document.addEventListener("visibilitychange",()=>{ if(document.hidden && Game.state==="play") App.togglePause(true); });
 
     UI.showScreen("sLoading");
@@ -1068,22 +1307,24 @@ const App = {
         this.useTracking=true; UI.gesture("尋找手部…");
       }catch(e){
         console.warn("camera failed",e); this.useTracking=false;
-        UI.fallback("攝影機無法使用<br>請允許權限或改用<br>滑鼠 / 觸控遊玩");
+        UI.fallback("攝影機無法使用<br>改用滑鼠／觸控<br>快速滑動＝拍打<br>按住慢移＝吸聚");
         Pointer.enable();
       }
     } else {
       this.useTracking=false;
-      UI.fallback("追蹤未就緒<br>使用滑鼠 / 觸控<br>移動＝黑洞・按住＝吸力<br>雙擊／F＝衝擊波");
+      UI.fallback("使用滑鼠／觸控<br>快速滑動＝拍打得分<br>按住慢移＝吸聚星星<br>雙擊／F＝衝擊波");
       Pointer.enable();
     }
     Game.startCountdown();
   },
 
   togglePause(auto){
-    if(Game.state==="play"){ Game.state="pause"; UI.showScreen("sPause"); if(Audio.ctx)Audio.ctx.suspend(); }
+    if(Game.state==="play"){ Game.state="pause"; UI.showScreen("sPause");
+      if(Audio.ctx)Audio.ctx.suspend(); if(this.useTracking) Camera.pause(); }
     else if(Game.state==="pause" && !auto){ this.resume(); }
   },
-  resume(){ if(Game.state==="pause"){ Game.state="play"; UI.showScreen(null); Audio.resume(); } },
+  resume(){ if(Game.state==="pause"){ Game.state="play"; UI.showScreen(null);
+    Audio.resume(); if(this.useTracking) Camera.resume(); } },
 
   loop(now){
     this.raf=requestAnimationFrame(t=>this.loop(t));
@@ -1116,9 +1357,15 @@ const App = {
     const hands=Gesture.hands;
     if(hands.length===0){ UI.camState("lost"); UI.gesture("—");
       if(Game.state==="play") UI.hint("把手放回鏡頭裡","掌心對準畫面，慢慢移動"); return; }
-    UI.camState("track"); UI.hint(null);
-    const names={open:"張手・強吸",fist:"握拳・衝擊",neutral:"掌心・吸引",none:"—"};
-    let label = hands.map(h=>names[h.gesture]).join(" + ");
+    UI.camState("track");
+    // teach the core verb until the first hit, then get out of the way
+    if(Game.state==="play" && !Game.poppedAny){
+      UI.hint(hands.length>=2 ? "右手快速揮 = 打　左手張開 = 吸" : "👋 快速揮手 拍爆星星！","聚成一團再一次揮爆，分數 ×2");
+    } else UI.hint(null);
+    const rn={strike:"打",gather:"吸",fist:"拳",idle:"待",none:"待"};
+    // order label by side so it reads 左 … 右
+    const sorted=[...hands].sort((a,b)=>(a.dpalm.x-b.dpalm.x));
+    let label = sorted.map(h=>(h.side==="L"?"左":h.side==="R"?"右":"·")+"·"+rn[h.role||"idle"]).join("  ");
     if(hands.length>=2 && Game.energy>=CFG.ENERGY_MAX) label="🙌 雙手大招就緒！";
     UI.gesture(label);
   }
