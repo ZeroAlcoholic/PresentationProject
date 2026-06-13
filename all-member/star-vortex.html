@@ -435,6 +435,7 @@ const Gesture = {
 
   // turn one raw hand (21 normalized landmarks) into geometry, mirrored to css px
   ingest(slot, lm, tSec, W, H){
+    if(!lm || lm.length<21) return;               // guard: a malformed frame must not poison the OneEuro filters
     const px=i=>(1-lm[i].x)*W, py=i=>lm[i].y*H;   // mirror x for selfie view
     // palm center = wrist + 4 finger MCPs (robust, not just wrist)
     const cx=(px(0)+px(5)+px(9)+px(13)+px(17))/5;
@@ -516,7 +517,7 @@ const Gesture = {
     for(let i=0;i<2;i++){
       if(assign[i]) this.ingest(this.slots[i], assign[i].lm, tSec, W, H);
       else { const s=this.slots[i]; s.lost++;
-        if(s.lost>4){ s.active=false; s.gesture="none"; s.striking=false; s.speed=0; s.trail.length=0;
+        if(s.lost>4){ s.active=false; s.gesture="none"; s.side=""; s.striking=false; s.speed=0; s.trail.length=0;
           s.fx.reset(); s.fy.reset(); s.tfx.forEach(f=>f.reset()); s.tfy.forEach(f=>f.reset()); } }
     }
     this.resolveSides(W);
@@ -607,7 +608,7 @@ const Pool = {
     const s=new Star(); s.respawn(W,H); this.stars.push(s); return s; },
   addParticle(x,y,vx,vy,life,r,color){
     if(this.activeParts>=Perf.tier.maxParticles) return;
-    for(const p of this.parts) if(!p.alive){ p.init(x,y,vx,vy,life,r,color); return; }
+    for(const p of this.parts) if(!p.alive){ p.init(x,y,vx,vy,life,r,color); this.activeParts++; return; }  // live cap (don't blow budget on the ultimate frame)
   },
   activeParts:0,
   burst(x,y,n,color,power=1){
@@ -625,7 +626,7 @@ const Pool = {
 const Game = {
   state:"loading",  // loading|start|countdown|play|pause|over
   score:0, combo:1, comboTimer:0, bestCombo:1, energy:0, time:CFG.ROUND_TIME,
-  shake:0, shockCd:0, ultCd:0, spawnTimer:0, cdNum:3, cdTimer:0, poppedAny:false,
+  shake:0, shockCd:0, ultCd:0, spawnTimer:0, cdNum:3, cdTimer:0, poppedAny:false, _cdHide:0,
   W:0, H:0, minDim:0,
   best: +(localStorage.getItem("starVortexBest")||0),
 
@@ -638,8 +639,10 @@ const Game = {
     for(let i=0;i<10;i++) Pool.spawnStar(this.W,this.H);
   },
   startCountdown(){ this.reset(); this.state="countdown"; this.cdNum=3; this.cdTimer=0;
+    clearTimeout(this._cdHide);            // cancel a stale GO-hide from a prior round
     if(App.useTracking) Camera.resume();   // wake camera if it was paused on the over/pause screen
-    UI.showScreen(null); UI.countdown(3); Audio.tick(); Audio.startMusic(); },
+    UI.showScreen(null); UI.countdown(3); Audio.tick();
+    Audio.stopMusic(); Audio.startMusic(); },   // stop first so restart-from-pause re-arms BGM from 0
 
   update(dt){
     if(this.state==="countdown"){
@@ -647,7 +650,7 @@ const Game = {
       if(this.cdTimer>=0.9){ this.cdTimer=0; this.cdNum--;
         if(this.cdNum>0){ UI.countdown(this.cdNum); Audio.tick(); }
         else { UI.countdown("GO"); Audio.go(); this.state="play"; this.time=CFG.ROUND_TIME;
-               setTimeout(()=>UI.countdown(null),650); }
+               this._cdHide=setTimeout(()=>UI.countdown(null),650); }
       }
       this.stepEffects(dt); return;
     }
@@ -1373,6 +1376,7 @@ const App = {
       rT=setTimeout(()=>{ Render.resize(); Overlay.resize(); }, 150); });
     window.addEventListener("orientationchange",()=>{ setTimeout(()=>{ Render.resize(); Overlay.resize(); },300); });
     document.addEventListener("visibilitychange",()=>{ if(document.hidden && Game.state==="play") App.togglePause(true); });
+    window.addEventListener("pagehide",()=>{ Camera.stop(); });   // release the webcam when leaving the page
 
     UI.showScreen("sLoading");
     // preload tracking model while showing loader
