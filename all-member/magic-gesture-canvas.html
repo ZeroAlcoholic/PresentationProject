@@ -589,6 +589,9 @@
           <button class="icon-button" id="clearButton" type="button" aria-label="清除畫布" title="清除畫布">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
           </button>
+          <button class="icon-button" id="ecoButton" type="button" aria-label="切換省電模式" title="省電模式（平板建議開啟）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3C8 7 6 10 6 14a6 6 0 0 0 12 0c0-4-2-7-6-11Z"/><path d="M12 21v-7"/></svg>
+          </button>
         </div>
       </div>
 
@@ -675,6 +678,7 @@
     const pauseButton = document.getElementById("pauseButton");
     const clearButton = document.getElementById("clearButton");
     const soundButton = document.getElementById("soundButton");
+    const ecoButton = document.getElementById("ecoButton");
     const status = document.getElementById("status");
     const statusText = document.getElementById("statusText");
     const modeName = document.getElementById("modeName");
@@ -685,6 +689,11 @@
     // 觸控/平板：平板常被誤判為桌機而跑在最重畫質（DPR2），在記憶體較吃緊的平板上易當機 → 一律降規 + 限 DPR
     const isTouchDevice = (matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0);
     const TOUCH_DPR_CAP = 1.5;
+
+    // 極簡省電模式：真正砍掉重負載（MediaPipe 推論才是平板當機主因，自適應畫質只降畫布、砍不到它）
+    // 預設在觸控/平板開啟；可用網址 ?eco=1 強制開、?eco=0 強制關來 A/B 測試。
+    const ecoParam = new URLSearchParams(location.search).get("eco");
+    const ecoMode = ecoParam === "1" ? true : ecoParam === "0" ? false : isTouchDevice;
 
     // 診斷：捕捉未預期錯誤並顯示（方便回報），同時不讓單一錯誤永久凍結畫面
     const errBox = document.createElement("div");
@@ -1448,6 +1457,7 @@
     async function loadAudioAssets() {
       if (audioAssetsRequested) return;
       audioAssetsRequested = true;
+      if (ecoMode) return; // 省電：不載入音樂/音效檔（省下下載、解碼與 ~9MB 記憶體），僅保留近乎免費的合成音
       initAudio();
       const files = { ambient: "ambient-loop.mp3", whoosh: "whoosh.mp3", shimmer: "shimmer.mp3", zap: "zap.mp3", eclipse: "eclipse.mp3", chime: "chime.mp3" };
       await Promise.all(Object.entries(files).map(async ([key, file]) => {
@@ -1506,8 +1516,14 @@
 
     async function openCamera() {
       if (cameraRunning) return;
+      // 省電模式用更低解析度與更低幀率餵給 MediaPipe，大幅降低 GPU/記憶體負載
       mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
+        video: ecoMode ? {
+          facingMode: "user",
+          width: { ideal: 320, max: 480 },
+          height: { ideal: 240, max: 360 },
+          frameRate: { ideal: 24, max: 30 }
+        } : {
           facingMode: "user",
           width: { ideal: 640, max: 960 },
           height: { ideal: 480, max: 540 },
@@ -1550,7 +1566,7 @@
           delegate: "GPU"
         },
         runningMode: "VIDEO",
-        numHands: 2,
+        numHands: ecoMode ? 1 : 2, // 省電：只追一隻手，約砍半 landmark 推論量
         minHandDetectionConfidence: .5,
         minHandPresenceConfidence: .48,
         minTrackingConfidence: .45
@@ -1573,7 +1589,7 @@
       burst(W * .5, H * .52, 1.25, .7);
       modeName.textContent = "喚醒中";
       statusText.textContent = "模型・載入中";
-      showToast("正在校準魔法視界…");
+      showToast(ecoMode ? "省電・極簡模式（單手・無背景樂）" : "正在校準魔法視界…");
 
       try {
         await openCamera();
@@ -1727,10 +1743,11 @@
       if (!magicStarted) return;
       if (now - qualityCheckAt < 1100) return;
       qualityCheckAt = now;
+      const maxLevel = ecoMode ? 0 : QUALITY.length - 1; // 省電模式鎖在最低畫質，不自動升級
       if (fps < 44 && qualityLevel > 0) {
         qualityRaiseStreak = 0;
         setQuality(qualityLevel - 1);
-      } else if (fps > 55 && qualityLevel < QUALITY.length - 1) {
+      } else if (fps > 55 && qualityLevel < maxLevel) {
         if (++qualityRaiseStreak >= 4) { qualityRaiseStreak = 0; setQuality(qualityLevel + 1); }
       } else {
         qualityRaiseStreak = 0;
@@ -1981,7 +1998,7 @@
       if (gen !== detectGen || !cameraRunning || appPaused) return;
       // 推論看門狗：偵測間隔不只看畫質設定，也跟著「實測單次推論耗時」放寬，
       // 避免裝置變慢/發熱時主執行緒被連續同步推論塞爆而整頁凍結。
-      const minGap = Math.max(QUALITY[qualityLevel].detectMs, inferAvg * 1.8);
+      const minGap = Math.max(ecoMode ? 80 : QUALITY[qualityLevel].detectMs, inferAvg * 1.8);
       if (modelReady && gestureRecognizer && video.readyState >= 2 &&
           now - lastDetectAt >= minGap && video.currentTime !== lastVideoTime) {
         // 強制單調遞增的時間戳：避免同毫秒或時鐘邊界讓 recognizeForVideo 拋錯；失敗時不消耗該影格
@@ -2061,6 +2078,14 @@
       showToast(soundOn ? "音效已開啟" : "音效已靜音");
     });
     pauseButton.addEventListener("click", () => setSystemPaused(!appPaused));
+    // 省電模式切換：以網址參數重載，確保相機解析度／numHands 等乾淨重新初始化
+    ecoButton.style.color = ecoMode ? "var(--cyan)" : "";
+    ecoButton.title = ecoMode ? "省電模式：開（點擊關閉）" : "省電模式：關（平板建議開啟）";
+    ecoButton.addEventListener("click", () => {
+      const url = new URL(location.href);
+      url.searchParams.set("eco", ecoMode ? "0" : "1");
+      location.href = url.toString();
+    });
     startButton.addEventListener("click", startMagic, { once: true });
     let resizeTimer = 0;
     addEventListener("resize", () => {
@@ -2076,11 +2101,13 @@
       if (event.key.toLowerCase() === "p" && !pauseButton.disabled) pauseButton.click();
     });
 
-    // 依裝置能力選擇起始畫質：手機/平板（觸控）一律從「平衡」起跳，避免平板被當成桌機跑最重檔而當機（之後仍會自適應）
-    if (isTouchDevice || matchMedia("(max-width: 760px)").matches || (navigator.hardwareConcurrency || 8) <= 4) {
+    // 依裝置能力選擇起始畫質：省電模式直接鎖最低檔；其餘觸控/弱機從「平衡」起跳（之後仍會自適應）
+    if (ecoMode) {
+      qualityLevel = 0;
+    } else if (isTouchDevice || matchMedia("(max-width: 760px)").matches || (navigator.hardwareConcurrency || 8) <= 4) {
       qualityLevel = 1;
     }
-    qualityBadge.textContent = `效果：${QUALITY[qualityLevel].name}`;
+    qualityBadge.textContent = ecoMode ? "省電・極簡" : `效果：${QUALITY[qualityLevel].name}`;
     buildSparkSprites();
     resize();
     burst(W * .5, H * .5, .5, .7);
