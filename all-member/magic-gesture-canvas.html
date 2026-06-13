@@ -30,7 +30,7 @@
 
     button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 
-    .stage, #camera, #art, .vignette, .grain {
+    .stage, #art, .vignette, .grain {
       position: fixed;
       inset: 0;
       width: 100%;
@@ -44,16 +44,6 @@
         radial-gradient(circle at 18% 30%, rgba(0, 178, 255, .08), transparent 32%),
         linear-gradient(145deg, #05030d, #071022 55%, #04020b);
     }
-
-    #camera {
-      z-index: -3;
-      object-fit: cover;
-      transform: scaleX(-1);
-      filter: saturate(.55) contrast(1.22) brightness(.25) hue-rotate(12deg);
-      opacity: 0;
-      transition: opacity 1.2s ease;
-    }
-    body.camera-on #camera { opacity: .48; }
 
     #art { z-index: -1; cursor: crosshair; }
 
@@ -292,6 +282,117 @@
     }
     .mode strong { display: block; margin-bottom: 5px; color: var(--cyan); font-size: 12px; font-weight: 700; }
 
+    .camera-preview {
+      position: fixed;
+      z-index: 5;
+      right: max(24px, env(safe-area-inset-right));
+      bottom: max(70px, calc(env(safe-area-inset-bottom) + 62px));
+      width: clamp(220px, 22vw, 330px);
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid rgba(111, 238, 255, .42);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(69,246,255,.12), transparent 48%),
+        rgba(3, 5, 15, .88);
+      box-shadow: 0 22px 70px rgba(0,0,0,.48), 0 0 34px rgba(69,246,255,.1), inset 0 0 0 1px rgba(255,255,255,.06);
+      opacity: 0;
+      transform: translateY(18px) scale(.96);
+      transition: .55s cubic-bezier(.2,.8,.2,1);
+      pointer-events: none;
+    }
+    body.started .camera-preview { opacity: 1; transform: none; }
+    .camera-preview::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(to bottom, rgba(4,5,14,.08), transparent 48%, rgba(4,5,14,.64));
+      box-shadow: inset 0 0 28px rgba(0,0,0,.42);
+    }
+    #camera {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      filter: saturate(.82) contrast(1.08) brightness(.88);
+    }
+    #handOverlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+    }
+    .preview-top, .preview-bottom {
+      position: absolute;
+      z-index: 4;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      text-shadow: 0 1px 8px rgba(0,0,0,.9);
+    }
+    .preview-top { top: 10px; }
+    .preview-bottom { bottom: 10px; align-items: flex-end; }
+    .preview-label, .preview-fps {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .14em;
+    }
+    .preview-label { color: rgba(255,255,255,.72); }
+    .preview-fps { color: var(--cyan); }
+    .tracking-dot {
+      width: 7px;
+      height: 7px;
+      margin-right: 6px;
+      display: inline-block;
+      border-radius: 50%;
+      background: #777484;
+    }
+    .camera-preview.tracking .tracking-dot { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+    .gesture-readout {
+      color: white;
+      font-family: Georgia, "Noto Serif TC", serif;
+      font-size: 18px;
+      letter-spacing: .08em;
+    }
+    .hand-count { color: rgba(255,255,255,.58); font-size: 9px; letter-spacing: .12em; }
+    .preview-fallback {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      color: #cbc6d8;
+      background: rgba(4,4,14,.9);
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.8;
+      letter-spacing: .08em;
+    }
+    .camera-preview.fallback .preview-fallback { display: grid; }
+    .quality-badge {
+      position: absolute;
+      z-index: 4;
+      right: 12px;
+      top: 10px;
+      padding: 4px 7px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 999px;
+      color: rgba(255,255,255,.6);
+      background: rgba(0,0,0,.25);
+      font-size: 8px;
+      letter-spacing: .12em;
+    }
+
     .toast {
       position: fixed;
       z-index: 8;
@@ -347,6 +448,16 @@
       .gesture span { display: none; }
       .hint, .mode { display: none; }
       .start-button { min-width: 224px; height: 54px; font-size: 15px; }
+      .camera-preview {
+        right: 12px;
+        bottom: 70px;
+        width: min(42vw, 178px);
+        border-radius: 15px;
+      }
+      .preview-top { top: 7px; left: 8px; right: 8px; }
+      .preview-bottom { bottom: 7px; left: 8px; right: 8px; }
+      .quality-badge, .preview-fps, .hand-count { display: none; }
+      .gesture-readout { font-size: 12px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -356,7 +467,6 @@
 </head>
 <body>
   <div class="stage">
-    <video id="camera" autoplay muted playsinline aria-hidden="true"></video>
     <canvas id="art" aria-label="魔法手勢互動畫布"></canvas>
     <div class="vignette"></div>
     <div class="grain"></div>
@@ -411,9 +521,26 @@
 
     <div class="gestures" aria-hidden="true">
       <div class="gesture"><strong>指尖・畫出光軌</strong><span>伸出食指，在空中留下魔法</span></div>
-      <div class="gesture"><strong>張掌・召喚星火</strong><span>張開手掌，綻放粒子煙火</span></div>
+      <div class="gesture"><strong>張掌・星火／握拳・暫停</strong><span>張掌爆發，握拳清除並暫停</span></div>
       <div class="gesture"><strong>雙手・釋放日蝕</strong><span>雙手靠近，觸發日蝕大招</span></div>
     </div>
+
+    <aside class="camera-preview" id="cameraPreview" aria-label="攝影機手部追蹤預覽">
+      <video id="camera" autoplay muted playsinline aria-hidden="true"></video>
+      <canvas id="handOverlay"></canvas>
+      <div class="preview-top">
+        <span class="preview-label"><i class="tracking-dot"></i><span id="trackingText">等待攝影機</span></span>
+      </div>
+      <span class="quality-badge" id="qualityBadge">效果：高</span>
+      <div class="preview-bottom">
+        <div>
+          <strong class="gesture-readout" id="gestureReadout">尚未偵測</strong>
+          <span class="hand-count" id="handCount">0 HANDS</span>
+        </div>
+        <span class="preview-fps" id="previewFps">-- FPS</span>
+      </div>
+      <div class="preview-fallback" id="previewFallback">攝影機或手部模型無法使用<br>可直接以滑鼠／觸控操作</div>
+    </aside>
   </div>
   <div class="toast" id="toast" role="status"></div>
   <div class="flash" id="flash"></div>
@@ -422,6 +549,15 @@
     const canvas = document.getElementById("art");
     const ctx = canvas.getContext("2d", { alpha: true });
     const video = document.getElementById("camera");
+    const handOverlay = document.getElementById("handOverlay");
+    const handCtx = handOverlay.getContext("2d");
+    const cameraPreview = document.getElementById("cameraPreview");
+    const trackingText = document.getElementById("trackingText");
+    const gestureReadout = document.getElementById("gestureReadout");
+    const handCount = document.getElementById("handCount");
+    const previewFps = document.getElementById("previewFps");
+    const previewFallback = document.getElementById("previewFallback");
+    const qualityBadge = document.getElementById("qualityBadge");
     const startButton = document.getElementById("startButton");
     const clearButton = document.getElementById("clearButton");
     const soundButton = document.getElementById("soundButton");
@@ -435,20 +571,44 @@
     const TAU = Math.PI * 2;
     const trails = [];
     const sparks = [];
+    const sparkPool = [];
     const rings = [];
     const stars = [];
     const pointers = new Map();
+    const HAND_CONNECTIONS = [
+      [0,1],[1,2],[2,3],[3,4],
+      [0,5],[5,6],[6,7],[7,8],
+      [5,9],[9,10],[10,11],[11,12],
+      [9,13],[13,14],[14,15],[15,16],
+      [13,17],[17,18],[18,19],[19,20],[0,17]
+    ];
     let W = innerWidth, H = innerHeight, dpr = 1;
     let handLandmarker = null;
     let lastVideoTime = -1;
+    let lastDetectAt = 0;
+    let latestHands = [];
+    let latestGestures = [];
     let cameraRunning = false;
+    let modelReady = false;
+    let drawingPaused = false;
     let soundOn = true;
     let audio = null;
     let lastPalmBurst = [0, 0];
+    let fistSince = [0, 0];
+    let fistTriggered = [false, false];
     let lastUltimate = 0;
     let ultimateCharge = 0;
     let lastFrame = performance.now();
     let fps = 60;
+    let lowFpsSeconds = 0;
+    let highFpsSeconds = 0;
+    let qualityLevel = 2;
+
+    const QUALITY = [
+      { name: "省電", particles: 260, trails: 180, detectMs: 100, dpr: 1, glow: 0 },
+      { name: "平衡", particles: 520, trails: 300, detectMs: 72, dpr: 1.4, glow: 5 },
+      { name: "高", particles: 820, trails: 420, detectMs: 55, dpr: 2, glow: 9 }
+    ];
 
     const palette = [
       [69, 246, 255],
@@ -459,7 +619,7 @@
 
     function resize() {
       W = innerWidth; H = innerHeight;
-      dpr = Math.min(devicePixelRatio || 1, 2);
+      dpr = Math.min(devicePixelRatio || 1, QUALITY[qualityLevel].dpr);
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
       canvas.style.width = W + "px";
@@ -470,6 +630,15 @@
       for (let i = 0; i < count; i++) {
         stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.25, a: .12 + Math.random() * .5, p: Math.random() * TAU });
       }
+      resizeHandOverlay();
+    }
+
+    function resizeHandOverlay() {
+      const rect = handOverlay.getBoundingClientRect();
+      const ratio = Math.min(devicePixelRatio || 1, 2);
+      handOverlay.width = Math.max(1, Math.round(rect.width * ratio));
+      handOverlay.height = Math.max(1, Math.round(rect.height * ratio));
+      handCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
     }
 
     function showToast(message) {
@@ -486,7 +655,17 @@
       return `rgba(${a[0] + (b[0] - a[0]) * f},${a[1] + (b[1] - a[1]) * f},${a[2] + (b[2] - a[2]) * f},${alpha})`;
     }
 
+    function emitSpark(values) {
+      const limit = QUALITY[qualityLevel].particles;
+      if (sparks.length >= limit) return null;
+      const particle = sparkPool.pop() || {};
+      Object.assign(particle, values);
+      sparks.push(particle);
+      return particle;
+    }
+
     function addTrail(x, y, source = 0, force = 1) {
+      if (drawingPaused) return;
       const prev = trails.length ? trails[trails.length - 1] : null;
       trails.push({
         x, y,
@@ -497,9 +676,11 @@
         hue: performance.now() * .00032 + source * 1.15,
         source
       });
-      if (trails.length > 520) trails.splice(0, trails.length - 520);
-      for (let i = 0; i < 2 + force * 2; i++) {
-        sparks.push({
+      const maxTrails = QUALITY[qualityLevel].trails;
+      if (trails.length > maxTrails) trails.splice(0, trails.length - maxTrails);
+      const sparkCount = qualityLevel === 0 ? 1 : Math.round(1 + force * qualityLevel);
+      for (let i = 0; i < sparkCount; i++) {
+        emitSpark({
           x, y,
           vx: (Math.random() - .5) * 2.6,
           vy: (Math.random() - .5) * 2.6,
@@ -512,11 +693,11 @@
     }
 
     function burst(x, y, power = 1, hue = 2) {
-      const count = Math.round(75 * power);
+      const count = Math.round((qualityLevel === 2 ? 64 : qualityLevel === 1 ? 42 : 24) * power);
       for (let i = 0; i < count; i++) {
         const a = Math.random() * TAU;
         const speed = (1.5 + Math.random() * 8) * power;
-        sparks.push({
+        emitSpark({
           x, y,
           vx: Math.cos(a) * speed,
           vy: Math.sin(a) * speed,
@@ -527,6 +708,7 @@
           gravity: .018 + Math.random() * .035
         });
       }
+      if (rings.length > 18) rings.splice(0, rings.length - 18);
       rings.push({ x, y, r: 8, life: 1, speed: 9 * power, hue });
       tone(260 + Math.random() * 180, .28, "sine");
     }
@@ -536,7 +718,8 @@
       if (now - lastUltimate < 1800) return;
       lastUltimate = now;
       ultimateCharge = 0;
-      for (let layer = 0; layer < 4; layer++) {
+      const layers = qualityLevel === 0 ? 2 : qualityLevel === 1 ? 3 : 4;
+      for (let layer = 0; layer < layers; layer++) {
         setTimeout(() => burst(x, y, 1.5 + layer * .23, layer * .7 + .5), layer * 90);
       }
       rings.push({ x, y, r: 15, life: 1.35, speed: 18, hue: 3, eclipse: true });
@@ -550,17 +733,44 @@
       showToast("✦ 日蝕共鳴 ✦");
     }
 
-    function openPalm(hand) {
+    function extendedFingerCount(hand) {
       const wrist = hand[0];
       const tips = [4, 8, 12, 16, 20];
       const bases = [2, 5, 9, 13, 17];
-      let open = 0;
+      let extended = 0;
       for (let i = 0; i < tips.length; i++) {
         const td = Math.hypot(hand[tips[i]].x - wrist.x, hand[tips[i]].y - wrist.y);
         const bd = Math.hypot(hand[bases[i]].x - wrist.x, hand[bases[i]].y - wrist.y);
-        if (td > bd * 1.45) open++;
+        if (td > bd * (i === 0 ? 1.28 : 1.42)) extended++;
       }
-      return open >= 4;
+      return extended;
+    }
+
+    function classifyGesture(hand) {
+      const count = extendedFingerCount(hand);
+      const wrist = hand[0];
+      const indexExtended = Math.hypot(hand[8].x - wrist.x, hand[8].y - wrist.y) >
+        Math.hypot(hand[5].x - wrist.x, hand[5].y - wrist.y) * 1.48;
+      const otherTips = [12, 16, 20];
+      const otherBases = [9, 13, 17];
+      const othersFolded = otherTips.every((tip, i) =>
+        Math.hypot(hand[tip].x - wrist.x, hand[tip].y - wrist.y) <
+        Math.hypot(hand[otherBases[i]].x - wrist.x, hand[otherBases[i]].y - wrist.y) * 1.36
+      );
+      if (count >= 4) return "OPEN";
+      if (count <= 1 && !indexExtended) return "FIST";
+      if (indexExtended && othersFolded) return "POINT";
+      return "MOVE";
+    }
+
+    function gestureLabel(gesture) {
+      return {
+        OPEN: "張掌・星火",
+        FIST: "握拳・暫停",
+        POINT: "指尖・光軌",
+        MOVE: "手掌移動",
+        DUAL: "雙手・日蝕"
+      }[gesture] || "尋找手勢";
     }
 
     function mapPoint(p) {
@@ -569,8 +779,18 @@
 
     function processHands(results, now) {
       const hands = results?.landmarks || [];
+      latestHands = hands.slice(0, 2);
+      latestGestures = latestHands.map(classifyGesture);
+      handCount.textContent = `${latestHands.length} HAND${latestHands.length === 1 ? "" : "S"}`;
+      cameraPreview.classList.toggle("tracking", latestHands.length > 0);
+      trackingText.textContent = latestHands.length ? "追蹤中" : "尋找手部";
+
       if (!hands.length) {
         modeName.textContent = "尋找雙手";
+        gestureReadout.textContent = "尚未偵測";
+        drawingPaused = false;
+        fistSince = [0, 0];
+        fistTriggered = [false, false];
         ultimateCharge = Math.max(0, ultimateCharge - .04);
         return;
       }
@@ -579,15 +799,29 @@
       hands.slice(0, 2).forEach((hand, i) => {
         const tip = mapPoint(hand[8]);
         const palm = mapPoint(hand[9]);
+        const gesture = latestGestures[i];
         centers.push(palm);
-        addTrail(tip.x, tip.y, i, 1);
+        if (gesture === "POINT" || gesture === "MOVE") addTrail(tip.x, tip.y, i, gesture === "POINT" ? 1.25 : .65);
 
-        if (openPalm(hand) && now - lastPalmBurst[i] > 1150) {
+        if (gesture === "OPEN" && now - lastPalmBurst[i] > 850) {
           lastPalmBurst[i] = now;
           burst(palm.x, palm.y, 1, i ? 2.2 : .1);
           modeName.textContent = "星火・綻放";
+        } else if (gesture === "FIST") {
+          if (!fistSince[i]) fistSince[i] = now;
+          drawingPaused = true;
+          modeName.textContent = "握拳・暫停";
+          if (!fistTriggered[i] && now - fistSince[i] > 420) {
+            fistTriggered[i] = true;
+            clearMagic(false);
+            showToast("握拳封印・畫布已清除");
+            if (navigator.vibrate) navigator.vibrate(35);
+          }
         } else {
-          modeName.textContent = "光軌・編織";
+          fistSince[i] = 0;
+          fistTriggered[i] = false;
+          if (!latestGestures.includes("FIST")) drawingPaused = false;
+          if (gesture === "POINT") modeName.textContent = "光軌・編織";
         }
       });
 
@@ -598,13 +832,68 @@
           ultimateCharge = Math.min(1, ultimateCharge + .055);
           const x = (centers[0].x + centers[1].x) / 2;
           const y = (centers[0].y + centers[1].y) / 2;
+          if (rings.length >= 18) rings.shift();
           rings.push({ x, y, r: 15 + ultimateCharge * 60, life: .32, speed: 1, hue: 3.2 });
           modeName.textContent = `日蝕蓄力 ${Math.round(ultimateCharge * 100)}%`;
+          gestureReadout.textContent = "雙手・日蝕";
           if (ultimateCharge >= 1) ultimate(x, y);
         } else {
           ultimateCharge = Math.max(0, ultimateCharge - .025);
+          gestureReadout.textContent = latestGestures.map(gestureLabel).join(" ＋ ");
         }
+      } else {
+        gestureReadout.textContent = gestureLabel(latestGestures[0]);
       }
+    }
+
+    function previewPoint(point, width, height) {
+      const vw = video.videoWidth || 4;
+      const vh = video.videoHeight || 3;
+      const scale = Math.max(width / vw, height / vh);
+      const drawWidth = vw * scale;
+      const drawHeight = vh * scale;
+      const offsetX = (width - drawWidth) / 2;
+      const offsetY = (height - drawHeight) / 2;
+      return {
+        x: width - (offsetX + point.x * drawWidth),
+        y: offsetY + point.y * drawHeight
+      };
+    }
+
+    function drawHandPreview() {
+      const rect = handOverlay.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      handCtx.clearRect(0, 0, width, height);
+      if (!latestHands.length) return;
+
+      handCtx.globalCompositeOperation = "lighter";
+      latestHands.forEach((hand, handIndex) => {
+        const hue = handIndex ? "#ff69bd" : "#5cf6ff";
+        handCtx.strokeStyle = hue;
+        handCtx.lineWidth = 2;
+        handCtx.shadowColor = hue;
+        handCtx.shadowBlur = QUALITY[qualityLevel].glow;
+        handCtx.beginPath();
+        for (const [from, to] of HAND_CONNECTIONS) {
+          const a = previewPoint(hand[from], width, height);
+          const b = previewPoint(hand[to], width, height);
+          handCtx.moveTo(a.x, a.y);
+          handCtx.lineTo(b.x, b.y);
+        }
+        handCtx.stroke();
+
+        hand.forEach((point, index) => {
+          const p = previewPoint(point, width, height);
+          const isTip = [4, 8, 12, 16, 20].includes(index);
+          handCtx.fillStyle = isTip ? "#fff7ce" : hue;
+          handCtx.beginPath();
+          handCtx.arc(p.x, p.y, isTip ? 4.8 : 2.2, 0, TAU);
+          handCtx.fill();
+        });
+      });
+      handCtx.shadowBlur = 0;
+      handCtx.globalCompositeOperation = "source-over";
     }
 
     function initAudio() {
@@ -647,30 +936,44 @@
         await video.play();
         document.body.classList.add("camera-on");
         cameraRunning = true;
+        trackingText.textContent = "載入模型";
 
         const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm");
         const fileset = await vision.FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm"
         );
-        handLandmarker = await vision.HandLandmarker.createFromOptions(fileset, {
+        const options = {
           baseOptions: {
             modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
             delegate: "GPU"
           },
           runningMode: "VIDEO",
           numHands: 2,
-          minHandDetectionConfidence: .55,
-          minHandPresenceConfidence: .5,
-          minTrackingConfidence: .5
-        });
+          minHandDetectionConfidence: .5,
+          minHandPresenceConfidence: .48,
+          minTrackingConfidence: .45
+        };
+        try {
+          handLandmarker = await vision.HandLandmarker.createFromOptions(fileset, options);
+        } catch {
+          options.baseOptions.delegate = "CPU";
+          handLandmarker = await vision.HandLandmarker.createFromOptions(fileset, options);
+        }
+        modelReady = true;
         status.classList.add("live");
         statusText.textContent = "攝影機・魔法同步";
+        trackingText.textContent = "尋找手部";
         modeName.textContent = "伸出食指";
         showToast("視界已開啟・把手放進畫面");
       } catch (error) {
         console.warn(error);
         statusText.textContent = "觸控模式";
         modeName.textContent = "觸控・就緒";
+        trackingText.textContent = "FALLBACK";
+        cameraPreview.classList.add("fallback");
+        previewFallback.innerHTML = cameraRunning
+          ? "手部模型載入失敗<br>攝影機可用・請改用觸控／滑鼠"
+          : "攝影機無法使用<br>請允許權限，或改用觸控／滑鼠";
         showToast("無法啟用攝影機，已切換觸控／滑鼠模式");
       }
     }
@@ -692,10 +995,12 @@
       ctx.globalCompositeOperation = "lighter";
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      for (let i = trails.length - 1; i >= 0; i--) {
+      let write = 0;
+      for (let i = 0; i < trails.length; i++) {
         const t = trails[i];
         t.life -= .012;
-        if (t.life <= 0) { trails.splice(i, 1); continue; }
+        if (t.life <= 0) continue;
+        trails[write++] = t;
         const alpha = Math.sin(Math.min(1, t.life) * Math.PI / 2);
         ctx.strokeStyle = colorAt(t.hue, alpha * .16);
         ctx.lineWidth = t.width * 4.5 * alpha;
@@ -707,6 +1012,7 @@
         ctx.lineWidth = Math.max(1, t.width * .34 * alpha);
         ctx.beginPath(); ctx.moveTo(t.px, t.py); ctx.lineTo(t.x, t.y); ctx.stroke();
       }
+      trails.length = write;
     }
 
     function drawSparks() {
@@ -716,10 +1022,16 @@
         p.x += p.vx; p.y += p.vy;
         p.vx *= .992; p.vy = p.vy * .992 + (p.gravity || 0);
         p.life -= p.decay;
-        if (p.life <= 0) { sparks.splice(i, 1); continue; }
+        if (p.life <= 0) {
+          const expired = sparks[i];
+          const tail = sparks.pop();
+          if (i < sparks.length) sparks[i] = tail;
+          sparkPool.push(expired);
+          continue;
+        }
         ctx.fillStyle = colorAt(p.hue, Math.min(1, p.life));
         ctx.shadowColor = colorAt(p.hue, 1);
-        ctx.shadowBlur = 9;
+        ctx.shadowBlur = QUALITY[qualityLevel].glow;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * Math.max(.15, p.life), 0, TAU);
         ctx.fill();
@@ -727,17 +1039,50 @@
       ctx.shadowBlur = 0;
     }
 
+    function setQuality(nextLevel) {
+      const clamped = Math.max(0, Math.min(QUALITY.length - 1, nextLevel));
+      if (clamped === qualityLevel) return;
+      qualityLevel = clamped;
+      qualityBadge.textContent = `效果：${QUALITY[qualityLevel].name}`;
+      while (sparks.length > QUALITY[qualityLevel].particles) sparkPool.push(sparks.pop());
+      if (trails.length > QUALITY[qualityLevel].trails) trails.splice(0, trails.length - QUALITY[qualityLevel].trails);
+      resize();
+    }
+
+    function updateAdaptiveQuality() {
+      if (fps < 38) {
+        lowFpsSeconds++;
+        highFpsSeconds = 0;
+      } else if (fps > 54) {
+        highFpsSeconds++;
+        lowFpsSeconds = 0;
+      } else {
+        lowFpsSeconds = Math.max(0, lowFpsSeconds - 1);
+        highFpsSeconds = 0;
+      }
+      if (lowFpsSeconds >= 3 && qualityLevel > 0) {
+        setQuality(qualityLevel - 1);
+        lowFpsSeconds = 0;
+        showToast(`已自動切換${QUALITY[qualityLevel].name}效果，優先維持即時反應`);
+      } else if (highFpsSeconds >= 8 && qualityLevel < 2) {
+        setQuality(qualityLevel + 1);
+        highFpsSeconds = 0;
+      }
+    }
+
     function drawRings() {
       ctx.globalCompositeOperation = "lighter";
-      for (let i = rings.length - 1; i >= 0; i--) {
+      let write = 0;
+      for (let i = 0; i < rings.length; i++) {
         const r = rings[i];
         r.r += r.speed;
         r.life -= r.eclipse ? .018 : .03;
-        if (r.life <= 0) { rings.splice(i, 1); continue; }
+        if (r.life <= 0) continue;
+        rings[write++] = r;
         ctx.strokeStyle = colorAt(r.hue, Math.min(1, r.life) * .75);
         ctx.lineWidth = (r.eclipse ? 8 : 3) * Math.max(.1, r.life);
         ctx.shadowColor = colorAt(r.hue, 1);
-        ctx.shadowBlur = r.eclipse ? 34 : 18;
+        ctx.shadowBlur = qualityLevel === 0 ? 0 : r.eclipse ? 24 + QUALITY[qualityLevel].glow : 10 + QUALITY[qualityLevel].glow;
         ctx.beginPath();
         ctx.arc(r.x, r.y, r.r, 0, TAU);
         ctx.stroke();
@@ -750,25 +1095,48 @@
           ctx.beginPath(); ctx.arc(r.x, r.y, r.r * .72, 0, TAU); ctx.fill();
         }
       }
+      rings.length = write;
       ctx.shadowBlur = 0;
     }
 
-    async function animate(now) {
+    function animate(now) {
       const dt = now - lastFrame;
       lastFrame = now;
       fps += ((1000 / Math.max(1, dt)) - fps) * .06;
-      if (cameraRunning && handLandmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+      const detectInterval = QUALITY[qualityLevel].detectMs;
+      if (cameraRunning && modelReady && handLandmarker && video.readyState >= 2 &&
+          video.currentTime !== lastVideoTime && now - lastDetectAt >= detectInterval) {
+        lastDetectAt = now;
         lastVideoTime = video.currentTime;
-        try { processHands(handLandmarker.detectForVideo(video, now), now); } catch {}
+        try {
+          processHands(handLandmarker.detectForVideo(video, now), now);
+        } catch (error) {
+          trackingText.textContent = "偵測重試中";
+        }
       }
       drawBackground(now);
       drawTrails();
       drawSparks();
       drawRings();
+      drawHandPreview();
       if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
-        fpsText.textContent = cameraRunning ? `${Math.round(fps)} FPS・本機運算` : "觸控與滑鼠已就緒";
+        const roundedFps = Math.round(fps);
+        fpsText.textContent = cameraRunning ? `${roundedFps} FPS・${latestHands.length} 手` : "觸控與滑鼠已就緒";
+        previewFps.textContent = `${roundedFps} FPS`;
+        canvas.dataset.fps = String(roundedFps);
+        canvas.dataset.particles = String(sparks.length);
+        canvas.dataset.trails = String(trails.length);
+        canvas.dataset.quality = QUALITY[qualityLevel].name;
+        updateAdaptiveQuality();
       }
       requestAnimationFrame(animate);
+    }
+
+    function clearMagic(withBurst = true) {
+      trails.length = 0;
+      rings.length = 0;
+      while (sparks.length) sparkPool.push(sparks.pop());
+      if (withBurst) burst(W * .5, H * .5, .65, .2);
     }
 
     function pointerPoint(event) { return { x: event.clientX, y: event.clientY }; }
@@ -802,8 +1170,7 @@
     canvas.addEventListener("pointercancel", releasePointer);
 
     clearButton.addEventListener("click", () => {
-      trails.length = sparks.length = rings.length = 0;
-      burst(W * .5, H * .5, .65, .2);
+      clearMagic(true);
       showToast("畫布已淨化");
     });
     soundButton.addEventListener("click", () => {
