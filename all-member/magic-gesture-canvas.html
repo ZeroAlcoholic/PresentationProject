@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05030d">
+  <title>ARCANA｜魔法手勢畫板</title>
+  <style>
+    :root {
+      --void: #05030d;
+      --cyan: #45f6ff;
+      --violet: #8b5cff;
+      --pink: #ff3da9;
+      --gold: #ffd166;
+      --paper: #fff7e6;
+      --muted: #9c9ab0;
+      --line: rgba(255, 255, 255, .15);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      margin: 0;
+      color: var(--paper);
+      background: var(--void);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+      touch-action: none;
+      user-select: none;
+    }
+
+    button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+
+    .stage, #camera, #art, .vignette, .grain {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .stage {
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 50% 56%, rgba(40, 28, 92, .28), transparent 42%),
+        radial-gradient(circle at 18% 30%, rgba(0, 178, 255, .08), transparent 32%),
+        linear-gradient(145deg, #05030d, #071022 55%, #04020b);
+    }
+
+    #camera {
+      z-index: -3;
+      object-fit: cover;
+      transform: scaleX(-1);
+      filter: saturate(.55) contrast(1.22) brightness(.25) hue-rotate(12deg);
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    body.camera-on #camera { opacity: .48; }
+
+    #art { z-index: -1; cursor: crosshair; }
+
+    .vignette {
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at center, transparent 25%, rgba(2, 1, 8, .2) 64%, rgba(2, 1, 8, .88) 112%),
+        linear-gradient(to bottom, rgba(1, 1, 6, .48), transparent 24%, transparent 72%, rgba(1, 1, 6, .6));
+    }
+
+    .grain {
+      z-index: 1;
+      pointer-events: none;
+      opacity: .055;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+    }
+
+    .chrome {
+      position: relative;
+      z-index: 4;
+      height: 100%;
+      padding: max(22px, env(safe-area-inset-top)) max(26px, env(safe-area-inset-right))
+        max(18px, env(safe-area-inset-bottom)) max(26px, env(safe-area-inset-left));
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .sigil {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 209, 102, .72);
+      border-radius: 50%;
+      color: var(--gold);
+      box-shadow: inset 0 0 20px rgba(255, 209, 102, .08), 0 0 28px rgba(255, 209, 102, .08);
+    }
+    .sigil svg { width: 35px; height: 35px; }
+
+    .brand-name {
+      margin: 0;
+      color: #ffe4a2;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(22px, 2.2vw, 34px);
+      font-weight: 400;
+      letter-spacing: .18em;
+      line-height: 1;
+      text-shadow: 0 0 24px rgba(255, 209, 102, .25);
+    }
+    .brand-sub {
+      margin: 7px 0 0;
+      color: rgba(255, 230, 177, .74);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .48em;
+    }
+
+    .actions { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+    .status, .icon-button {
+      height: 42px;
+      border: 1px solid var(--line);
+      background: rgba(5, 4, 15, .48);
+      backdrop-filter: blur(14px);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 15px;
+      border-radius: 999px;
+      color: #b8b5c4;
+      font-size: 12px;
+      letter-spacing: .08em;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #777484; box-shadow: 0 0 0 4px rgba(119,116,132,.1);
+    }
+    .status.live .status-dot { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+    .icon-button {
+      width: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .icon-button:hover { border-color: rgba(255,255,255,.36); transform: translateY(-2px); }
+    .icon-button svg { width: 18px; height: 18px; }
+
+    .center-intro {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      top: 53%;
+      width: min(600px, calc(100% - 34px));
+      text-align: center;
+      transform: translate(-50%, -50%);
+      transition: .7s cubic-bezier(.2,.8,.2,1);
+      pointer-events: none;
+    }
+    body.started .center-intro { opacity: 0; transform: translate(-50%, -45%) scale(.96); visibility: hidden; }
+
+    .intro-sigil {
+      width: 110px;
+      height: 110px;
+      margin: 0 auto 19px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(139, 92, 255, .36);
+      border-radius: 50%;
+      box-shadow: 0 0 80px rgba(69, 246, 255, .1), inset 0 0 30px rgba(139,92,255,.08);
+      animation: breathe 3.6s ease-in-out infinite;
+    }
+    .intro-sigil svg { width: 67px; color: #c8b8ff; filter: drop-shadow(0 0 12px rgba(139,92,255,.5)); }
+    .center-intro h2 {
+      margin: 0;
+      font-family: Georgia, "Noto Serif TC", serif;
+      font-size: clamp(31px, 4.6vw, 68px);
+      font-weight: 400;
+      letter-spacing: .06em;
+      text-shadow: 0 0 35px rgba(139, 92, 255, .25);
+    }
+    .center-intro p {
+      margin: 13px 0 26px;
+      color: #aaa6bc;
+      font-size: clamp(13px, 1.4vw, 16px);
+      letter-spacing: .18em;
+    }
+
+    .start-button {
+      position: relative;
+      min-width: 250px;
+      height: 58px;
+      padding: 0 28px;
+      border: 1px solid rgba(255, 209, 102, .75);
+      border-radius: 999px;
+      color: #fff0ca;
+      background: linear-gradient(110deg, rgba(70,31,133,.82), rgba(21,15,59,.94) 55%, rgba(100,25,91,.8));
+      box-shadow: 0 0 0 6px rgba(139,92,255,.06), 0 0 38px rgba(139,92,255,.35), inset 0 0 26px rgba(255,61,169,.14);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .18em;
+      cursor: pointer;
+      pointer-events: auto;
+      overflow: hidden;
+      transition: .25s ease;
+    }
+    .start-button::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.23), transparent 55%);
+      transform: translateX(-120%);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .start-button:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 0 48px rgba(139,92,255,.56); }
+    .start-note { margin-top: 13px; color: #777384; font-size: 10px; letter-spacing: .17em; }
+
+    .bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .hint {
+      color: rgba(215, 211, 228, .46);
+      font-size: 10px;
+      letter-spacing: .12em;
+      white-space: nowrap;
+    }
+
+    .gestures {
+      position: absolute;
+      left: 50%;
+      bottom: max(22px, env(safe-area-inset-bottom));
+      width: min(720px, calc(100% - 220px));
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      transform: translateX(-50%);
+      pointer-events: none;
+      transition: opacity .4s ease;
+    }
+    .gesture {
+      position: relative;
+      padding: 0 22px;
+      text-align: center;
+    }
+    .gesture + .gesture::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 4px;
+      height: 38px;
+      width: 1px;
+      background: linear-gradient(transparent, rgba(255,255,255,.18), transparent);
+    }
+    .gesture strong {
+      display: block;
+      color: rgba(255,255,255,.86);
+      font-family: Georgia, "Noto Serif TC", serif;
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: .12em;
+    }
+    .gesture span {
+      display: block;
+      margin-top: 6px;
+      color: #777384;
+      font-size: 10px;
+      letter-spacing: .1em;
+    }
+    .gesture:nth-child(1) strong { color: #80f8ff; }
+    .gesture:nth-child(2) strong { color: #ff78c2; }
+    .gesture:nth-child(3) strong { color: #ffe4a2; }
+
+    .mode {
+      min-width: 150px;
+      text-align: right;
+      color: #777384;
+      font-size: 10px;
+      letter-spacing: .12em;
+    }
+    .mode strong { display: block; margin-bottom: 5px; color: var(--cyan); font-size: 12px; font-weight: 700; }
+
+    .toast {
+      position: fixed;
+      z-index: 8;
+      left: 50%;
+      top: 18%;
+      padding: 10px 18px;
+      border: 1px solid rgba(255,255,255,.17);
+      border-radius: 999px;
+      color: #e9e5f2;
+      background: rgba(4,3,12,.62);
+      backdrop-filter: blur(15px);
+      font-size: 12px;
+      letter-spacing: .12em;
+      opacity: 0;
+      transform: translate(-50%, -8px);
+      transition: .35s ease;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .flash {
+      position: fixed;
+      z-index: 6;
+      inset: 0;
+      pointer-events: none;
+      background: white;
+      opacity: 0;
+    }
+    .flash.fire { animation: flash .65s ease-out; }
+
+    @keyframes breathe { 50% { transform: scale(1.045) rotate(2deg); box-shadow: 0 0 100px rgba(69,246,255,.16), inset 0 0 40px rgba(139,92,255,.12); } }
+    @keyframes shimmer { 55%, 100% { transform: translateX(120%); } }
+    @keyframes flash { 0% { opacity: .75; } 100% { opacity: 0; } }
+
+    @media (max-width: 760px) {
+      .chrome { padding: max(15px, env(safe-area-inset-top)) 15px max(14px, env(safe-area-inset-bottom)); }
+      .sigil { width: 42px; height: 42px; }
+      .sigil svg { width: 28px; }
+      .brand-name { font-size: 21px; }
+      .brand-sub { font-size: 8px; letter-spacing: .32em; }
+      .status, .actions .icon-button:first-of-type { display: none; }
+      .center-intro { top: 48%; }
+      .intro-sigil { width: 82px; height: 82px; }
+      .intro-sigil svg { width: 50px; }
+      .center-intro p { line-height: 1.7; }
+      .gestures {
+        bottom: max(18px, env(safe-area-inset-bottom));
+        width: calc(100% - 20px);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .gesture { min-width: 0; padding: 0 5px; }
+      .gesture strong { font-size: 10px; line-height: 1.45; letter-spacing: 0; white-space: normal; overflow-wrap: anywhere; }
+      .gesture span { display: none; }
+      .hint, .mode { display: none; }
+      .start-button { min-width: 224px; height: 54px; font-size: 15px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <video id="camera" autoplay muted playsinline aria-hidden="true"></video>
+    <canvas id="art" aria-label="魔法手勢互動畫布"></canvas>
+    <div class="vignette"></div>
+    <div class="grain"></div>
+
+    <div class="chrome">
+      <div class="topbar">
+        <div class="brand">
+          <div class="sigil" aria-hidden="true">
+            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="50" cy="50" r="44"/><path d="M50 8 86 72H14L50 8Z"/><path d="m18 27 64 46M82 27 18 73M50 8v84"/>
+              <circle cx="50" cy="50" r="10"/><circle cx="50" cy="50" r="3" fill="currentColor"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-name">ARCANA</h1>
+            <p class="brand-sub">魔法手勢畫板</p>
+          </div>
+        </div>
+
+        <div class="actions">
+          <div class="status" id="status">
+            <span class="status-dot"></span>
+            <span class="status-label" id="statusText">攝影機・未啟用</span>
+          </div>
+          <button class="icon-button" id="soundButton" type="button" aria-label="切換音效" title="切換音效">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M11 5 6.5 9H3v6h3.5l4.5 4V5Z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/></svg>
+          </button>
+          <button class="icon-button" id="clearButton" type="button" aria-label="清除畫布" title="清除畫布">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="bottom">
+        <div class="hint">滑鼠拖曳／單指繪製・雙指靠近釋放日蝕</div>
+        <div class="mode"><strong id="modeName">等待喚醒</strong><span id="fpsText">觸控與滑鼠已就緒</span></div>
+      </div>
+    </div>
+
+    <section class="center-intro" aria-labelledby="introTitle">
+      <div class="intro-sigil" aria-hidden="true">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="50" cy="50" r="35"/><circle cx="50" cy="50" r="19"/><path d="M50 4v27M50 69v27M4 50h27M69 50h27"/>
+          <path d="m17 17 19 19M64 64l19 19M83 17 64 36M36 64 17 83"/><circle cx="50" cy="50" r="4" fill="currentColor"/>
+        </svg>
+      </div>
+      <h2 id="introTitle">讓雙手成為魔法</h2>
+      <p>在空氣中留下光，張開掌心喚醒星火</p>
+      <button class="start-button" id="startButton" type="button">開啟魔法視界</button>
+      <div class="start-note">點擊後允許使用攝影機・影像只在你的裝置上處理</div>
+    </section>
+
+    <div class="gestures" aria-hidden="true">
+      <div class="gesture"><strong>指尖・畫出光軌</strong><span>伸出食指，在空中留下魔法</span></div>
+      <div class="gesture"><strong>張掌・召喚星火</strong><span>張開手掌，綻放粒子煙火</span></div>
+      <div class="gesture"><strong>雙手・釋放日蝕</strong><span>雙手靠近，觸發日蝕大招</span></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="flash" id="flash"></div>
+
+  <script type="module">
+    const canvas = document.getElementById("art");
+    const ctx = canvas.getContext("2d", { alpha: true });
+    const video = document.getElementById("camera");
+    const startButton = document.getElementById("startButton");
+    const clearButton = document.getElementById("clearButton");
+    const soundButton = document.getElementById("soundButton");
+    const status = document.getElementById("status");
+    const statusText = document.getElementById("statusText");
+    const modeName = document.getElementById("modeName");
+    const fpsText = document.getElementById("fpsText");
+    const toast = document.getElementById("toast");
+    const flash = document.getElementById("flash");
+
+    const TAU = Math.PI * 2;
+    const trails = [];
+    const sparks = [];
+    const rings = [];
+    const stars = [];
+    const pointers = new Map();
+    let W = innerWidth, H = innerHeight, dpr = 1;
+    let handLandmarker = null;
+    let lastVideoTime = -1;
+    let cameraRunning = false;
+    let soundOn = true;
+    let audio = null;
+    let lastPalmBurst = [0, 0];
+    let lastUltimate = 0;
+    let ultimateCharge = 0;
+    let lastFrame = performance.now();
+    let fps = 60;
+
+    const palette = [
+      [69, 246, 255],
+      [139, 92, 255],
+      [255, 61, 169],
+      [255, 209, 102]
+    ];
+
+    function resize() {
+      W = innerWidth; H = innerHeight;
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      canvas.style.width = W + "px";
+      canvas.style.height = H + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      stars.length = 0;
+      const count = Math.min(150, Math.round(W * H / 10000));
+      for (let i = 0; i < count; i++) {
+        stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.25, a: .12 + Math.random() * .5, p: Math.random() * TAU });
+      }
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 2400);
+    }
+
+    function colorAt(t, alpha = 1) {
+      const a = palette[Math.floor(t) % palette.length];
+      const b = palette[(Math.floor(t) + 1) % palette.length];
+      const f = t % 1;
+      return `rgba(${a[0] + (b[0] - a[0]) * f},${a[1] + (b[1] - a[1]) * f},${a[2] + (b[2] - a[2]) * f},${alpha})`;
+    }
+
+    function addTrail(x, y, source = 0, force = 1) {
+      const prev = trails.length ? trails[trails.length - 1] : null;
+      trails.push({
+        x, y,
+        px: prev?.source === source ? prev.x : x,
+        py: prev?.source === source ? prev.y : y,
+        life: 1,
+        width: 7 + force * 8,
+        hue: performance.now() * .00032 + source * 1.15,
+        source
+      });
+      if (trails.length > 520) trails.splice(0, trails.length - 520);
+      for (let i = 0; i < 2 + force * 2; i++) {
+        sparks.push({
+          x, y,
+          vx: (Math.random() - .5) * 2.6,
+          vy: (Math.random() - .5) * 2.6,
+          life: .6 + Math.random() * .4,
+          decay: .012 + Math.random() * .02,
+          size: 1 + Math.random() * 2.8,
+          hue: performance.now() * .00032 + source * 1.15 + Math.random() * .5
+        });
+      }
+    }
+
+    function burst(x, y, power = 1, hue = 2) {
+      const count = Math.round(75 * power);
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * TAU;
+        const speed = (1.5 + Math.random() * 8) * power;
+        sparks.push({
+          x, y,
+          vx: Math.cos(a) * speed,
+          vy: Math.sin(a) * speed,
+          life: .75 + Math.random() * .45,
+          decay: .007 + Math.random() * .015,
+          size: 1.2 + Math.random() * 4.5 * power,
+          hue: hue + Math.random() * 1.2,
+          gravity: .018 + Math.random() * .035
+        });
+      }
+      rings.push({ x, y, r: 8, life: 1, speed: 9 * power, hue });
+      tone(260 + Math.random() * 180, .28, "sine");
+    }
+
+    function ultimate(x, y) {
+      const now = performance.now();
+      if (now - lastUltimate < 1800) return;
+      lastUltimate = now;
+      ultimateCharge = 0;
+      for (let layer = 0; layer < 4; layer++) {
+        setTimeout(() => burst(x, y, 1.5 + layer * .23, layer * .7 + .5), layer * 90);
+      }
+      rings.push({ x, y, r: 15, life: 1.35, speed: 18, hue: 3, eclipse: true });
+      flash.classList.remove("fire");
+      void flash.offsetWidth;
+      flash.classList.add("fire");
+      tone(72, .85, "sawtooth");
+      setTimeout(() => tone(145, .55, "sine"), 110);
+      if (navigator.vibrate) navigator.vibrate([40, 30, 90]);
+      modeName.textContent = "日蝕・解放";
+      showToast("✦ 日蝕共鳴 ✦");
+    }
+
+    function openPalm(hand) {
+      const wrist = hand[0];
+      const tips = [4, 8, 12, 16, 20];
+      const bases = [2, 5, 9, 13, 17];
+      let open = 0;
+      for (let i = 0; i < tips.length; i++) {
+        const td = Math.hypot(hand[tips[i]].x - wrist.x, hand[tips[i]].y - wrist.y);
+        const bd = Math.hypot(hand[bases[i]].x - wrist.x, hand[bases[i]].y - wrist.y);
+        if (td > bd * 1.45) open++;
+      }
+      return open >= 4;
+    }
+
+    function mapPoint(p) {
+      return { x: (1 - p.x) * W, y: p.y * H };
+    }
+
+    function processHands(results, now) {
+      const hands = results?.landmarks || [];
+      if (!hands.length) {
+        modeName.textContent = "尋找雙手";
+        ultimateCharge = Math.max(0, ultimateCharge - .04);
+        return;
+      }
+
+      const centers = [];
+      hands.slice(0, 2).forEach((hand, i) => {
+        const tip = mapPoint(hand[8]);
+        const palm = mapPoint(hand[9]);
+        centers.push(palm);
+        addTrail(tip.x, tip.y, i, 1);
+
+        if (openPalm(hand) && now - lastPalmBurst[i] > 1150) {
+          lastPalmBurst[i] = now;
+          burst(palm.x, palm.y, 1, i ? 2.2 : .1);
+          modeName.textContent = "星火・綻放";
+        } else {
+          modeName.textContent = "光軌・編織";
+        }
+      });
+
+      if (centers.length === 2) {
+        const distance = Math.hypot(centers[0].x - centers[1].x, centers[0].y - centers[1].y);
+        const threshold = Math.min(W, H) * .3;
+        if (distance < threshold) {
+          ultimateCharge = Math.min(1, ultimateCharge + .055);
+          const x = (centers[0].x + centers[1].x) / 2;
+          const y = (centers[0].y + centers[1].y) / 2;
+          rings.push({ x, y, r: 15 + ultimateCharge * 60, life: .32, speed: 1, hue: 3.2 });
+          modeName.textContent = `日蝕蓄力 ${Math.round(ultimateCharge * 100)}%`;
+          if (ultimateCharge >= 1) ultimate(x, y);
+        } else {
+          ultimateCharge = Math.max(0, ultimateCharge - .025);
+        }
+      }
+    }
+
+    function initAudio() {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === "suspended") audio.resume();
+    }
+
+    function tone(freq, duration = .2, type = "sine") {
+      if (!soundOn) return;
+      try {
+        initAudio();
+        const osc = audio.createOscillator();
+        const gain = audio.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audio.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(35, freq * .52), audio.currentTime + duration);
+        gain.gain.setValueAtTime(.0001, audio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(.055, audio.currentTime + .02);
+        gain.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + duration);
+        osc.connect(gain).connect(audio.destination);
+        osc.start();
+        osc.stop(audio.currentTime + duration + .03);
+      } catch {}
+    }
+
+    async function startMagic() {
+      document.body.classList.add("started");
+      initAudio();
+      burst(W * .5, H * .52, 1.25, .7);
+      modeName.textContent = "喚醒中";
+      statusText.textContent = "模型・載入中";
+      showToast("正在校準魔法視界…");
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+        document.body.classList.add("camera-on");
+        cameraRunning = true;
+
+        const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm");
+        const fileset = await vision.FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm"
+        );
+        handLandmarker = await vision.HandLandmarker.createFromOptions(fileset, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numHands: 2,
+          minHandDetectionConfidence: .55,
+          minHandPresenceConfidence: .5,
+          minTrackingConfidence: .5
+        });
+        status.classList.add("live");
+        statusText.textContent = "攝影機・魔法同步";
+        modeName.textContent = "伸出食指";
+        showToast("視界已開啟・把手放進畫面");
+      } catch (error) {
+        console.warn(error);
+        statusText.textContent = "觸控模式";
+        modeName.textContent = "觸控・就緒";
+        showToast("無法啟用攝影機，已切換觸控／滑鼠模式");
+      }
+    }
+
+    function drawBackground(time) {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = cameraRunning ? "rgba(3,2,11,.12)" : "rgba(3,2,11,.2)";
+      ctx.fillRect(0, 0, W, H);
+      for (const s of stars) {
+        const alpha = s.a * (.65 + Math.sin(time * .0008 + s.p) * .35);
+        ctx.fillStyle = `rgba(170,205,255,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, TAU);
+        ctx.fill();
+      }
+    }
+
+    function drawTrails() {
+      ctx.globalCompositeOperation = "lighter";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      for (let i = trails.length - 1; i >= 0; i--) {
+        const t = trails[i];
+        t.life -= .012;
+        if (t.life <= 0) { trails.splice(i, 1); continue; }
+        const alpha = Math.sin(Math.min(1, t.life) * Math.PI / 2);
+        ctx.strokeStyle = colorAt(t.hue, alpha * .16);
+        ctx.lineWidth = t.width * 4.5 * alpha;
+        ctx.beginPath(); ctx.moveTo(t.px, t.py); ctx.lineTo(t.x, t.y); ctx.stroke();
+        ctx.strokeStyle = colorAt(t.hue + .22, alpha * .5);
+        ctx.lineWidth = t.width * 1.8 * alpha;
+        ctx.beginPath(); ctx.moveTo(t.px, t.py); ctx.lineTo(t.x, t.y); ctx.stroke();
+        ctx.strokeStyle = `rgba(235,252,255,${alpha * .9})`;
+        ctx.lineWidth = Math.max(1, t.width * .34 * alpha);
+        ctx.beginPath(); ctx.moveTo(t.px, t.py); ctx.lineTo(t.x, t.y); ctx.stroke();
+      }
+    }
+
+    function drawSparks() {
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const p = sparks[i];
+        p.x += p.vx; p.y += p.vy;
+        p.vx *= .992; p.vy = p.vy * .992 + (p.gravity || 0);
+        p.life -= p.decay;
+        if (p.life <= 0) { sparks.splice(i, 1); continue; }
+        ctx.fillStyle = colorAt(p.hue, Math.min(1, p.life));
+        ctx.shadowColor = colorAt(p.hue, 1);
+        ctx.shadowBlur = 9;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * Math.max(.15, p.life), 0, TAU);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    function drawRings() {
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = rings.length - 1; i >= 0; i--) {
+        const r = rings[i];
+        r.r += r.speed;
+        r.life -= r.eclipse ? .018 : .03;
+        if (r.life <= 0) { rings.splice(i, 1); continue; }
+        ctx.strokeStyle = colorAt(r.hue, Math.min(1, r.life) * .75);
+        ctx.lineWidth = (r.eclipse ? 8 : 3) * Math.max(.1, r.life);
+        ctx.shadowColor = colorAt(r.hue, 1);
+        ctx.shadowBlur = r.eclipse ? 34 : 18;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.r, 0, TAU);
+        ctx.stroke();
+        if (r.eclipse) {
+          const grad = ctx.createRadialGradient(r.x, r.y, r.r * .15, r.x, r.y, r.r);
+          grad.addColorStop(0, "rgba(0,0,0,.95)");
+          grad.addColorStop(.72, "rgba(5,1,16,.88)");
+          grad.addColorStop(1, "rgba(255,61,169,0)");
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(r.x, r.y, r.r * .72, 0, TAU); ctx.fill();
+        }
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    async function animate(now) {
+      const dt = now - lastFrame;
+      lastFrame = now;
+      fps += ((1000 / Math.max(1, dt)) - fps) * .06;
+      if (cameraRunning && handLandmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        try { processHands(handLandmarker.detectForVideo(video, now), now); } catch {}
+      }
+      drawBackground(now);
+      drawTrails();
+      drawSparks();
+      drawRings();
+      if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
+        fpsText.textContent = cameraRunning ? `${Math.round(fps)} FPS・本機運算` : "觸控與滑鼠已就緒";
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function pointerPoint(event) { return { x: event.clientX, y: event.clientY }; }
+
+    canvas.addEventListener("pointerdown", event => {
+      document.body.classList.add("started");
+      try { canvas.setPointerCapture(event.pointerId); } catch {}
+      pointers.set(event.pointerId, pointerPoint(event));
+      initAudio();
+      if (event.pointerType !== "mouse") burst(event.clientX, event.clientY, .45, event.pointerId % 4);
+    });
+    canvas.addEventListener("pointermove", event => {
+      if (!pointers.has(event.pointerId)) return;
+      const old = pointers.get(event.pointerId);
+      const next = pointerPoint(event);
+      const speed = Math.min(2, Math.hypot(next.x - old.x, next.y - old.y) / 22);
+      pointers.set(event.pointerId, next);
+      addTrail(next.x, next.y, event.pointerId % 2, .5 + speed);
+      if (pointers.size >= 2) {
+        const pts = [...pointers.values()];
+        const distance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if (distance < Math.min(W, H) * .18) ultimate((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
+      }
+    });
+    function releasePointer(event) {
+      const p = pointers.get(event.pointerId);
+      if (p && event.pointerType === "mouse") burst(p.x, p.y, .55, 1);
+      pointers.delete(event.pointerId);
+    }
+    canvas.addEventListener("pointerup", releasePointer);
+    canvas.addEventListener("pointercancel", releasePointer);
+
+    clearButton.addEventListener("click", () => {
+      trails.length = sparks.length = rings.length = 0;
+      burst(W * .5, H * .5, .65, .2);
+      showToast("畫布已淨化");
+    });
+    soundButton.addEventListener("click", () => {
+      soundOn = !soundOn;
+      soundButton.style.opacity = soundOn ? "1" : ".45";
+      if (soundOn) tone(440, .15);
+      showToast(soundOn ? "音效已開啟" : "音效已靜音");
+    });
+    startButton.addEventListener("click", startMagic, { once: true });
+    addEventListener("resize", resize);
+    addEventListener("keydown", event => {
+      if (event.code === "Space") { event.preventDefault(); ultimate(W * .5, H * .5); }
+      if (event.key.toLowerCase() === "c") clearButton.click();
+    });
+
+    resize();
+    burst(W * .5, H * .5, .5, .7);
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
