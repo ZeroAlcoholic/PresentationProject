@@ -30,7 +30,7 @@
 
     button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 
-    .stage, #art, .vignette, .grain {
+    .stage, #stars, #art, .vignette, .grain {
       position: fixed;
       inset: 0;
       width: 100%;
@@ -45,6 +45,7 @@
         linear-gradient(145deg, #05030d, #071022 55%, #04020b);
     }
 
+    #stars { z-index: -2; pointer-events: none; }
     #art { z-index: -1; cursor: crosshair; }
 
     .vignette {
@@ -145,6 +146,36 @@
     }
     .icon-button:hover { border-color: rgba(255,255,255,.36); transform: translateY(-2px); }
     .icon-button svg { width: 18px; height: 18px; }
+    .icon-button:disabled { opacity: .34; cursor: default; transform: none; }
+    .icon-button .resume-icon { display: none; }
+    body.system-paused .icon-button .pause-icon { display: none; }
+    body.system-paused .icon-button .resume-icon { display: block; }
+
+    .pause-screen {
+      position: fixed;
+      z-index: 3;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(255, 247, 230, .88);
+      background: radial-gradient(circle, rgba(23, 15, 52, .28), rgba(3, 2, 11, .72));
+      font-family: Georgia, "Noto Serif TC", serif;
+      font-size: clamp(18px, 2.4vw, 30px);
+      letter-spacing: .2em;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .25s ease, visibility .25s ease;
+      backdrop-filter: blur(3px);
+    }
+    .pause-screen span {
+      padding: 18px 28px;
+      border: 1px solid rgba(255, 209, 102, .3);
+      border-radius: 999px;
+      background: rgba(5, 3, 15, .58);
+      box-shadow: 0 0 40px rgba(139, 92, 255, .14);
+    }
+    body.system-paused .pause-screen { opacity: 1; visibility: visible; }
 
     .center-intro {
       position: absolute;
@@ -488,7 +519,7 @@
       .sigil svg { width: 28px; }
       .brand-name { font-size: 21px; }
       .brand-sub { font-size: 8px; letter-spacing: .32em; }
-      .status, .actions .icon-button:first-of-type { display: none; }
+      .status, #soundButton { display: none; }
       .center-intro { top: 48%; }
       .intro-sigil { width: 82px; height: 82px; }
       .intro-sigil svg { width: 50px; }
@@ -523,6 +554,7 @@
 </head>
 <body>
   <div class="stage">
+    <canvas id="stars" aria-hidden="true"></canvas>
     <canvas id="art" aria-label="魔法手勢互動畫布"></canvas>
     <div class="vignette"></div>
     <div class="grain"></div>
@@ -547,6 +579,10 @@
             <span class="status-dot"></span>
             <span class="status-label" id="statusText">攝影機・未啟用</span>
           </div>
+          <button class="icon-button" id="pauseButton" type="button" aria-label="暫停攝影機與運算" title="暫停攝影機與運算" disabled>
+            <svg class="pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5v14M16 5v14"/></svg>
+            <svg class="resume-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 5 11 7-11 7V5Z"/></svg>
+          </button>
           <button class="icon-button" id="soundButton" type="button" aria-label="切換音效" title="切換音效">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M11 5 6.5 9H3v6h3.5l4.5 4V5Z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/></svg>
           </button>
@@ -614,6 +650,7 @@
       </div>
       <div class="preview-fallback" id="previewFallback">攝影機或手部模型無法使用<br>可直接以滑鼠／觸控操作</div>
     </aside>
+    <div class="pause-screen" aria-live="polite"><span>魔法視界已休眠</span></div>
   </div>
   <div class="toast" id="toast" role="status"></div>
   <div class="flash" id="flash"></div>
@@ -621,6 +658,8 @@
   <script type="module">
     const canvas = document.getElementById("art");
     const ctx = canvas.getContext("2d", { alpha: true });
+    const starsCanvas = document.getElementById("stars");
+    const starsCtx = starsCanvas.getContext("2d", { alpha: true });
     const video = document.getElementById("camera");
     const handOverlay = document.getElementById("handOverlay");
     const handCtx = handOverlay.getContext("2d");
@@ -633,6 +672,7 @@
     const qualityBadge = document.getElementById("qualityBadge");
     const spellbook = document.getElementById("spellbook");
     const startButton = document.getElementById("startButton");
+    const pauseButton = document.getElementById("pauseButton");
     const clearButton = document.getElementById("clearButton");
     const soundButton = document.getElementById("soundButton");
     const status = document.getElementById("status");
@@ -649,6 +689,7 @@
     const rings = [];
     const glyphs = [];
     const stars = [];
+    const sparkSprites = [];
     const pointers = new Map();
     const HAND_CONNECTIONS = [
       [0,1],[1,2],[2,3],[3,4],
@@ -665,7 +706,11 @@
     let latestGestures = [];
     let latestOfficialGestures = [];
     let cameraRunning = false;
+    let mediaStream = null;
     let modelReady = false;
+    let appPaused = false;
+    let magicStarted = false;
+    let animationFrameId = 0;
     let drawingPaused = false;
     let soundOn = true;
     let audio = null;
@@ -680,14 +725,12 @@
     let ultimateCharge = 0;
     let lastFrame = performance.now();
     let fps = 60;
-    let lowFpsSeconds = 0;
-    let highFpsSeconds = 0;
     let qualityLevel = 2;
 
     const QUALITY = [
-      { name: "省電", particles: 260, trails: 180, detectMs: 100, dpr: 1, glow: 0 },
-      { name: "平衡", particles: 520, trails: 300, detectMs: 72, dpr: 1.4, glow: 5 },
-      { name: "高", particles: 820, trails: 420, detectMs: 55, dpr: 2, glow: 9 }
+      { name: "省電", particles: 260, trails: 180, detectMs: 50, dpr: 1, glow: 0 },
+      { name: "平衡", particles: 520, trails: 300, detectMs: 50, dpr: 1.4, glow: 5 },
+      { name: "高", particles: 820, trails: 420, detectMs: 50, dpr: 2, glow: 9 }
     ];
 
     const palette = [
@@ -705,12 +748,46 @@
       canvas.style.width = W + "px";
       canvas.style.height = H + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      starsCanvas.width = Math.round(W * dpr);
+      starsCanvas.height = Math.round(H * dpr);
+      starsCanvas.style.width = W + "px";
+      starsCanvas.style.height = H + "px";
+      starsCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       stars.length = 0;
       const count = Math.min(150, Math.round(W * H / 10000));
       for (let i = 0; i < count; i++) {
         stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.25, a: .12 + Math.random() * .5, p: Math.random() * TAU });
       }
+      drawStaticStars();
       resizeHandOverlay();
+      drawHandPreview();
+    }
+
+    function drawStaticStars() {
+      starsCtx.clearRect(0, 0, W, H);
+      for (const s of stars) {
+        starsCtx.fillStyle = `rgba(170,205,255,${s.a})`;
+        starsCtx.beginPath();
+        starsCtx.arc(s.x, s.y, s.r, 0, TAU);
+        starsCtx.fill();
+      }
+    }
+
+    function buildSparkSprites() {
+      sparkSprites.length = 0;
+      for (let i = 0; i < 16; i++) {
+        const sprite = document.createElement("canvas");
+        sprite.width = sprite.height = 40;
+        const spriteCtx = sprite.getContext("2d");
+        const gradient = spriteCtx.createRadialGradient(20, 20, 0, 20, 20, 20);
+        gradient.addColorStop(0, colorAt(i / 4, 1));
+        gradient.addColorStop(.18, colorAt(i / 4, .95));
+        gradient.addColorStop(.5, colorAt(i / 4, .32));
+        gradient.addColorStop(1, colorAt(i / 4, 0));
+        spriteCtx.fillStyle = gradient;
+        spriteCtx.fillRect(0, 0, 40, 40);
+        sparkSprites.push(sprite);
+      }
     }
 
     function resizeHandOverlay() {
@@ -743,6 +820,7 @@
       const particle = sparkPool.pop() || {};
       Object.assign(particle, values);
       sparks.push(particle);
+      ensureAnimation();
       return particle;
     }
 
@@ -839,6 +917,7 @@
         y2: options.y2 ?? y,
         phase: Math.random() * TAU
       });
+      ensureAnimation();
     }
 
     function castPoseSpell(gesture, point, handIndex) {
@@ -906,15 +985,20 @@
       });
     }
 
+    function distanceSquared(a, b) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      return dx * dx + dy * dy;
+    }
+
     function extendedFingerCount(hand) {
       const wrist = hand[0];
       const tips = [4, 8, 12, 16, 20];
       const bases = [2, 5, 9, 13, 17];
       let extended = 0;
       for (let i = 0; i < tips.length; i++) {
-        const td = Math.hypot(hand[tips[i]].x - wrist.x, hand[tips[i]].y - wrist.y);
-        const bd = Math.hypot(hand[bases[i]].x - wrist.x, hand[bases[i]].y - wrist.y);
-        if (td > bd * (i === 0 ? 1.28 : 1.42)) extended++;
+        const ratio = i === 0 ? 1.28 : 1.42;
+        if (distanceSquared(hand[tips[i]], wrist) > distanceSquared(hand[bases[i]], wrist) * ratio * ratio) extended++;
       }
       return extended;
     }
@@ -922,21 +1006,16 @@
     function classifyGesture(hand, official = null) {
       const count = extendedFingerCount(hand);
       const wrist = hand[0];
-      const palmScale = Math.max(.001, Math.hypot(hand[9].x - wrist.x, hand[9].y - wrist.y));
-      const pinchDistance = Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y) / palmScale;
-      const indexExtended = Math.hypot(hand[8].x - wrist.x, hand[8].y - wrist.y) >
-        Math.hypot(hand[5].x - wrist.x, hand[5].y - wrist.y) * 1.48;
-      const middleExtended = Math.hypot(hand[12].x - wrist.x, hand[12].y - wrist.y) >
-        Math.hypot(hand[9].x - wrist.x, hand[9].y - wrist.y) * 1.4;
-      const ringExtended = Math.hypot(hand[16].x - wrist.x, hand[16].y - wrist.y) >
-        Math.hypot(hand[13].x - wrist.x, hand[13].y - wrist.y) * 1.4;
-      const pinkyExtended = Math.hypot(hand[20].x - wrist.x, hand[20].y - wrist.y) >
-        Math.hypot(hand[17].x - wrist.x, hand[17].y - wrist.y) * 1.4;
+      const palmScaleSquared = Math.max(.000001, distanceSquared(hand[9], wrist));
+      const pinchDistanceSquared = distanceSquared(hand[4], hand[8]) / palmScaleSquared;
+      const indexExtended = distanceSquared(hand[8], wrist) > distanceSquared(hand[5], wrist) * 2.1904;
+      const middleExtended = distanceSquared(hand[12], wrist) > distanceSquared(hand[9], wrist) * 1.96;
+      const ringExtended = distanceSquared(hand[16], wrist) > distanceSquared(hand[13], wrist) * 1.96;
+      const pinkyExtended = distanceSquared(hand[20], wrist) > distanceSquared(hand[17], wrist) * 1.96;
       const otherTips = [12, 16, 20];
       const otherBases = [9, 13, 17];
       const othersFolded = otherTips.every((tip, i) =>
-        Math.hypot(hand[tip].x - wrist.x, hand[tip].y - wrist.y) <
-        Math.hypot(hand[otherBases[i]].x - wrist.x, hand[otherBases[i]].y - wrist.y) * 1.36
+        distanceSquared(hand[tip], wrist) < distanceSquared(hand[otherBases[i]], wrist) * 1.8496
       );
       const officialMap = {
         Closed_Fist: "FIST",
@@ -948,7 +1027,7 @@
         ILoveYou: "ILY"
       };
       if (official?.score >= .58 && officialMap[official.name]) return officialMap[official.name];
-      if (pinchDistance < .42) return "PINCH";
+      if (pinchDistanceSquared < .1764) return "PINCH";
       if (indexExtended && !middleExtended && !ringExtended && pinkyExtended) return "HORNS";
       if (count === 3) return "THREE";
       if (count >= 4) return "OPEN";
@@ -1022,15 +1101,22 @@
       }
 
       if ((gesture === "POINT" || gesture === "PINCH") && history.length >= 12 && now - history[0].t > 480) {
-        const xs = history.map(point => point.x);
-        const ys = history.map(point => point.y);
-        const width = Math.max(...xs) - Math.min(...xs);
-        const height = Math.max(...ys) - Math.min(...ys);
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, cx = 0, cy = 0;
+        for (const point of history) {
+          if (point.x < minX) minX = point.x;
+          if (point.x > maxX) maxX = point.x;
+          if (point.y < minY) minY = point.y;
+          if (point.y > maxY) maxY = point.y;
+          cx += point.x;
+          cy += point.y;
+        }
+        const width = maxX - minX;
+        const height = maxY - minY;
         const start = history[0];
         const end = history[history.length - 1];
         const closed = Math.hypot(end.x - start.x, end.y - start.y);
-        const cx = xs.reduce((sum, value) => sum + value, 0) / xs.length;
-        const cy = ys.reduce((sum, value) => sum + value, 0) / ys.length;
+        cx /= history.length;
+        cy /= history.length;
         let turn = 0;
         let previousAngle = Math.atan2(history[0].y - cy, history[0].x - cx);
         for (let i = 1; i < history.length; i++) {
@@ -1073,6 +1159,7 @@
         handHistory = [[], []];
         spellbook.dataset.active = "";
         ultimateCharge = Math.max(0, ultimateCharge - .04);
+        drawHandPreview();
         return;
       }
 
@@ -1156,6 +1243,7 @@
       } else {
         gestureReadout.textContent = gestureLabel(latestGestures[0]);
       }
+      drawHandPreview();
     }
 
     function previewPoint(point, width, height) {
@@ -1231,7 +1319,65 @@
       } catch {}
     }
 
+    async function openCamera() {
+      if (cameraRunning) return;
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 640, max: 960 },
+          height: { ideal: 480, max: 540 },
+          frameRate: { ideal: 30, max: 30 }
+        },
+        audio: false
+      });
+      video.srcObject = mediaStream;
+      await video.play();
+      document.body.classList.add("camera-on");
+      cameraRunning = true;
+      lastVideoTime = -1;
+      ensureAnimation();
+    }
+
+    function stopCamera() {
+      cameraRunning = false;
+      if (mediaStream) {
+        for (const track of mediaStream.getTracks()) track.stop();
+      }
+      mediaStream = null;
+      video.pause();
+      video.srcObject = null;
+      document.body.classList.remove("camera-on");
+    }
+
+    async function loadGestureModel() {
+      if (modelReady || gestureRecognizer) return;
+      const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm");
+      const fileset = await vision.FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm"
+      );
+      const options = {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numHands: 2,
+        minHandDetectionConfidence: .5,
+        minHandPresenceConfidence: .48,
+        minTrackingConfidence: .45
+      };
+      try {
+        gestureRecognizer = await vision.GestureRecognizer.createFromOptions(fileset, options);
+      } catch {
+        options.baseOptions.delegate = "CPU";
+        gestureRecognizer = await vision.GestureRecognizer.createFromOptions(fileset, options);
+      }
+      modelReady = true;
+    }
+
     async function startMagic() {
+      if (magicStarted) return;
+      magicStarted = true;
       document.body.classList.add("started");
       initAudio();
       burst(W * .5, H * .52, 1.25, .7);
@@ -1240,38 +1386,10 @@
       showToast("正在校準魔法視界…");
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false
-        });
-        video.srcObject = stream;
-        await video.play();
-        document.body.classList.add("camera-on");
-        cameraRunning = true;
+        await openCamera();
         trackingText.textContent = "載入模型";
-
-        const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm");
-        const fileset = await vision.FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm"
-        );
-        const options = {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
-            delegate: "GPU"
-          },
-          runningMode: "VIDEO",
-          numHands: 2,
-          minHandDetectionConfidence: .5,
-          minHandPresenceConfidence: .48,
-          minTrackingConfidence: .45
-        };
-        try {
-          gestureRecognizer = await vision.GestureRecognizer.createFromOptions(fileset, options);
-        } catch {
-          options.baseOptions.delegate = "CPU";
-          gestureRecognizer = await vision.GestureRecognizer.createFromOptions(fileset, options);
-        }
-        modelReady = true;
+        await loadGestureModel();
+        pauseButton.disabled = false;
         status.classList.add("live");
         statusText.textContent = "攝影機・魔法同步";
         trackingText.textContent = "尋找手部";
@@ -1290,17 +1408,64 @@
       }
     }
 
-    function drawBackground(time) {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = cameraRunning ? "rgba(3,2,11,.12)" : "rgba(3,2,11,.2)";
-      ctx.fillRect(0, 0, W, H);
-      for (const s of stars) {
-        const alpha = s.a * (.65 + Math.sin(time * .0008 + s.p) * .35);
-        ctx.fillStyle = `rgba(170,205,255,${alpha})`;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, TAU);
-        ctx.fill();
+    async function setSystemPaused(next, reason = "manual") {
+      if (!magicStarted || appPaused === next) return;
+      appPaused = next;
+      pauseButton.disabled = true;
+      document.body.classList.toggle("system-paused", appPaused);
+      pauseButton.setAttribute("aria-label", appPaused ? "恢復攝影機與運算" : "暫停攝影機與運算");
+      pauseButton.title = appPaused ? "恢復攝影機與運算" : "暫停攝影機與運算";
+
+      if (appPaused) {
+        stopCamera();
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = 0;
+        latestHands = [];
+        latestGestures = [];
+        handCtx.clearRect(0, 0, handOverlay.width, handOverlay.height);
+        cameraPreview.classList.remove("tracking");
+        trackingText.textContent = "已暫停";
+        gestureReadout.textContent = "運算休眠";
+        handCount.textContent = "0 HANDS";
+        status.classList.remove("live");
+        statusText.textContent = "攝影機・已停止";
+        modeName.textContent = "魔法視界休眠";
+        fpsText.textContent = "鏡頭與運算已停止";
+        if (audio?.state === "running") audio.suspend();
+        if (reason === "manual") showToast("已停止鏡頭、辨識與動畫運算");
+        pauseButton.disabled = false;
+        return;
       }
+
+      statusText.textContent = "攝影機・恢復中";
+      trackingText.textContent = "重新連線";
+      try {
+        await openCamera();
+        status.classList.add("live");
+        statusText.textContent = "攝影機・魔法同步";
+        trackingText.textContent = "尋找手部";
+        gestureReadout.textContent = "尚未偵測";
+        modeName.textContent = "伸出食指";
+        lastFrame = performance.now();
+        ensureAnimation();
+        showToast("魔法視界已恢復");
+        pauseButton.disabled = false;
+      } catch (error) {
+        appPaused = true;
+        document.body.classList.add("system-paused");
+        cameraPreview.classList.add("fallback");
+        previewFallback.innerHTML = "攝影機恢復失敗<br>請檢查權限後再試";
+        statusText.textContent = "攝影機・恢復失敗";
+        pauseButton.disabled = false;
+        console.warn(error);
+      }
+    }
+
+    function drawBackground() {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = cameraRunning ? "rgba(0,0,0,.12)" : "rgba(0,0,0,.2)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "source-over";
     }
 
     function drawTrails() {
@@ -1341,14 +1506,13 @@
           sparkPool.push(expired);
           continue;
         }
-        ctx.fillStyle = colorAt(p.hue, Math.min(1, p.life));
-        ctx.shadowColor = colorAt(p.hue, 1);
-        ctx.shadowBlur = QUALITY[qualityLevel].glow;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * Math.max(.15, p.life), 0, TAU);
-        ctx.fill();
+        const life = Math.min(1, p.life);
+        const radius = Math.max(1.5, p.size * Math.max(.18, life) * 3.2);
+        const spriteIndex = ((Math.round(p.hue * 4) % sparkSprites.length) + sparkSprites.length) % sparkSprites.length;
+        ctx.globalAlpha = life;
+        ctx.drawImage(sparkSprites[spriteIndex], p.x - radius, p.y - radius, radius * 2, radius * 2);
       }
-      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
     }
 
     function setQuality(nextLevel) {
@@ -1361,27 +1525,6 @@
       const glyphLimit = qualityLevel === 0 ? 16 : qualityLevel === 1 ? 28 : 42;
       if (glyphs.length > glyphLimit) glyphs.splice(0, glyphs.length - glyphLimit);
       resize();
-    }
-
-    function updateAdaptiveQuality() {
-      if (fps < 38) {
-        lowFpsSeconds++;
-        highFpsSeconds = 0;
-      } else if (fps > 57 && sparks.length < QUALITY[qualityLevel].particles * .25 && glyphs.length < 4) {
-        highFpsSeconds++;
-        lowFpsSeconds = 0;
-      } else {
-        lowFpsSeconds = Math.max(0, lowFpsSeconds - 1);
-        highFpsSeconds = 0;
-      }
-      if (lowFpsSeconds >= 3 && qualityLevel > 0) {
-        setQuality(qualityLevel - 1);
-        lowFpsSeconds = 0;
-        showToast(`已自動切換${QUALITY[qualityLevel].name}效果，優先維持即時反應`);
-      } else if (highFpsSeconds >= 12 && qualityLevel < 2) {
-        setQuality(qualityLevel + 1);
-        highFpsSeconds = 0;
-      }
     }
 
     function drawGlyphs(time) {
@@ -1564,6 +1707,8 @@
     }
 
     function animate(now) {
+      animationFrameId = 0;
+      if (appPaused) return;
       const dt = now - lastFrame;
       lastFrame = now;
       fps += ((1000 / Math.max(1, dt)) - fps) * .06;
@@ -1578,12 +1723,11 @@
           trackingText.textContent = "偵測重試中";
         }
       }
-      drawBackground(now);
+      drawBackground();
       drawTrails();
       drawSparks();
       drawGlyphs(now);
       drawRings();
-      drawHandPreview();
       if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
         const roundedFps = Math.round(fps);
         fpsText.textContent = cameraRunning ? `${roundedFps} FPS・${latestHands.length} 手` : "觸控與滑鼠已就緒";
@@ -1593,9 +1737,16 @@
         canvas.dataset.trails = String(trails.length);
         canvas.dataset.glyphs = String(glyphs.length);
         canvas.dataset.quality = QUALITY[qualityLevel].name;
-        updateAdaptiveQuality();
       }
-      requestAnimationFrame(animate);
+      if (cameraRunning || trails.length || sparks.length || glyphs.length || rings.length) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    }
+
+    function ensureAnimation() {
+      if (appPaused || animationFrameId) return;
+      lastFrame = performance.now();
+      animationFrameId = requestAnimationFrame(animate);
     }
 
     function clearMagic(withBurst = true) {
@@ -1609,6 +1760,7 @@
     function pointerPoint(event) { return { x: event.clientX, y: event.clientY }; }
 
     canvas.addEventListener("pointerdown", event => {
+      if (appPaused) return;
       document.body.classList.add("started");
       try { canvas.setPointerCapture(event.pointerId); } catch {}
       pointers.set(event.pointerId, pointerPoint(event));
@@ -1616,6 +1768,7 @@
       if (event.pointerType !== "mouse") burst(event.clientX, event.clientY, .45, event.pointerId % 4);
     });
     canvas.addEventListener("pointermove", event => {
+      if (appPaused) return;
       if (!pointers.has(event.pointerId)) return;
       const old = pointers.get(event.pointerId);
       const next = pointerPoint(event);
@@ -1646,16 +1799,22 @@
       if (soundOn) tone(440, .15);
       showToast(soundOn ? "音效已開啟" : "音效已靜音");
     });
+    pauseButton.addEventListener("click", () => setSystemPaused(!appPaused));
     startButton.addEventListener("click", startMagic, { once: true });
     addEventListener("resize", resize);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && magicStarted && !appPaused) setSystemPaused(true, "visibility");
+    });
     addEventListener("keydown", event => {
       if (event.code === "Space") { event.preventDefault(); ultimate(W * .5, H * .5); }
       if (event.key.toLowerCase() === "c") clearButton.click();
+      if (event.key.toLowerCase() === "p" && !pauseButton.disabled) pauseButton.click();
     });
 
+    buildSparkSprites();
     resize();
     burst(W * .5, H * .5, .5, .7);
-    requestAnimationFrame(animate);
+    ensureAnimation();
   </script>
 </body>
 </html>
