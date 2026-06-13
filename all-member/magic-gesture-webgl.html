@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05030d">
+  <title>ARCANA ✦ 魔法手勢畫板（WebGL 輕量華麗版）</title>
+  <style>
+    :root { --void:#05030d; --gold:#ffd166; --paper:#fff7e6; --line:rgba(255,255,255,.15); }
+    * { box-sizing: border-box; }
+    html, body { width:100%; height:100%; overflow:hidden; }
+    body {
+      margin:0; color:var(--paper); background:var(--void);
+      font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+      touch-action:none; user-select:none; -webkit-user-select:none;
+    }
+    button { font:inherit; color:inherit; -webkit-tap-highlight-color:transparent; }
+    .stage, #fx, .vignette { position:fixed; inset:0; width:100%; height:100%; }
+    .stage {
+      background:
+        radial-gradient(circle at 50% 56%, rgba(40,28,92,.30), transparent 44%),
+        radial-gradient(circle at 18% 28%, rgba(0,178,255,.08), transparent 32%),
+        linear-gradient(145deg,#05030d,#071022 55%,#04020b);
+    }
+    #fx { z-index:1; cursor:crosshair; display:block; }
+    .vignette {
+      z-index:2; pointer-events:none;
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(2,1,8,.22) 66%, rgba(2,1,8,.9) 116%);
+    }
+    .chrome {
+      position:relative; z-index:4; height:100%;
+      padding: max(18px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+               max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      display:flex; flex-direction:column; justify-content:space-between; pointer-events:none;
+    }
+    .topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .sigil {
+      width:46px; height:46px; display:grid; place-items:center; border:1px solid rgba(255,209,102,.7);
+      border-radius:50%; color:var(--gold); box-shadow:inset 0 0 18px rgba(255,209,102,.08), 0 0 24px rgba(255,209,102,.08);
+    }
+    .sigil svg { width:30px; height:30px; }
+    .brand-name { margin:0; color:#ffe4a2; font-family:Georgia,"Times New Roman",serif; font-size:clamp(20px,2vw,30px); font-weight:400; letter-spacing:.18em; line-height:1; }
+    .brand-sub { margin:6px 0 0; color:rgba(255,230,177,.74); font-size:10px; font-weight:700; letter-spacing:.42em; }
+    .actions { display:flex; align-items:center; gap:8px; pointer-events:auto; }
+    .status, .icon-button {
+      height:40px; border:1px solid var(--line); background:rgba(5,4,15,.5); backdrop-filter:blur(12px);
+    }
+    .status { display:flex; align-items:center; gap:8px; padding:0 14px; border-radius:999px; color:#b8b5c4; font-size:12px; letter-spacing:.06em; }
+    .status-dot { width:7px; height:7px; border-radius:50%; background:#777484; }
+    .status.live .status-dot { background:#45f6ff; box-shadow:0 0 12px #45f6ff; }
+    .icon-button { width:40px; display:grid; place-items:center; border-radius:50%; cursor:pointer; transition:.2s ease; }
+    .icon-button:hover { border-color:rgba(255,255,255,.36); transform:translateY(-2px); }
+    .icon-button:disabled { opacity:.34; cursor:default; transform:none; }
+    .icon-button svg { width:18px; height:18px; }
+    .bottom { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; }
+    .hint { color:rgba(215,211,228,.5); font-size:10px; letter-spacing:.1em; }
+    .mode { text-align:right; color:#8a8798; font-size:10px; letter-spacing:.1em; }
+    .mode strong { display:block; margin-bottom:4px; color:#80f8ff; font-size:12px; font-weight:700; }
+
+    .center-intro {
+      position:absolute; z-index:3; left:50%; top:52%; width:min(580px,calc(100% - 32px));
+      text-align:center; transform:translate(-50%,-50%); transition:.6s cubic-bezier(.2,.8,.2,1); pointer-events:none;
+    }
+    body.started .center-intro { opacity:0; transform:translate(-50%,-46%) scale(.96); visibility:hidden; }
+    .intro-sigil {
+      width:96px; height:96px; margin:0 auto 18px; display:grid; place-items:center;
+      border:1px solid rgba(139,92,255,.36); border-radius:50%;
+      box-shadow:0 0 70px rgba(69,246,255,.1), inset 0 0 26px rgba(139,92,255,.08); animation:breathe 3.6s ease-in-out infinite;
+    }
+    .intro-sigil svg { width:58px; color:#c8b8ff; filter:drop-shadow(0 0 12px rgba(139,92,255,.5)); }
+    .center-intro h2 { margin:0; font-family:Georgia,"Noto Serif TC",serif; font-size:clamp(28px,4.4vw,60px); font-weight:400; letter-spacing:.05em; text-shadow:0 0 32px rgba(139,92,255,.25); }
+    .center-intro p { margin:12px 0 24px; color:#aaa6bc; font-size:clamp(12px,1.3vw,15px); letter-spacing:.16em; }
+    .start-button {
+      position:relative; min-width:240px; height:56px; padding:0 26px; border:1px solid rgba(255,209,102,.75);
+      border-radius:999px; color:#fff0ca;
+      background:linear-gradient(110deg,rgba(70,31,133,.82),rgba(21,15,59,.94) 55%,rgba(100,25,91,.8));
+      box-shadow:0 0 0 6px rgba(139,92,255,.06),0 0 34px rgba(139,92,255,.32),inset 0 0 24px rgba(255,61,169,.14);
+      font-size:16px; font-weight:700; letter-spacing:.16em; cursor:pointer; pointer-events:auto; overflow:hidden; transition:.25s ease;
+    }
+    .start-button:hover { transform:translateY(-3px) scale(1.02); box-shadow:0 0 46px rgba(139,92,255,.54); }
+    .start-note { margin-top:12px; color:#777384; font-size:10px; letter-spacing:.14em; }
+
+    .camera-preview {
+      position:fixed; z-index:5; right:max(20px,env(safe-area-inset-right)); bottom:max(64px,calc(env(safe-area-inset-bottom) + 58px));
+      width:clamp(150px,20vw,260px); aspect-ratio:4/3; overflow:hidden; border:1px solid rgba(111,238,255,.42); border-radius:18px;
+      background:radial-gradient(circle at 50% 45%,rgba(69,246,255,.12),transparent 48%),rgba(3,5,15,.88);
+      box-shadow:0 18px 56px rgba(0,0,0,.46),0 0 28px rgba(69,246,255,.1); opacity:0; transform:translateY(16px) scale(.96);
+      transition:.5s cubic-bezier(.2,.8,.2,1); pointer-events:none;
+    }
+    body.started .camera-preview { opacity:1; transform:none; }
+    #camera { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); filter:saturate(.82) contrast(1.08) brightness(.9); }
+    #handOverlay { position:absolute; inset:0; z-index:2; width:100%; height:100%; }
+    .preview-bottom { position:absolute; z-index:3; left:10px; right:10px; bottom:8px; display:flex; align-items:flex-end; justify-content:space-between; gap:8px; text-shadow:0 1px 8px rgba(0,0,0,.9); }
+    .preview-label { color:rgba(255,255,255,.72); font-size:9px; font-weight:800; letter-spacing:.12em; }
+    .preview-fps { color:#45f6ff; font-size:9px; font-weight:800; letter-spacing:.12em; }
+    .tracking-dot { width:6px; height:6px; margin-right:5px; display:inline-block; border-radius:50%; background:#777484; }
+    .camera-preview.tracking .tracking-dot { background:#45f6ff; box-shadow:0 0 10px #45f6ff; }
+    .preview-fallback { position:absolute; z-index:4; inset:0; display:none; place-items:center; padding:18px; color:#cbc6d8; background:rgba(4,4,14,.9); text-align:center; font-size:11px; line-height:1.7; letter-spacing:.06em; }
+    .camera-preview.fallback .preview-fallback { display:grid; }
+
+    .toast {
+      position:fixed; z-index:8; left:50%; top:16%; padding:9px 16px; border:1px solid rgba(255,255,255,.17); border-radius:999px;
+      color:#e9e5f2; background:rgba(4,3,12,.62); backdrop-filter:blur(14px); font-size:12px; letter-spacing:.1em;
+      opacity:0; transform:translate(-50%,-8px); transition:.35s ease; pointer-events:none;
+    }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    @keyframes breathe { 50% { transform:scale(1.04) rotate(2deg); } }
+    @media (max-width:760px) {
+      .brand-sub { display:none; }
+      .status { display:none; }
+      .hint, .mode { display:none; }
+      .camera-preview { right:12px; bottom:60px; width:min(40vw,150px); border-radius:13px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="stage"></div>
+  <canvas id="fx" aria-label="魔法手勢光焰畫布"></canvas>
+  <div class="vignette"></div>
+
+  <div class="chrome">
+    <div class="topbar">
+      <div class="brand">
+        <div class="sigil" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="50" cy="50" r="44"/><path d="M50 8 86 72H14L50 8Z"/><path d="m18 27 64 46M82 27 18 73M50 8v84"/>
+            <circle cx="50" cy="50" r="10"/><circle cx="50" cy="50" r="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-name">ARCANA</h1>
+          <p class="brand-sub">WEBGL 輕量華麗版</p>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="status" id="status"><span class="status-dot"></span><span id="statusText">攝影機・未啟用</span></div>
+        <button class="icon-button" id="pauseButton" type="button" aria-label="暫停" title="暫停攝影機與運算" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5v14M16 5v14"/></svg>
+        </button>
+        <button class="icon-button" id="clearButton" type="button" aria-label="清除畫布" title="清除畫布">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="bottom">
+      <div class="hint">食指畫光焰・捏合聚靈珠・張掌爆星火・握拳清空</div>
+      <div class="mode"><strong id="modeName">等待喚醒</strong><span id="fpsText">WebGL・就緒</span></div>
+    </div>
+  </div>
+
+  <section class="center-intro">
+    <div class="intro-sigil" aria-hidden="true">
+      <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="50" cy="50" r="35"/><circle cx="50" cy="50" r="19"/><path d="M50 4v27M50 69v27M4 50h27M69 50h27"/>
+        <path d="m17 17 19 19M64 64l19 19M83 17 64 36M36 64 17 83"/><circle cx="50" cy="50" r="4" fill="currentColor"/>
+      </svg>
+    </div>
+    <h2>讓雙手點燃星焰</h2>
+    <p>GPU 光焰・即使輕量裝置也能華麗綻放</p>
+    <button class="start-button" id="startButton" type="button">開啟魔法視界</button>
+    <div class="start-note">點擊後允許使用攝影機・影像只在你的裝置上處理</div>
+  </section>
+
+  <aside class="camera-preview" id="cameraPreview" aria-label="攝影機手部追蹤預覽">
+    <video id="camera" autoplay muted playsinline aria-hidden="true"></video>
+    <canvas id="handOverlay"></canvas>
+    <div class="preview-bottom">
+      <span class="preview-label"><i class="tracking-dot"></i><span id="trackingText">等待攝影機</span></span>
+      <span class="preview-fps" id="previewFps">-- FPS</span>
+    </div>
+    <div class="preview-fallback" id="previewFallback">攝影機或手部模型無法使用<br>可直接以滑鼠／觸控操作</div>
+  </aside>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script type="module">
+    "use strict";
+    const $ = id => document.getElementById(id);
+    const fxCanvas = $("fx");
+    const video = $("camera");
+    const handOverlay = $("handOverlay");
+    const handCtx = handOverlay.getContext("2d");
+    const cameraPreview = $("cameraPreview");
+    const trackingText = $("trackingText");
+    const previewFps = $("previewFps");
+    const previewFallback = $("previewFallback");
+    const statusEl = $("status");
+    const statusText = $("statusText");
+    const modeName = $("modeName");
+    const fpsText = $("fpsText");
+    const toast = $("toast");
+    const startButton = $("startButton");
+    const pauseButton = $("pauseButton");
+    const clearButton = $("clearButton");
+
+    // —— 診斷浮層：捕捉未預期錯誤並顯示，方便在 iPad 上回報 ——
+    const errBox = document.createElement("div");
+    errBox.style.cssText = "position:fixed;z-index:99;left:50%;bottom:80px;transform:translateX(-50%);max-width:min(92vw,560px);padding:10px 14px;border:1px solid rgba(255,90,130,.55);border-radius:12px;background:rgba(20,4,12,.95);color:#ffd7e0;font:11px/1.5 ui-monospace,monospace;white-space:pre-wrap;display:none;pointer-events:auto;box-shadow:0 12px 44px rgba(0,0,0,.55)";
+    errBox.addEventListener("click", () => { errBox.style.display = "none"; });
+    document.body.appendChild(errBox);
+    let errShown = 0;
+    function reportError(label, info) {
+      console.error("[ARCANA]", label, info);
+      if (errShown++ < 5) { errBox.textContent = `⚠ ${label}（請截圖回報）\n${info}`.slice(0, 700); errBox.style.display = "block"; }
+    }
+    addEventListener("error", e => reportError("執行錯誤", `${e.message || ""} @${e.lineno || "?"}:${e.colno || "?"}\n${(e.error && e.error.stack || "").slice(0, 360)}`));
+    addEventListener("unhandledrejection", e => reportError("未處理的 Promise", String(e.reason && (e.reason.stack || e.reason.message) || e.reason).slice(0, 360)));
+
+    const TAU = Math.PI * 2;
+    const isTouch = (matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0);
+    function showToast(m){ toast.textContent = m; toast.classList.add("show"); clearTimeout(showToast.t); showToast.t = setTimeout(()=>toast.classList.remove("show"), 2200); }
+
+    /* =========================================================================
+       WebGL 光焰引擎（iPad 安全：WebGL1、僅 RGBA8、無浮點貼圖、半解析、低解析 bloom）
+       管線：① 累積 FBO ping-pong（前一幀淡出→疊加新粒子＝拖尾餘暉）
+             ② gl.POINTS 粒子（單一 draw call，加色混合，輝光貼圖）
+             ③ 低解析 bloom（降取樣→水平/垂直高斯→加回）＝華麗輝光、成本固定
+       ========================================================================= */
+    const GL = {
+      gl:null, ok:false, lost:false,
+      W:1, H:1,                 // 顯示畫布（drawingBuffer）像素
+      AW:1, AH:1,               // 累積緩衝（半解析）
+      BW:1, BH:1,               // bloom 緩衝（再半）
+      progCopy:null, progPoint:null, progBlur:null, progComp:null,
+      accum:[null,null], accumTex:[null,null], cur:0,
+      bloom:[null,null], bloomTex:[null,null],
+      quadBuf:null, pointBuf:null, glowTex:null,
+      bloomOn:true
+    };
+
+    function makeShader(gl, type, src){
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error("shader: " + gl.getShaderInfoLog(s));
+      return s;
+    }
+    function makeProgram(gl, vs, fs){
+      const p = gl.createProgram();
+      gl.attachShader(p, makeShader(gl, gl.VERTEX_SHADER, vs));
+      gl.attachShader(p, makeShader(gl, gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error("link: " + gl.getProgramInfoLog(p));
+      return p;
+    }
+    function makeRT(gl, w, h){
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); // RGBA8，無浮點
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      return { fb, tex };
+    }
+
+    const VS_QUAD = "attribute vec2 aPos; varying vec2 vUv; void main(){ vUv=aPos*0.5+0.5; gl_Position=vec4(aPos,0.0,1.0); }";
+    const FS_COPY = "precision mediump float; varying vec2 vUv; uniform sampler2D uTex; uniform float uAlpha; void main(){ gl_FragColor = texture2D(uTex,vUv)*uAlpha; }";
+    const VS_POINT = "attribute vec2 aPos; attribute float aSize; attribute vec4 aColor; varying vec4 vColor; void main(){ vColor=aColor; gl_PointSize=aSize; gl_Position=vec4(aPos,0.0,1.0); }";
+    const FS_POINT = "precision mediump float; varying vec4 vColor; uniform sampler2D uGlow; void main(){ float a = texture2D(uGlow, gl_PointCoord).a * vColor.a; gl_FragColor = vec4(vColor.rgb * a, a); }";
+    const FS_BLUR = "precision mediump float; varying vec2 vUv; uniform sampler2D uTex; uniform vec2 uDir; void main(){ vec4 s = texture2D(uTex,vUv)*0.227027; s += texture2D(uTex,vUv+uDir*1.3846)*0.316216; s += texture2D(uTex,vUv-uDir*1.3846)*0.316216; s += texture2D(uTex,vUv+uDir*3.2307)*0.070270; s += texture2D(uTex,vUv-uDir*3.2307)*0.070270; gl_FragColor = s; }";
+    // 合成到螢幕：不透明黑底，霓虹光焰在純黑上更亮眼（避免半透明把暗部吃掉）
+    const FS_COMP = "precision mediump float; varying vec2 vUv; uniform sampler2D uTex; uniform float uAlpha; void main(){ gl_FragColor = vec4(texture2D(uTex,vUv).rgb * uAlpha, 1.0); }";
+
+    function buildGlowTexture(gl){
+      const S = 64, cv = document.createElement("canvas"); cv.width = cv.height = S;
+      const c = cv.getContext("2d");
+      const g = c.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
+      g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(0.38,"rgba(255,255,255,.85)");
+      g.addColorStop(0.7,"rgba(255,255,255,.28)"); g.addColorStop(1,"rgba(255,255,255,0)");
+      c.fillStyle = g; c.fillRect(0,0,S,S);
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return tex;
+    }
+
+    function initGL(){
+      const opts = { alpha:true, premultipliedAlpha:false, antialias:false, depth:false, stencil:false, preserveDrawingBuffer:false, powerPreference:"high-performance" };
+      const gl = fxCanvas.getContext("webgl2", opts) || fxCanvas.getContext("webgl", opts) || fxCanvas.getContext("experimental-webgl", opts);
+      if (!gl) { GL.ok = false; return false; }
+      GL.gl = gl;
+      GL.progCopy = makeProgram(gl, VS_QUAD, FS_COPY);
+      GL.progPoint = makeProgram(gl, VS_POINT, FS_POINT);
+      GL.progBlur = makeProgram(gl, VS_QUAD, FS_BLUR);
+      GL.progComp = makeProgram(gl, VS_QUAD, FS_COMP);
+      GL.quadBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, GL.quadBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW); // 覆蓋三角形
+      GL.pointBuf = gl.createBuffer();
+      GL.glowTex = buildGlowTexture(gl);
+      gl.disable(gl.DEPTH_TEST);
+      GL.ok = true;
+      allocTargets();
+      return true;
+    }
+
+    function allocTargets(){
+      const gl = GL.gl; if (!gl) return;
+      // 半解析累積、1/4 解析 bloom（手機填色省一大半）
+      GL.AW = Math.max(2, Math.round(GL.W * 0.5));
+      GL.AH = Math.max(2, Math.round(GL.H * 0.5));
+      GL.BW = Math.max(2, Math.round(GL.W * 0.25));
+      GL.BH = Math.max(2, Math.round(GL.H * 0.25));
+      GL.accum[0] = makeRT(gl, GL.AW, GL.AH); GL.accumTex[0] = GL.accum[0].tex;
+      GL.accum[1] = makeRT(gl, GL.AW, GL.AH); GL.accumTex[1] = GL.accum[1].tex;
+      GL.bloom[0] = makeRT(gl, GL.BW, GL.BH); GL.bloomTex[0] = GL.bloom[0].tex;
+      GL.bloom[1] = makeRT(gl, GL.BW, GL.BH); GL.bloomTex[1] = GL.bloom[1].tex;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
+    function drawFullQuad(prog, setup){
+      const gl = GL.gl;
+      gl.useProgram(prog);
+      gl.bindBuffer(gl.ARRAY_BUFFER, GL.quadBuf);
+      const loc = gl.getAttribLocation(prog, "aPos");
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      setup(gl, prog);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    // 粒子池（CPU 狀態，GPU 繪製）。座標單位＝累積緩衝像素（左上原點）
+    const P_STRIDE = 7; // clipX, clipY, size, r,g,b,a
+    let MAX_P = isTouch ? 2600 : 6000;
+    let parts = [];           // {x,y,vx,vy,life,decay,size,r,g,b}
+    let vtx = new Float32Array(MAX_P * P_STRIDE);
+    const palette = [[69,246,255],[139,92,255],[255,61,169],[255,209,102]];
+    function colorAt(t){
+      const n = ((t % palette.length) + palette.length) % palette.length, i = Math.floor(n), f = n - i;
+      const a = palette[i], b = palette[(i+1)%palette.length];
+      return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
+    }
+    let spawnAcc = 0;
+    function spawn(x, y, count, opts){
+      opts = opts || {};
+      for (let i=0;i<count;i++){
+        if (parts.length >= MAX_P) break;
+        const ang = opts.ang!==undefined ? opts.ang + (Math.random()-.5)*(opts.spread||0.6) : Math.random()*TAU;
+        const spd = (opts.spd||1) * (0.4 + Math.random()*1.2);
+        const col = colorAt(opts.hue!==undefined ? opts.hue + (Math.random()-.5)*0.5 : Math.random()*4);
+        parts.push({
+          x, y,
+          vx:(opts.vx||0) + Math.cos(ang)*spd, vy:(opts.vy||0) + Math.sin(ang)*spd,
+          life:1, decay: opts.decay || (0.012 + Math.random()*0.02),
+          size:(opts.size||10) * (0.6 + Math.random()*0.9),
+          r:col[0]/255, g:col[1]/255, b:col[2]/255, grav: opts.grav||0
+        });
+      }
+    }
+
+    function renderGL(){
+      const gl = GL.gl; if (!GL.ok || GL.lost) return;
+      const src = GL.cur, dst = 1 - GL.cur;
+
+      // ① 累積：把前一幀淡出寫進新緩衝（拖尾餘暉）
+      gl.bindFramebuffer(gl.FRAMEBUFFER, GL.accum[dst].fb);
+      gl.viewport(0,0,GL.AW,GL.AH);
+      gl.disable(gl.BLEND);
+      drawFullQuad(GL.progCopy, (gl,p)=>{
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.accumTex[src]);
+        gl.uniform1i(gl.getUniformLocation(p,"uTex"), 0);
+        gl.uniform1f(gl.getUniformLocation(p,"uAlpha"), 0.95); // 累積層衰減＝拖尾長度（拖尾由此產生，非靠粒子壽命）
+      });
+
+      // ② 疊加粒子（加色混合，單一 draw call）
+      let n = 0;
+      for (let i=parts.length-1;i>=0;i--){
+        const p = parts[i];
+        p.x += p.vx; p.y += p.vy; p.vx *= 0.985; p.vy = p.vy*0.985 + p.grav;
+        p.life -= p.decay;
+        if (p.life <= 0){ parts[i] = parts[parts.length-1]; parts.pop(); continue; }
+        const a = Math.min(1, p.life);
+        const o = n * P_STRIDE;
+        vtx[o]   = (p.x / GL.AW) * 2 - 1;
+        vtx[o+1] = 1 - (p.y / GL.AH) * 2;
+        vtx[o+2] = Math.max(2, p.size * (0.35 + a*0.65));
+        vtx[o+3] = p.r; vtx[o+4] = p.g; vtx[o+5] = p.b; vtx[o+6] = a;
+        if (++n >= MAX_P) break;
+      }
+      if (n > 0){
+        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); // 純加色（frag 已預乘 alpha）
+        gl.useProgram(GL.progPoint);
+        gl.bindBuffer(gl.ARRAY_BUFFER, GL.pointBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, vtx.subarray(0, n*P_STRIDE), gl.DYNAMIC_DRAW);
+        const sb = P_STRIDE*4;
+        const lPos = gl.getAttribLocation(GL.progPoint,"aPos");
+        const lSize = gl.getAttribLocation(GL.progPoint,"aSize");
+        const lCol = gl.getAttribLocation(GL.progPoint,"aColor");
+        gl.enableVertexAttribArray(lPos); gl.vertexAttribPointer(lPos,2,gl.FLOAT,false,sb,0);
+        gl.enableVertexAttribArray(lSize); gl.vertexAttribPointer(lSize,1,gl.FLOAT,false,sb,8);
+        gl.enableVertexAttribArray(lCol); gl.vertexAttribPointer(lCol,4,gl.FLOAT,false,sb,12);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.glowTex);
+        gl.uniform1i(gl.getUniformLocation(GL.progPoint,"uGlow"), 0);
+        gl.drawArrays(gl.POINTS, 0, n);
+      }
+      GL.cur = dst;
+
+      // ③ bloom：降取樣 + 水平/垂直高斯（低解析、成本固定）
+      if (GL.bloomOn){
+        gl.disable(gl.BLEND);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, GL.bloom[0].fb); gl.viewport(0,0,GL.BW,GL.BH);
+        drawFullQuad(GL.progCopy, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.accumTex[GL.cur]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.0); });
+        for (let pass=0; pass<3; pass++){
+          const spread = 1.3 + pass*0.6;
+          gl.bindFramebuffer(gl.FRAMEBUFFER, GL.bloom[1].fb); gl.viewport(0,0,GL.BW,GL.BH);
+          drawFullQuad(GL.progBlur, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.bloomTex[0]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform2f(gl.getUniformLocation(p,"uDir"), spread/GL.BW, 0); });
+          gl.bindFramebuffer(gl.FRAMEBUFFER, GL.bloom[0].fb); gl.viewport(0,0,GL.BW,GL.BH);
+          drawFullQuad(GL.progBlur, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.bloomTex[1]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform2f(gl.getUniformLocation(p,"uDir"), 0, spread/GL.BH); });
+        }
+      }
+
+      // ④ 合成到螢幕：累積層 + bloom（加色）
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0,0,GL.W,GL.H);
+      gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.disable(gl.BLEND);
+      drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.accumTex[GL.cur]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.3); });
+      if (GL.bloomOn){
+        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+        drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.bloomTex[0]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.7); });
+      }
+    }
+
+    function clearGL(){
+      const gl = GL.gl; if (!GL.ok) return;
+      parts.length = 0;
+      for (let i=0;i<2;i++){ gl.bindFramebuffer(gl.FRAMEBUFFER, GL.accum[i].fb); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT); }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
+    // —— 尺寸 / DPR（觸控限 1，桌機限 1.5）——
+    let W = innerWidth, H = innerHeight, dpr = 1;
+    function resize(){
+      W = innerWidth; H = innerHeight;
+      dpr = Math.min(devicePixelRatio || 1, isTouch ? 1 : 1.5);
+      fxCanvas.width = Math.max(2, Math.round(W * dpr));
+      fxCanvas.height = Math.max(2, Math.round(H * dpr));
+      fxCanvas.style.width = W + "px"; fxCanvas.style.height = H + "px";
+      GL.W = fxCanvas.width; GL.H = fxCanvas.height;
+      if (GL.ok && !GL.lost) allocTargets();
+      resizeHandOverlay();
+    }
+    let previewW = 0, previewH = 0;
+    function resizeHandOverlay(){
+      const r = handOverlay.getBoundingClientRect();
+      previewW = r.width; previewH = r.height;
+      const ratio = Math.min(devicePixelRatio || 1, 2);
+      handOverlay.width = Math.max(1, Math.round(r.width * ratio));
+      handOverlay.height = Math.max(1, Math.round(r.height * ratio));
+      handCtx.setTransform(ratio,0,0,ratio,0,0);
+    }
+
+    // 把畫面像素(CSS px)轉成累積緩衝像素
+    function toAccum(xCss, yCss){ return [ xCss / W * GL.AW, yCss / H * GL.AH ]; }
+
+    /* =========================================================================
+       MediaPipe + One Euro（沿用穩定的偵測架構；偵測率 ~視訊幀，繪製獨立 60Hz）
+       ========================================================================= */
+    class OneEuro {
+      constructor(minCutoff=1.5, beta=0.03, dCutoff=1){ this.minCutoff=minCutoff; this.beta=beta; this.dCutoff=dCutoff; this.x=null; this.dx=0; this.t=null; }
+      static alpha(c,dt){ const r=TAU*c*dt; return r/(r+1); }
+      filter(v,t){ if(this.x===null||this.t===null){this.x=v;this.t=t;return v;} let dt=(t-this.t)/1000; if(!(dt>0)||dt>0.2)dt=1/60; this.t=t; const dx=(v-this.x)/dt; this.dx+=OneEuro.alpha(this.dCutoff,dt)*(dx-this.dx); const c=this.minCutoff+this.beta*Math.abs(this.dx); this.x+=OneEuro.alpha(c,dt)*(v-this.x); return this.x; }
+      reset(){ this.x=null; this.dx=0; this.t=null; }
+    }
+    const HAND_CONNECTIONS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+    const NUM_HANDS = isTouch ? 1 : 2;
+    const filt = Array.from({length:NUM_HANDS}, () => Array.from({length:21}, () => ({x:new OneEuro(), y:new OneEuro()})));
+    function resetFilt(s){ for (const f of filt[s]) { f.x.reset(); f.y.reset(); } }
+
+    let gestureRecognizer = null, modelReady = false, cameraRunning = false, mediaStream = null;
+    let appPaused = false, magicStarted = false, animId = 0, detectGen = 0, lastRecognizeTs = 0;
+    let lastVideoTime = -1, lastDetectAt = 0, inferAvg = 16;
+    let latestHands = [];
+    const draw = Array.from({length:NUM_HANDS}, () => ({active:false, gesture:"", x:0, y:0, px:0, py:0, primed:false}));
+    let fistSince = new Array(NUM_HANDS).fill(0);
+    const rvfc = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+
+    function extendedFingers(hand){
+      const wr = hand[0], tips=[4,8,12,16,20], bases=[2,5,9,13,17]; let n=0;
+      for (let i=0;i<5;i++){ const r = i===0?1.28:1.42; const dt=(hand[tips[i]].x-wr.x)**2+(hand[tips[i]].y-wr.y)**2; const db=(hand[bases[i]].x-wr.x)**2+(hand[bases[i]].y-wr.y)**2; if (dt > db*r*r) n++; }
+      return n;
+    }
+    const d2 = (a,b) => (a.x-b.x)**2 + (a.y-b.y)**2;
+    // 完整十式手勢辨識（官方類別優先，輔以幾何啟發）
+    function classify(hand, official){
+      const wr = hand[0];
+      const palmS = Math.max(1e-6, d2(hand[9], wr));
+      const pinch = d2(hand[4], hand[8]) / palmS;
+      const idx = d2(hand[8],wr) > d2(hand[5],wr)*2.19;
+      const mid = d2(hand[12],wr) > d2(hand[9],wr)*1.96;
+      const ring = d2(hand[16],wr) > d2(hand[13],wr)*1.96;
+      const pinky = d2(hand[20],wr) > d2(hand[17],wr)*1.96;
+      const tips=[12,16,20], bases=[9,13,17];
+      const othersFolded = tips.every((t,i)=> d2(hand[t],wr) < d2(hand[bases[i]],wr)*1.85);
+      const count = extendedFingers(hand);
+      const map = { Closed_Fist:"FIST", Open_Palm:"OPEN", Pointing_Up:"POINT", Thumb_Up:"THUMB_UP", Thumb_Down:"THUMB_DOWN", Victory:"VICTORY", ILoveYou:"ILY" };
+      if (official && official.score >= 0.58 && map[official.name]) return map[official.name];
+      if (pinch < 0.176) return "PINCH";
+      if (idx && !mid && !ring && pinky) return "HORNS";
+      if (count === 3) return "THREE";
+      if (count >= 4) return "OPEN";
+      if (count <= 1 && !idx) return "FIST";
+      if (idx && othersFolded) return "POINT";
+      return "MOVE";
+    }
+    const LABEL = { POINT:"指尖・光焰", MOVE:"掌動・流光", PINCH:"捏合・聚靈珠", OPEN:"張掌・爆星火", FIST:"握拳・封印",
+      THUMB_UP:"讚・太陽軌道", THUMB_DOWN:"倒讚・重力深淵", VICTORY:"勝利・稜鏡雷射", ILY:"愛・極光幕", THREE:"三指・三角法陣", HORNS:"角・雷暴風暴", ECLIPSE:"雙手・日蝕共鳴", BRIDGE:"雙掌・星座光橋" };
+    const effectCooldowns = new Map();
+    function triggerOnce(key, cd, fn){ const n=performance.now(); const last=effectCooldowns.get(key); if (last!==undefined && n-last<cd) return false; effectCooldowns.set(key,n); fn(); return true; }
+
+    // 各手勢 → 差異化 GPU 粒子「咒語」（全部走同一條加色+bloom管線，成本相同）
+    function castSpell(g, cssX, cssY, s){
+      triggerOnce(g + "-" + s, g === "OPEN" ? 650 : 1050, () => {
+        const [ax, ay] = toAccum(cssX, cssY);
+        if (g === "OPEN"){ for (let i=0;i<46;i++){ const a=Math.random()*TAU; spawn(ax,ay,1,{ang:a,spread:0.1,spd:6,size:14,hue:s?2.1:0.1,decay:0.05,grav:0.02}); } }
+        else if (g === "THUMB_UP"){ for (let i=0;i<48;i++){ const a=i/48*TAU; spawn(ax,ay,1,{ang:a,spread:0.04,spd:5.2,size:13,hue:3,decay:0.05}); } spawn(ax,ay,18,{spd:1,size:19,hue:3,decay:0.04}); }
+        else if (g === "THUMB_DOWN"){ for (let i=0;i<44;i++){ const a=i/44*TAU, R=95; spawn(ax+Math.cos(a)*R, ay+Math.sin(a)*R, 1, {ang:a+Math.PI+0.55, spd:3.2, size:11, hue:1.2, decay:0.045}); } }
+        else if (g === "VICTORY"){ for (let b=0;b<5;b++){ const a=-0.55+b*0.27; for (let j=1;j<=14;j++){ const r=j*8; spawn(ax+Math.cos(a)*r, ay+Math.sin(a)*r, 1, {ang:a,spread:0.08,spd:1.6,size:9,hue:b*0.45,decay:0.025}); } } }
+        else if (g === "ILY"){ for (let i=0;i<64;i++){ const t=i/64; spawn(ax+(t-0.5)*320, ay+Math.sin(t*TAU*1.5)*42, 1, {ang:-1.57,spread:0.4,spd:1.1,size:12,hue:1.6+t*0.9,decay:0.02,vy:-1}); } }
+        else if (g === "THREE"){ for (let e=0;e<3;e++){ const a0=-Math.PI/2+e/3*TAU, a1=-Math.PI/2+(e+1)/3*TAU, R=92; const x0=ax+Math.cos(a0)*R,y0=ay+Math.sin(a0)*R,x1=ax+Math.cos(a1)*R,y1=ay+Math.sin(a1)*R; for (let j=0;j<15;j++){ const t=j/15; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t, 1, {spd:0.4,size:9,hue:2.5,decay:0.02}); } } }
+        else if (g === "HORNS"){ for (let b=0;b<5;b++){ const a=b/5*TAU; for (let j=1;j<=8;j++){ const r=j/8*120, jit=(Math.random()-0.5)*30; spawn(ax+Math.cos(a)*r+Math.cos(a+1.57)*jit, ay+Math.sin(a)*r+Math.sin(a+1.57)*jit, 2, {spd:0.5,size:8,hue:0.05,decay:0.03}); } } }
+        if (navigator.vibrate && g !== "OPEN") navigator.vibrate(18);
+      });
+    }
+    const POSE_SPELLS = ["OPEN","THUMB_UP","THUMB_DOWN","VICTORY","ILY","THREE","HORNS"];
+
+    function processHands(results, now){
+      const dets = (results?.landmarks || []).slice(0, NUM_HANDS);
+      const paired = dets.map((hand, i) => { const g = results?.gestures?.[i]?.[0]; return { hand, official: g ? {name:g.categoryName, score:g.score} : null }; });
+      if (paired.length === 2) paired.sort((a,b)=>a.hand[0].x - b.hand[0].x);
+      latestHands = paired.map((p, s) => p.hand.map((lm,i)=>({ x:filt[s][i].x.filter(lm.x, now), y:filt[s][i].y.filter(lm.y, now), z:lm.z })));
+      for (let s=paired.length; s<NUM_HANDS; s++) resetFilt(s);
+
+      cameraPreview.classList.toggle("tracking", latestHands.length > 0);
+      trackingText.textContent = latestHands.length ? "追蹤中" : "尋找手部";
+
+      if (!latestHands.length){
+        modeName.textContent = "尋找雙手";
+        for (let s=0;s<NUM_HANDS;s++){ draw[s].active=false; draw[s].primed=false; fistSince[s]=0; }
+        drawPreview(); return;
+      }
+
+      const centers = [], gestures = [];
+      latestHands.forEach((hand, s) => {
+        const g = classify(hand, paired[s].official);
+        gestures[s] = g;
+        const d = draw[s];
+        const tipCss = { x:(1-hand[8].x)*W, y:hand[8].y*H };
+        const palmCss = { x:(1-hand[9].x)*W, y:hand[9].y*H };
+        centers[s] = palmCss;
+
+        if (g === "POINT" || g === "MOVE"){ d.gesture=g; d.active=true; d.tx=tipCss.x; d.ty=tipCss.y; }
+        else if (g === "PINCH"){ d.gesture="PINCH"; d.active=true; d.tx=(1-(hand[4].x+hand[8].x)/2)*W; d.ty=((hand[4].y+hand[8].y)/2)*H; }
+        else { d.active=false; d.primed=false; }
+
+        if (g === "FIST"){
+          if (!fistSince[s]) fistSince[s] = now;
+          if (now - fistSince[s] > 420){ fistSince[s] = now + 1e9; clearGL(); showToast("握拳封印・畫布已清除"); if (navigator.vibrate) navigator.vibrate(30); }
+        } else fistSince[s] = 0;
+
+        if (POSE_SPELLS.includes(g)) castSpell(g, palmCss.x, palmCss.y, s);
+        modeName.textContent = LABEL[g] || "尋找手勢";
+      });
+      for (let s=latestHands.length; s<NUM_HANDS; s++){ draw[s].active=false; draw[s].primed=false; fistSince[s]=0; }
+
+      // 雙手合擊
+      if (centers.length === 2){
+        const dist = Math.hypot(centers[0].x-centers[1].x, centers[0].y-centers[1].y);
+        const mx = (centers[0].x+centers[1].x)/2, my = (centers[0].y+centers[1].y)/2;
+        if (dist < Math.min(W,H)*0.30){
+          modeName.textContent = LABEL.ECLIPSE;
+          triggerOnce("eclipse", 1500, () => {
+            const [ax,ay] = toAccum(mx,my);
+            for (let i=0;i<120;i++){ const a=Math.random()*TAU; spawn(ax,ay,1,{ang:a,spread:0.1,spd:8,size:15,hue:2.6+Math.random()*0.8,decay:0.045,grav:0.005}); }
+            spawn(ax,ay,30,{spd:1,size:22,hue:3,decay:0.035});
+            if (navigator.vibrate) navigator.vibrate([35,25,70]);
+            showToast("✦ 日蝕共鳴 ✦");
+          });
+        } else if (gestures[0]==="OPEN" && gestures[1]==="OPEN"){
+          modeName.textContent = LABEL.BRIDGE;
+          const [x0,y0]=toAccum(centers[0].x,centers[0].y), [x1,y1]=toAccum(centers[1].x,centers[1].y);
+          for (let j=0;j<10;j++){ const t=j/10; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t - Math.sin(t*Math.PI)*40, 1, {spd:0.3,size:9,hue:1.8+t*0.6,decay:0.05}); }
+        }
+      }
+      drawPreview();
+    }
+
+    function previewPoint(p, w, h){
+      const vw = video.videoWidth || 4, vh = video.videoHeight || 3;
+      const sc = Math.max(w/vw, h/vh), dw = vw*sc, dh = vh*sc, ox=(w-dw)/2, oy=(h-dh)/2;
+      return { x: w - (ox + p.x*dw), y: oy + p.y*dh };
+    }
+    function drawPreview(){
+      const w = previewW, h = previewH;
+      handCtx.clearRect(0,0,w,h);
+      if (!latestHands.length) return;
+      handCtx.globalCompositeOperation = "lighter";
+      latestHands.forEach((hand, s) => {
+        const hue = s ? "#ff69bd" : "#5cf6ff";
+        handCtx.strokeStyle = hue; handCtx.lineWidth = 2; handCtx.beginPath();
+        for (const [a,b] of HAND_CONNECTIONS){ const pa=previewPoint(hand[a],w,h), pb=previewPoint(hand[b],w,h); handCtx.moveTo(pa.x,pa.y); handCtx.lineTo(pb.x,pb.y); }
+        handCtx.stroke();
+        hand.forEach((pt, i) => { const p=previewPoint(pt,w,h); const tip=[4,8,12,16,20].includes(i); handCtx.fillStyle=tip?"#fff7ce":hue; handCtx.beginPath(); handCtx.arc(p.x,p.y, tip?4:2, 0, TAU); handCtx.fill(); });
+      });
+      handCtx.globalCompositeOperation = "source-over";
+    }
+
+    // 每幀：把 active 指尖以緩動沿路徑灑粒子（光焰拖尾），由 GPU 累積層形成餘暉
+    function emitFromHands(){
+      for (let s=0;s<NUM_HANDS;s++){
+        const d = draw[s]; if (!d.active) continue;
+        if (!d.primed){ d.x=d.tx; d.y=d.ty; d.px=d.tx; d.py=d.ty; d.primed=true; }
+        d.px = d.x; d.py = d.y;
+        d.x += (d.tx - d.x) * 0.4; d.y += (d.ty - d.y) * 0.4;
+        const [ax,ay] = toAccum(d.x, d.y);
+        const [apx,apy] = toAccum(d.px, d.py);
+        const dx = ax-apx, dy = ay-apy, dist = Math.hypot(dx,dy);
+        const ang = Math.atan2(dy, dx);
+        const steps = Math.max(1, Math.min(12, Math.round(dist/2.5)));
+        // 同一筆畫用緩慢連貫的色相（避免每顆亂色疊成灰白）
+        const baseHue = d.gesture === "PINCH" ? (s?2.2:0.2) : (performance.now()*0.00018 + s*1.5);
+        for (let i=0;i<steps;i++){
+          const t = i/steps, x = apx+dx*t, y = apy+dy*t;
+          // 主光帶：高密度、低速、大、連貫色、短壽命（拖尾交給累積層，避免長條拉絲）
+          spawn(x, y, 2, { ang, spread:0.12, spd:0.12, size:16, hue:baseHue, decay:0.08, vx:dx*0.02, vy:dy*0.02 });
+        }
+        if (d.gesture === "PINCH"){ // 朝中心吸聚的環
+          const [ax2,ay2] = toAccum(d.tx, d.ty);
+          for (let k=0;k<6;k++){ const a=Math.random()*TAU, rad=18+Math.random()*22; spawn(ax2+Math.cos(a)*rad, ay2+Math.sin(a)*rad, 1, { ang:a+Math.PI, spd:1.4, size:9, hue:baseHue, decay:0.04 }); }
+        }
+      }
+    }
+
+    /* =========================== 主迴圈（自我修復） =========================== */
+    let lastFrame = performance.now(), fps = 60, fpsAccum = 0, qualityCheckAt = 0;
+    function frame(now){
+      animId = 0;
+      if (appPaused) return;
+      const dt = now - lastFrame; lastFrame = now;
+      fps += ((1000 / Math.max(1, dt)) - fps) * 0.08;
+      try {
+        // 偵測（沿用耦合節流；不阻塞 rVFC 時用 rVFC，否則此處退而求其次）
+        if (!rvfc && cameraRunning && modelReady && gestureRecognizer && video.readyState >= 2 &&
+            video.currentTime !== lastVideoTime && now - lastDetectAt >= 45){
+          lastDetectAt = now; lastVideoTime = video.currentTime;
+          runDetect(now);
+        }
+        emitFromHands();
+        renderGL();
+        adapt(now);
+        if (Math.floor(now/1000) !== Math.floor((now-dt)/1000)){
+          const r = Math.round(fps);
+          fpsText.textContent = cameraRunning ? `${r} FPS・${latestHands.length} 手・${parts.length}火` : "WebGL・就緒";
+          previewFps.textContent = `${r} FPS`;
+          fxCanvas.dataset.fps = String(r); fxCanvas.dataset.parts = String(parts.length); fxCanvas.dataset.bloom = GL.bloomOn?"on":"off";
+        }
+      } catch (err){ reportError("動畫迴圈", `${(err&&err.message)||err}\n${(err&&err.stack||"").slice(0,360)}`); }
+      animId = requestAnimationFrame(frame);
+    }
+    function ensureLoop(){ if (appPaused || animId) return; lastFrame = performance.now(); animId = requestAnimationFrame(frame); }
+
+    function adapt(now){
+      if (now - qualityCheckAt < 1200) return; qualityCheckAt = now;
+      if (fps < 40){ // 吃緊：先關 bloom，再砍粒子上限
+        if (GL.bloomOn) GL.bloomOn = false;
+        else MAX_P = Math.max(800, Math.round(MAX_P*0.8));
+        if (parts.length > MAX_P) parts.length = MAX_P;
+        if (vtx.length < MAX_P*P_STRIDE) {} else if (MAX_P*P_STRIDE < vtx.length) {/* keep buffer */}
+      } else if (fps > 56){
+        if (!GL.bloomOn) GL.bloomOn = true;
+      }
+    }
+
+    function runDetect(now){
+      const ts = Math.max(lastRecognizeTs + 1, Math.round(now)); lastRecognizeTs = ts;
+      try { const t0 = performance.now(); const res = gestureRecognizer.recognizeForVideo(video, ts); inferAvg += (performance.now()-t0-inferAvg)*0.1; processHands(res, now); }
+      catch (e){ trackingText.textContent = "偵測重試中"; }
+    }
+    // rVFC 偵測迴圈（與繪製分離）
+    function startDetectLoop(){ const gen = ++detectGen; schedDetect(gen); }
+    function schedDetect(gen){ if (!rvfc || gen !== detectGen || !cameraRunning || appPaused) return; video.requestVideoFrameCallback((t)=>onVF(t, gen)); }
+    function onVF(now, gen){
+      if (gen !== detectGen || !cameraRunning || appPaused) return;
+      const gap = Math.max(isTouch ? 55 : 40, inferAvg*1.8);
+      if (modelReady && gestureRecognizer && video.readyState >= 2 && now - lastDetectAt >= gap && video.currentTime !== lastVideoTime){
+        lastDetectAt = now; lastVideoTime = video.currentTime; runDetect(now);
+      }
+      schedDetect(gen);
+    }
+
+    /* =========================== 相機 / 模型 / 啟動 =========================== */
+    async function openCamera(){
+      if (cameraRunning) return;
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: isTouch
+          ? { facingMode:"user", width:{ideal:480,max:640}, height:{ideal:360,max:480}, frameRate:{ideal:24,max:30} }
+          : { facingMode:"user", width:{ideal:640,max:960}, height:{ideal:480,max:540}, frameRate:{ideal:30,max:30} },
+        audio:false
+      });
+      video.srcObject = mediaStream; await video.play();
+      cameraRunning = true; lastVideoTime = -1; ensureLoop(); if (rvfc) startDetectLoop();
+    }
+    function stopCamera(){
+      cameraRunning = false; detectGen++;
+      for (let s=0;s<NUM_HANDS;s++) resetFilt(s);
+      if (mediaStream){ for (const t of mediaStream.getTracks()) t.stop(); }
+      mediaStream = null; try { video.pause(); } catch {} video.srcObject = null;
+    }
+    async function loadModel(){
+      if (modelReady) return;
+      const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm");
+      const fileset = await vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm");
+      const opt = { baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task", delegate:"GPU" }, runningMode:"VIDEO", numHands:NUM_HANDS, minHandDetectionConfidence:.5, minHandPresenceConfidence:.48, minTrackingConfidence:.45 };
+      try { gestureRecognizer = await vision.GestureRecognizer.createFromOptions(fileset, opt); }
+      catch { opt.baseOptions.delegate = "CPU"; gestureRecognizer = await vision.GestureRecognizer.createFromOptions(fileset, opt); }
+      modelReady = true;
+    }
+    async function start(){
+      if (magicStarted) return; magicStarted = true;
+      document.body.classList.add("started");
+      modeName.textContent = "喚醒中"; statusText.textContent = "模型・載入中"; showToast("正在校準魔法視界…");
+      // 啟動時來一發歡迎星火
+      spawn(GL.AW*0.5, GL.AH*0.5, 120, { spd:7, size:14, decay:0.012, grav:0.01 });
+      try {
+        await openCamera(); trackingText.textContent = "載入模型"; await loadModel();
+        pauseButton.disabled = false; statusEl.classList.add("live"); statusText.textContent = "攝影機・魔法同步"; trackingText.textContent = "尋找手部"; modeName.textContent = "伸出食指"; showToast("視界已開啟・把手放進畫面");
+      } catch (e){
+        statusText.textContent = "觸控模式"; modeName.textContent = "觸控・就緒"; trackingText.textContent = "FALLBACK";
+        cameraPreview.classList.add("fallback"); previewFallback.innerHTML = cameraRunning ? "手部模型載入失敗<br>可用滑鼠／觸控" : "攝影機無法使用<br>請允許權限，或用滑鼠／觸控"; showToast("已切換觸控／滑鼠模式");
+      }
+    }
+    function setPaused(next){
+      if (!magicStarted || appPaused === next) return; appPaused = next;
+      document.body.classList.toggle("paused", appPaused);
+      if (appPaused){ stopCamera(); cancelAnimationFrame(animId); animId = 0; latestHands = []; handCtx.clearRect(0,0,handOverlay.width,handOverlay.height); cameraPreview.classList.remove("tracking"); statusEl.classList.remove("live"); statusText.textContent="已暫停"; trackingText.textContent="已暫停"; modeName.textContent="休眠中"; showToast("已暫停鏡頭與運算"); pauseButton.setAttribute("aria-label","恢復"); }
+      else { statusText.textContent="恢復中"; openCamera().then(()=>{ statusEl.classList.add("live"); statusText.textContent="攝影機・魔法同步"; trackingText.textContent="尋找手部"; modeName.textContent="伸出食指"; lastFrame=performance.now(); ensureLoop(); showToast("已恢復"); }).catch(()=>{ statusText.textContent="恢復失敗"; }); }
+    }
+
+    /* =========================== 滑鼠/觸控 後備 =========================== */
+    const pointers = new Map();
+    fxCanvas.addEventListener("pointerdown", e => { document.body.classList.add("started"); try{ fxCanvas.setPointerCapture(e.pointerId);}catch{} pointers.set(e.pointerId, {x:e.clientX,y:e.clientY}); const [ax,ay]=toAccum(e.clientX,e.clientY); spawn(ax,ay, 16, {spd:2.5,size:14,decay:0.06,grav:0.01}); ensureLoop(); });
+    fxCanvas.addEventListener("pointermove", e => { const o = pointers.get(e.pointerId); if (!o) return; const dx=e.clientX-o.x, dy=e.clientY-o.y, dist=Math.hypot(dx,dy); const ang=Math.atan2(dy,dx); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); const steps=Math.max(1,Math.min(12,Math.round(dist/2.5))); const baseHue=performance.now()*0.00018; for(let i=0;i<steps;i++){ const t=i/steps; const [ax,ay]=toAccum(o.x+dx*t,o.y+dy*t); spawn(ax,ay,2,{ang,spread:0.12,spd:0.12,size:16,hue:baseHue,decay:0.08,vx:dx*0.02,vy:dy*0.02}); } ensureLoop(); });
+    const relPtr = e => pointers.delete(e.pointerId);
+    fxCanvas.addEventListener("pointerup", relPtr); fxCanvas.addEventListener("pointercancel", relPtr);
+
+    /* =========================== 事件 =========================== */
+    startButton.addEventListener("click", start, { once:true });
+    pauseButton.addEventListener("click", () => setPaused(!appPaused));
+    clearButton.addEventListener("click", () => { clearGL(); showToast("畫布已淨化"); });
+    let resizeTimer = 0;
+    addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 150); });
+    document.addEventListener("visibilitychange", () => { if (document.hidden && magicStarted && !appPaused) setPaused(true); });
+    addEventListener("keydown", e => { if (e.key.toLowerCase()==="c") clearButton.click(); if (e.key.toLowerCase()==="p" && !pauseButton.disabled) pauseButton.click(); });
+
+    // WebGL 內容遺失/恢復（iPad 記憶體壓力下會發生）
+    fxCanvas.addEventListener("webglcontextlost", e => { e.preventDefault(); GL.lost = true; reportError("WebGL 內容遺失", "嘗試自動恢復中…"); });
+    fxCanvas.addEventListener("webglcontextrestored", () => { GL.lost = false; GL.ok = false; initGL(); resize(); errBox.style.display = "none"; showToast("WebGL 已恢復"); });
+
+    /* =========================== 啟動 =========================== */
+    if (!initGL()){
+      reportError("WebGL 無法初始化", "此瀏覽器/裝置不支援 WebGL，請改用其他瀏覽器。");
+    } else {
+      resize();
+      // 開場閒置時也有一點微光漂浮
+      spawn(GL.AW*0.5, GL.AH*0.52, 60, { spd:3, size:12, decay:0.01, grav:0 });
+      ensureLoop();
+    }
+  </script>
+</body>
+</html>
