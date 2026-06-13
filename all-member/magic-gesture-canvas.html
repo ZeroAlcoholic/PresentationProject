@@ -728,9 +728,9 @@
     let qualityLevel = 2;
 
     const QUALITY = [
-      { name: "省電", particles: 260, trails: 180, detectMs: 50, dpr: 1, glow: 0 },
-      { name: "平衡", particles: 520, trails: 300, detectMs: 50, dpr: 1.4, glow: 5 },
-      { name: "高", particles: 820, trails: 420, detectMs: 50, dpr: 2, glow: 9 }
+      { name: "省電", particles: 260, trails: 180, detectMs: 66, dpr: 1, glow: 0 },
+      { name: "平衡", particles: 520, trails: 300, detectMs: 40, dpr: 1.4, glow: 5 },
+      { name: "高", particles: 820, trails: 420, detectMs: 33, dpr: 2, glow: 9 }
     ];
 
     const palette = [
@@ -739,6 +739,63 @@
       [255, 61, 169],
       [255, 209, 102]
     ];
+
+    // —— 反應速度核心：One Euro 濾波 + 60Hz 補間繪製 + 自適應畫質 ——
+    // One Euro Filter：靜止時強力抑制抖動、快速移動時降低延遲（minCutoff / beta 可調）
+    class OneEuro {
+      constructor(minCutoff = 1.5, beta = 0.03, dCutoff = 1) {
+        this.minCutoff = minCutoff; this.beta = beta; this.dCutoff = dCutoff;
+        this.x = null; this.dx = 0; this.t = null;
+      }
+      static alpha(cutoff, dt) { const r = TAU * cutoff * dt; return r / (r + 1); }
+      filter(value, t) {
+        if (this.x === null || this.t === null) { this.x = value; this.t = t; return value; }
+        let dt = (t - this.t) / 1000;
+        if (!(dt > 0) || dt > 0.2) dt = 1 / 60;
+        this.t = t;
+        const dxRaw = (value - this.x) / dt;
+        this.dx += OneEuro.alpha(this.dCutoff, dt) * (dxRaw - this.dx);
+        const cutoff = this.minCutoff + this.beta * Math.abs(this.dx);
+        this.x += OneEuro.alpha(cutoff, dt) * (value - this.x);
+        return this.x;
+      }
+      reset() { this.x = null; this.dx = 0; this.t = null; }
+    }
+    function makeFilterBank() {
+      return Array.from({ length: 21 }, () => ({ x: new OneEuro(), y: new OneEuro() }));
+    }
+    const handFilters = [makeFilterBank(), makeFilterBank()];
+    function filterHand(slot, hand, t) {
+      const bank = handFilters[slot];
+      const out = new Array(hand.length);
+      for (let i = 0; i < hand.length; i++) {
+        out[i] = { x: bank[i].x.filter(hand[i].x, t), y: bank[i].y.filter(hand[i].y, t), z: hand[i].z };
+      }
+      return out;
+    }
+    function resetFilterBank(slot) {
+      for (const f of handFilters[slot]) { f.x.reset(); f.y.reset(); }
+    }
+
+    // 補間繪製：偵測 ~30Hz、繪製 60Hz，指尖以緩動逼近濾波後目標 → 光軌滑順無斷點
+    const TRAIL_EASE = 0.4;
+    let frameCount = 0;
+    const handDraw = [
+      { active: false, x: 0, y: 0, tx: 0, ty: 0, force: 1 },
+      { active: false, x: 0, y: 0, tx: 0, ty: 0, force: 1 }
+    ];
+    function setDrawTarget(slot, x, y, force) {
+      const d = handDraw[slot];
+      d.tx = x; d.ty = y; d.force = force;
+      if (!d.active) { d.x = x; d.y = y; d.active = true; }
+    }
+    function clearDrawTarget(slot) { handDraw[slot].active = false; }
+
+    // 偵測迴圈：以 requestVideoFrameCallback 驅動（僅處理新影格、時間戳單調遞增）
+    const rvfcSupported = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+    let detectLoopActive = false;
+    let qualityCheckAt = 0;
+    let qualityRaiseStreak = 0;
 
     function resize() {
       W = innerWidth; H = innerHeight;
@@ -824,7 +881,7 @@
       return particle;
     }
 
-    function addTrail(x, y, source = 0, force = 1) {
+    function addTrail(x, y, source = 0, force = 1, emitSparks = true) {
       if (drawingPaused) return;
       const prev = trails.length ? trails[trails.length - 1] : null;
       trails.push({
@@ -838,6 +895,7 @@
       });
       const maxTrails = QUALITY[qualityLevel].trails;
       if (trails.length > maxTrails) trails.splice(0, trails.length - maxTrails);
+      if (!emitSparks) return;
       const sparkCount = qualityLevel === 0 ? 1 : Math.round(1 + force * qualityLevel);
       for (let i = 0; i < sparkCount; i++) {
         emitSpark({
@@ -1135,8 +1193,10 @@
     }
 
     function processHands(results, now) {
-      const hands = results?.landmarks || [];
-      latestHands = hands.slice(0, 2);
+      const rawHands = (results?.landmarks || []).slice(0, 2);
+      latestHands = rawHands.map((hand, index) => filterHand(index, hand, now));
+      for (let s = rawHands.length; s < 2; s++) resetFilterBank(s);
+      const hands = latestHands;
       latestOfficialGestures = latestHands.map((_, index) => {
         const category = results?.gestures?.[index]?.[0];
         return category ? { name: category.categoryName, score: category.score } : null;
@@ -1157,6 +1217,8 @@
         fistTriggered = [false, false];
         gestureStability = [{ name: "", count: 0, stable: "" }, { name: "", count: 0, stable: "" }];
         handHistory = [[], []];
+        clearDrawTarget(0);
+        clearDrawTarget(1);
         spellbook.dataset.active = "";
         ultimateCharge = Math.max(0, ultimateCharge - .04);
         drawHandPreview();
@@ -1170,7 +1232,8 @@
         const gesture = latestGestures[i];
         centers.push(palm);
         trackMotion(hand, gesture, i, now);
-        if (gesture === "POINT" || gesture === "MOVE") addTrail(tip.x, tip.y, i, gesture === "POINT" ? 1.25 : .65);
+        if (gesture === "POINT" || gesture === "MOVE") setDrawTarget(i, tip.x, tip.y, gesture === "POINT" ? 1.25 : .65);
+        else if (gesture !== "PINCH") clearDrawTarget(i);
 
         if (gesture === "PINCH") {
           const pinch = mapPoint({
@@ -1178,7 +1241,7 @@
             y: (hand[4].y + hand[8].y) / 2
           });
           const pinchDistance = Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y);
-          addTrail(pinch.x, pinch.y, i, .5 + Math.min(1.4, pinchDistance * 8));
+          setDrawTarget(i, pinch.x, pinch.y, .5 + Math.min(1.4, pinchDistance * 8));
           if (now - lastPinchPulse[i] > 110) {
             lastPinchPulse[i] = now;
             addGlyph("ORB", pinch.x, pinch.y, { size: 26 + pinchDistance * 180, life: .32, hue: i ? 2 : 0 });
@@ -1209,6 +1272,7 @@
           modeName.textContent = gestureLabel(gesture);
         }
       });
+      for (let s = hands.length; s < 2; s++) clearDrawTarget(s);
 
       if (centers.length === 2) {
         const distance = Math.hypot(centers[0].x - centers[1].x, centers[0].y - centers[1].y);
@@ -1336,6 +1400,7 @@
       cameraRunning = true;
       lastVideoTime = -1;
       ensureAnimation();
+      startDetectLoop();
     }
 
     function stopCamera() {
@@ -1395,6 +1460,7 @@
         trackingText.textContent = "尋找手部";
         modeName.textContent = "伸出食指";
         showToast("視界已開啟・把手放進畫面");
+        fps = 60; qualityCheckAt = performance.now();
       } catch (error) {
         console.warn(error);
         statusText.textContent = "觸控模式";
@@ -1525,6 +1591,22 @@
       const glyphLimit = qualityLevel === 0 ? 16 : qualityLevel === 1 ? 28 : 42;
       if (glyphs.length > glyphLimit) glyphs.splice(0, glyphs.length - glyphLimit);
       resize();
+    }
+
+    // 自適應畫質：偵測到掉幀立即降級、持續流暢才緩步升級（遲滯避免抖動）
+    // 僅在實際開始互動後生效，避免閒置開場畫面或分頁節流造成誤降級
+    function adaptQuality(now) {
+      if (!magicStarted) return;
+      if (now - qualityCheckAt < 1100) return;
+      qualityCheckAt = now;
+      if (fps < 44 && qualityLevel > 0) {
+        qualityRaiseStreak = 0;
+        setQuality(qualityLevel - 1);
+      } else if (fps > 55 && qualityLevel < QUALITY.length - 1) {
+        if (++qualityRaiseStreak >= 4) { qualityRaiseStreak = 0; setQuality(qualityLevel + 1); }
+      } else {
+        qualityRaiseStreak = 0;
+      }
     }
 
     function drawGlyphs(time) {
@@ -1712,16 +1794,15 @@
       const dt = now - lastFrame;
       lastFrame = now;
       fps += ((1000 / Math.max(1, dt)) - fps) * .06;
-      const detectInterval = QUALITY[qualityLevel].detectMs;
-      if (cameraRunning && modelReady && gestureRecognizer && video.readyState >= 2 &&
-          video.currentTime !== lastVideoTime && now - lastDetectAt >= detectInterval) {
-        lastDetectAt = now;
-        lastVideoTime = video.currentTime;
-        try {
-          processHands(gestureRecognizer.recognizeForVideo(video, now), now);
-        } catch (error) {
-          trackingText.textContent = "偵測重試中";
-        }
+      adaptQuality(now);
+      // 補間繪製：每一畫面將指尖緩動逼近濾波後目標，並按 source 排放光軌（火花隔幀排放以控量）
+      frameCount++;
+      for (let s = 0; s < 2; s++) {
+        const d = handDraw[s];
+        if (!d.active) continue;
+        d.x += (d.tx - d.x) * TRAIL_EASE;
+        d.y += (d.ty - d.y) * TRAIL_EASE;
+        addTrail(d.x, d.y, s, d.force, (frameCount & 1) === 0);
       }
       drawBackground();
       drawTrails();
@@ -1747,6 +1828,32 @@
       if (appPaused || animationFrameId) return;
       lastFrame = performance.now();
       animationFrameId = requestAnimationFrame(animate);
+    }
+
+    // 偵測迴圈與繪製迴圈分離：辨識僅在新影格觸發，繪製維持 60Hz 不被推論卡住
+    function startDetectLoop() {
+      if (detectLoopActive) return;
+      detectLoopActive = true;
+      scheduleDetect();
+    }
+    function scheduleDetect() {
+      if (!cameraRunning || appPaused) { detectLoopActive = false; return; }
+      if (rvfcSupported) video.requestVideoFrameCallback(onVideoFrame);
+      else requestAnimationFrame(onVideoFrame);
+    }
+    function onVideoFrame(now) {
+      if (!cameraRunning || appPaused) { detectLoopActive = false; return; }
+      if (modelReady && gestureRecognizer && video.readyState >= 2 &&
+          now - lastDetectAt >= QUALITY[qualityLevel].detectMs && video.currentTime !== lastVideoTime) {
+        lastDetectAt = now;
+        lastVideoTime = video.currentTime;
+        try {
+          processHands(gestureRecognizer.recognizeForVideo(video, now), now);
+        } catch (error) {
+          trackingText.textContent = "偵測重試中";
+        }
+      }
+      scheduleDetect();
     }
 
     function clearMagic(withBurst = true) {
@@ -1811,6 +1918,11 @@
       if (event.key.toLowerCase() === "p" && !pauseButton.disabled) pauseButton.click();
     });
 
+    // 依裝置能力選擇起始畫質，弱機從「平衡」起跳避免首屏卡頓（之後仍會自適應）
+    if (matchMedia("(max-width: 760px)").matches || (navigator.hardwareConcurrency || 8) <= 4) {
+      qualityLevel = 1;
+    }
+    qualityBadge.textContent = `效果：${QUALITY[qualityLevel].name}`;
     buildSparkSprites();
     resize();
     burst(W * .5, H * .5, .5, .7);
