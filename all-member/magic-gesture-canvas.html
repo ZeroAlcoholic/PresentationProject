@@ -792,12 +792,24 @@
     function clearDrawTarget(slot) { handDraw[slot].active = false; }
 
     // 偵測迴圈：以 requestVideoFrameCallback 驅動（僅處理新影格、時間戳單調遞增）
+    // detectGen 為「世代代幣」：暫停/停止時遞增使所有在途回呼失效，杜絕快速暫停/恢復造成死迴圈或雙迴圈
     const rvfcSupported = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
-    let detectLoopActive = false;
+    let detectGen = 0;
+    let lastRecognizeTs = 0;
+    let detectFailures = 0;
     let qualityCheckAt = 0;
     let qualityRaiseStreak = 0;
+    let previewW = 0, previewH = 0;
 
-    function resize() {
+    function resize(preserve = false) {
+      // 自適應畫質會改變 dpr → 重新配置畫布會清空；preserve 時先快照再貼回，保留既有光軌與餘暉
+      let snap = null;
+      if (preserve && canvas.width > 0 && canvas.height > 0) {
+        snap = document.createElement("canvas");
+        snap.width = canvas.width;
+        snap.height = canvas.height;
+        snap.getContext("2d").drawImage(canvas, 0, 0);
+      }
       W = innerWidth; H = innerHeight;
       dpr = Math.min(devicePixelRatio || 1, QUALITY[qualityLevel].dpr);
       canvas.width = Math.round(W * dpr);
@@ -818,6 +830,7 @@
       drawStaticStars();
       resizeHandOverlay();
       drawHandPreview();
+      if (snap) ctx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, W, H);
     }
 
     function drawStaticStars() {
@@ -849,6 +862,8 @@
 
     function resizeHandOverlay() {
       const rect = handOverlay.getBoundingClientRect();
+      previewW = rect.width;
+      previewH = rect.height;
       const ratio = Math.min(devicePixelRatio || 1, 2);
       handOverlay.width = Math.max(1, Math.round(rect.width * ratio));
       handOverlay.height = Math.max(1, Math.round(rect.height * ratio));
@@ -1193,14 +1208,18 @@
     }
 
     function processHands(results, now) {
-      const rawHands = (results?.landmarks || []).slice(0, 2);
-      latestHands = rawHands.map((hand, index) => filterHand(index, hand, now));
-      for (let s = rawHands.length; s < 2; s++) resetFilterBank(s);
-      const hands = latestHands;
-      latestOfficialGestures = latestHands.map((_, index) => {
-        const category = results?.gestures?.[index]?.[0];
-        return category ? { name: category.categoryName, score: category.score } : null;
+      // 依手腕水平位置排出穩定槽位（畫面左側→0），使濾波與每手狀態跨影格對應到同一隻手。
+      // MediaPipe 雙手偵測不保證陣列順序固定；改用空間排序比慣用手標籤更穩（不受 Left/Right 抖動影響），
+      // 僅在兩手水平交越的瞬間才會短暫互換，屬可接受邊界情況。
+      const paired = (results?.landmarks || []).slice(0, 2).map((hand, idx) => {
+        const category = results?.gestures?.[idx]?.[0];
+        return { hand, official: category ? { name: category.categoryName, score: category.score } : null };
       });
+      if (paired.length === 2) paired.sort((a, b) => a.hand[0].x - b.hand[0].x);
+      latestHands = paired.map((p, index) => filterHand(index, p.hand, now));
+      for (let s = paired.length; s < 2; s++) resetFilterBank(s);
+      const hands = latestHands;
+      latestOfficialGestures = paired.map(p => p.official);
       latestGestures = latestHands.map((hand, index) =>
         stabilizeGesture(index, classifyGesture(hand, latestOfficialGestures[index]))
       );
@@ -1325,9 +1344,8 @@
     }
 
     function drawHandPreview() {
-      const rect = handOverlay.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
+      const width = previewW;
+      const height = previewH;
       handCtx.clearRect(0, 0, width, height);
       if (!latestHands.length) return;
 
@@ -1405,6 +1423,9 @@
 
     function stopCamera() {
       cameraRunning = false;
+      detectGen++; // 使所有在途偵測回呼失效，恢復時由 startDetectLoop 乾淨重啟
+      resetFilterBank(0);
+      resetFilterBank(1);
       if (mediaStream) {
         for (const track of mediaStream.getTracks()) track.stop();
       }
@@ -1513,6 +1534,7 @@
         gestureReadout.textContent = "尚未偵測";
         modeName.textContent = "伸出食指";
         lastFrame = performance.now();
+        fps = 60; qualityCheckAt = performance.now();
         ensureAnimation();
         showToast("魔法視界已恢復");
         pauseButton.disabled = false;
@@ -1590,7 +1612,7 @@
       if (trails.length > QUALITY[qualityLevel].trails) trails.splice(0, trails.length - QUALITY[qualityLevel].trails);
       const glyphLimit = qualityLevel === 0 ? 16 : qualityLevel === 1 ? 28 : 42;
       if (glyphs.length > glyphLimit) glyphs.splice(0, glyphs.length - glyphLimit);
-      resize();
+      resize(true); // 保留畫面內容，避免自適應換檔時整塊閃黑
     }
 
     // 自適應畫質：偵測到掉幀立即降級、持續流暢才緩步升級（遲滯避免抖動）
@@ -1629,7 +1651,7 @@
         ctx.fillStyle = colorAt(g.hue + .22, alpha * .14);
         ctx.lineWidth = qualityLevel === 0 ? 1.5 : 2.5;
         ctx.shadowColor = colorAt(g.hue, 1);
-        ctx.shadowBlur = QUALITY[qualityLevel].glow + 8;
+        ctx.shadowBlur = qualityLevel === 0 ? 0 : QUALITY[qualityLevel].glow + 8;
 
         if (g.type === "ORB") {
           ctx.beginPath();
@@ -1830,30 +1852,36 @@
       animationFrameId = requestAnimationFrame(animate);
     }
 
-    // 偵測迴圈與繪製迴圈分離：辨識僅在新影格觸發，繪製維持 60Hz 不被推論卡住
+    // 偵測迴圈與繪製迴圈分離：辨識僅在新影格觸發，繪製維持 60Hz 不被推論卡住。
+    // 以 detectGen 世代代幣保證同時只有一條迴圈、且暫停後可乾淨重啟。
     function startDetectLoop() {
-      if (detectLoopActive) return;
-      detectLoopActive = true;
-      scheduleDetect();
+      const gen = ++detectGen;
+      scheduleDetect(gen);
     }
-    function scheduleDetect() {
-      if (!cameraRunning || appPaused) { detectLoopActive = false; return; }
-      if (rvfcSupported) video.requestVideoFrameCallback(onVideoFrame);
-      else requestAnimationFrame(onVideoFrame);
+    function scheduleDetect(gen) {
+      if (gen !== detectGen || !cameraRunning || appPaused) return;
+      if (rvfcSupported) video.requestVideoFrameCallback(t => onVideoFrame(t, gen));
+      else requestAnimationFrame(t => onVideoFrame(t, gen));
     }
-    function onVideoFrame(now) {
-      if (!cameraRunning || appPaused) { detectLoopActive = false; return; }
+    function onVideoFrame(now, gen) {
+      if (gen !== detectGen || !cameraRunning || appPaused) return;
       if (modelReady && gestureRecognizer && video.readyState >= 2 &&
           now - lastDetectAt >= QUALITY[qualityLevel].detectMs && video.currentTime !== lastVideoTime) {
-        lastDetectAt = now;
-        lastVideoTime = video.currentTime;
+        // 強制單調遞增的時間戳：避免同毫秒或時鐘邊界讓 recognizeForVideo 拋錯；失敗時不消耗該影格
+        const ts = Math.max(lastRecognizeTs + 1, Math.round(now));
         try {
-          processHands(gestureRecognizer.recognizeForVideo(video, now), now);
+          const result = gestureRecognizer.recognizeForVideo(video, ts);
+          lastRecognizeTs = ts;
+          lastDetectAt = now;
+          lastVideoTime = video.currentTime;
+          detectFailures = 0;
+          processHands(result, now);
         } catch (error) {
           trackingText.textContent = "偵測重試中";
+          if ((detectFailures++ % 60) === 0) console.warn("recognizeForVideo failed:", error);
         }
       }
-      scheduleDetect();
+      scheduleDetect(gen);
     }
 
     function clearMagic(withBurst = true) {
@@ -1908,7 +1936,11 @@
     });
     pauseButton.addEventListener("click", () => setSystemPaused(!appPaused));
     startButton.addEventListener("click", startMagic, { once: true });
-    addEventListener("resize", resize);
+    let resizeTimer = 0;
+    addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => resize(true), 150);
+    });
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && magicStarted && !appPaused) setSystemPaused(true, "visibility");
     });
