@@ -1634,42 +1634,62 @@ html, body {
     ctx.strokeStyle = rgba(col, 0.3 * A); ctx.lineWidth = 1.2;
     roundRect(-HW + 8, -HH + 8, (HW - 8) * 2, (HH - 8) * 2, R - 6); ctx.stroke();
 
-    // 額頭「腦」顯示（小巧低調＝心智指示，不搶過眼睛）
-    var brY = -HH + 20;
-    glow(0, brY, 14, C.violet, 0.32 * A * (0.8 + 0.2 * Math.sin(t * 1.6)));
-    ctx.strokeStyle = rgba(C.violet, 0.48 * A); ctx.lineWidth = 1.3;
+    // 額頭「腦」顯示（放大、清楚：腦回輪廓 + 中央腦溝 + 放電節點）
+    var brY = -HH + 26;
+    glow(0, brY, 26, C.violet, 0.44 * A * (0.8 + 0.2 * Math.sin(t * 1.6)));
+    ctx.strokeStyle = rgba(C.violet, 0.62 * A); ctx.lineWidth = 1.6;
     ctx.beginPath();
-    for (var i = 0; i <= 20; i++) { var ang = i / 20 * TAU, w = 1 + 0.16 * Math.sin(ang * 5); var px = Math.cos(ang) * 16 * w, py = brY + Math.sin(ang) * 8.5 * w; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+    for (var i = 0; i <= 24; i++) { var ang = i / 24 * TAU, w = 1 + 0.17 * Math.sin(ang * 5); var px = Math.cos(ang) * 26 * w, py = brY + Math.sin(ang) * 14 * w; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
     ctx.closePath(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, brY - 7); ctx.lineTo(0, brY + 7); ctx.stroke();
-    for (var bn = 0; bn < 3; bn++) { var ba = t * 0.6 + bn / 3 * TAU; glow(Math.cos(ba) * 8, brY + Math.sin(ba) * 4.5, 3, C.violet, 0.5 * A); }
+    ctx.beginPath(); ctx.moveTo(0, brY - 13); ctx.bezierCurveTo(8, brY - 4, -8, brY + 4, 0, brY + 13); ctx.stroke(); // 中央腦溝
+    for (var bn = 0; bn < 5; bn++) { var ba = t * 0.6 + bn / 5 * TAU; glow(Math.cos(ba) * 14, brY + Math.sin(ba) * 7, 3.5, C.violet, 0.62 * A); }
 
-    // 雙漸層發光眼（主角；白核 → 青 → 淡紫緣）＋ 眨眼
-    var eyeY = 9, eyeDX = 31, eyeR = 17;
-    var bt = t % 3.6; var bf = bt < 0.18 ? Math.max(0.12, Math.abs(Math.sin(bt / 0.18 * Math.PI))) : 1;
+    // 雙漸層發光眼（主角；白核 → 青 → 淡紫緣）＋ 弧形眼瞼眨眼
+    var eyeY = 11, eyeDX = 32, eyeR = 17;
+    var bt = t % 3.6; var bf = bt < 0.2 ? Math.abs(Math.cos(bt / 0.2 * Math.PI)) : 1; // 1=睜開，0=閉合（每 3.6s 眨一次）
     [-1, 1].forEach(function (s) {
       var cxk = s * eyeDX;
       glow(cxk, eyeY, eyeR + 9, col, 0.5 * A);
-      var eg = ctx.createRadialGradient(cxk - 4, eyeY - 4, 1, cxk, eyeY, eyeR);
+      // 眼球（恆為圓形）
+      var eg = ctx.createRadialGradient(cxk - 4, eyeY - 5, 1, cxk, eyeY, eyeR);
       eg.addColorStop(0, rgba([255, 255, 255], 0.98 * A));
       eg.addColorStop(0.5, rgba(C.cyan, 0.96 * A));
-      eg.addColorStop(1, rgba(C.violet, 0.4 * A));
+      eg.addColorStop(1, rgba(C.violet, 0.42 * A));
       ctx.fillStyle = eg;
-      ctx.beginPath(); ctx.ellipse(cxk, eyeY, eyeR, eyeR * bf, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(cxk, eyeY, eyeR, 0, TAU); ctx.fill();
+      // 弧形眼瞼：眨眼時由上而下蓋住眼球（含亮邊弧線）
+      if (bf < 0.96) {
+        var lidB = eyeY - eyeR - 3 + (1 - bf) * (2 * eyeR + 6);
+        ctx.save();
+        ctx.beginPath(); ctx.arc(cxk, eyeY, eyeR + 1.5, 0, TAU); ctx.clip();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = rgba([12, 20, 34], 0.97 * A);
+        ctx.fillRect(cxk - eyeR - 3, eyeY - eyeR - 4, (eyeR + 3) * 2, lidB - (eyeY - eyeR - 4));
+        ctx.restore();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = rgba(col, 0.85 * A); ctx.lineWidth = 2.4; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(cxk - eyeR, lidB); ctx.quadraticCurveTo(cxk, lidB + 7, cxk + eyeR, lidB); ctx.stroke();
+      }
     });
 
-    // 開口說話嘴（D 形開口：上緣平、下緣圓）＋ 內部聲波
-    var my = 42, talk = 0.4 + 0.6 * Math.abs(Math.sin(t * 3.4));
-    var mw = 19, mh = 5 + talk * 12;
-    glow(0, my + mh * 0.4, 20, col, 0.24 * A);
+    // 機器人嘴：清楚的喇叭膠囊 + 內部水平聲波（線條乾淨，非牙齒）
+    var my = 44, talk = 0.4 + 0.6 * Math.abs(Math.sin(t * 3.4));
+    var mw = 30, mh = 12;
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = rgba([6, 16, 28], 0.85 * A);
-    ctx.beginPath(); ctx.ellipse(0, my, mw, mh, 0, 0, Math.PI); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = rgba([6, 16, 28], 0.88 * A);
+    roundRect(-mw, my - mh, mw * 2, mh * 2, mh); ctx.fill();
     ctx.globalCompositeOperation = "lighter";
-    ctx.strokeStyle = rgba(col, 0.9 * A); ctx.lineWidth = 2.6; ctx.lineJoin = "round"; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.ellipse(0, my, mw, mh, 0, 0, Math.PI); ctx.closePath(); ctx.stroke();
-    ctx.strokeStyle = rgba([205, 246, 255], 0.8 * A); ctx.lineWidth = 2;
-    for (var mb = 0; mb < 3; mb++) { var mx2 = -8 + mb * 8; var mbh = 1.5 + talk * Math.abs(Math.sin(t * 7 + mb)) * (mh * 0.5); ctx.beginPath(); ctx.moveTo(mx2, my + 1.5); ctx.lineTo(mx2, my + 1.5 + mbh); ctx.stroke(); }
+    glow(0, my, 22, col, 0.18 * A);
+    ctx.strokeStyle = rgba(col, 0.92 * A); ctx.lineWidth = 2.8;
+    roundRect(-mw, my - mh, mw * 2, mh * 2, mh); ctx.stroke();
+    // 中央水平聲波線（說話時起伏）
+    ctx.strokeStyle = rgba([205, 246, 255], 0.92 * A); ctx.lineWidth = 2.4; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.beginPath();
+    for (var wx = -mw + 9; wx <= mw - 9; wx += 4) {
+      var amp = talk * Math.sin(wx * 0.28 + t * 8) * (mh - 5);
+      if (wx === -mw + 9) ctx.moveTo(wx, my + amp); else ctx.lineTo(wx, my + amp);
+    }
+    ctx.stroke();
 
     // 耳麥：耳罩 + 麥克風 boom（移除頭帶，較簡潔；天線獨立於頂）
     ctx.fillStyle = rgba(C.amber, 0.07 * A); ctx.strokeStyle = rgba(C.amber, 0.7 * A); ctx.lineWidth = 2.5;
@@ -1701,36 +1721,42 @@ html, body {
     var proX = Xc + 90;                  // 專業人員（中）
     var custX = Xc + 360;                // 客戶（右）
 
-    // ── 融合變身：眼/腦/耳/嘴飛回 → 匯聚 → 閃光 → 成形 ──
-    // 1) 各部位飛回匯聚（並在融入閃光前淡出）
-    var gather = clamp(p / 0.28, 0, 1);
-    var ofade = 1 - smoothstep((p - 0.22) / 0.1);
+    // ── 融合變身：眼/腦/耳/嘴以「原尺寸」現身四方 → 向中心匯聚並縮小 → 閃光 → 成形小機器人頭 ──
+    var conv = easeInOut(clamp(p / 0.34, 0, 1));        // 位置：四方散開 → 中心
+    var shrink = smoothstep((p - 0.22) / 0.13);         // 尺寸：原尺寸 → 縮小
+    var ofade = 1 - smoothstep((p - 0.34) / 0.07);      // 融入閃光前淡出
     if (ofade > 0.01) {
-      var organs = ["eye", "brain", "ear", "mouth"];
+      var homes = [[-168, -8], [10, -122], [168, -8], [-10, 120]]; // 眼/腦/耳/嘴（十字散開）
+      var kinds = ["eye", "brain", "ear", "mouth"];
+      var kcol = [C.cyan, C.violet, C.amber, C.amber];
       for (var oi = 0; oi < 4; oi++) {
-        var sp2 = clamp((gather - oi * 0.05) / 0.72, 0, 1);
-        var e2 = easeInOut(sp2);
-        var sx = lerp(agentX - 760 - oi * 90, agentX, e2);
-        var sy = lerp(headY + (oi - 1.5) * 70, headY, e2);
-        var oa = alpha * ofade * smoothstep(sp2 * 4);
+        var hx = agentX + homes[oi][0], hy = headY + homes[oi][1];
+        var ox = lerp(hx, agentX, conv), oy = lerp(hy, headY, conv);
+        var gsc = lerp(2.7, 0.4, shrink);               // 原尺寸 → 縮入頭中
+        var oa = alpha * ofade;
         if (oa <= 0.02) continue;
-        ctx.save(); ctx.globalCompositeOperation = "lighter";
-        glow(sx, sy, 16, oi === 0 ? C.cyan : oi === 1 ? C.violet : C.amber, oa * 0.5);
+        ctx.save();
+        ctx.translate(ox, oy); ctx.scale(gsc, gsc);
+        ctx.save(); ctx.globalCompositeOperation = "lighter"; glow(0, 0, 18, kcol[oi], oa * 0.45); ctx.restore();
+        if (kinds[oi] === "eye") drawMiniEye(0, 0, oa, t);
+        else if (kinds[oi] === "brain") drawMiniBrain(0, 0, oa, t);
+        else if (kinds[oi] === "ear") drawEar(0, 0, C.amber, oa, 1.0);
+        else drawMouth(0, 0, C.amber, oa, 0.5, t);
         ctx.restore();
-        if (organs[oi] === "eye") drawMiniEye(sx, sy, oa, t);
-        else if (organs[oi] === "brain") drawMiniBrain(sx, sy, oa, t);
-        else if (organs[oi] === "ear") drawEar(sx, sy, C.amber, oa, 0.7);
-        else drawMouth(sx, sy, C.amber, oa, 0.4, t);
       }
     }
-    // 2) 融合閃光（變身瞬間，柔和鐘形，不全螢幕硬閃）
-    var flash = Math.sin(clamp((p - 0.24) / 0.16, 0, 1) * Math.PI);
+    // 2) 融合閃光（變身瞬間，更強烈：白核爆閃 + 金色擴散環 + 放射光芒）
+    var flash = Math.sin(clamp((p - 0.28) / 0.18, 0, 1) * Math.PI);
     if (flash > 0.01) {
       ctx.save(); ctx.globalCompositeOperation = "lighter";
-      glow(agentX, headY, 70 + 230 * flash, [255, 255, 255], 0.5 * flash * alpha);
-      glow(agentX, headY, 50 + 120 * flash, C.gold, 0.4 * flash * alpha);
-      var rr = lerp(30, 260, clamp((p - 0.24) / 0.2, 0, 1));
-      ctx.strokeStyle = rgba(C.gold, 0.5 * flash * alpha); ctx.lineWidth = 3;
+      glow(agentX, headY, 90 + 320 * flash, [255, 255, 255], 0.62 * flash * alpha);
+      glow(agentX, headY, 60 + 160 * flash, C.gold, 0.5 * flash * alpha);
+      // 放射光芒
+      ctx.strokeStyle = rgba([255, 255, 255], 0.4 * flash * alpha); ctx.lineWidth = 2;
+      for (var fr = 0; fr < 12; fr++) { var fa = fr / 12 * TAU + t * 0.3, rl = 60 + 120 * flash; ctx.beginPath(); ctx.moveTo(agentX + Math.cos(fa) * 24, headY + Math.sin(fa) * 24); ctx.lineTo(agentX + Math.cos(fa) * rl, headY + Math.sin(fa) * rl); ctx.stroke(); }
+      // 擴散環
+      var rr = lerp(20, 300, clamp((p - 0.28) / 0.22, 0, 1));
+      ctx.strokeStyle = rgba(C.gold, 0.55 * flash * alpha); ctx.lineWidth = 3.5;
       ctx.beginPath(); ctx.arc(agentX, headY, rr, 0, TAU); ctx.stroke();
       ctx.restore();
     }
