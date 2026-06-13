@@ -682,6 +682,22 @@
     const toast = document.getElementById("toast");
     const flash = document.getElementById("flash");
 
+    // 診斷：捕捉未預期錯誤並顯示（方便回報），同時不讓單一錯誤永久凍結畫面
+    const errBox = document.createElement("div");
+    errBox.style.cssText = "position:fixed;z-index:99;left:50%;bottom:84px;transform:translateX(-50%);max-width:min(92vw,540px);padding:10px 14px;border:1px solid rgba(255,90,130,.55);border-radius:12px;background:rgba(20,4,12,.94);color:#ffd7e0;font:11px/1.55 ui-monospace,monospace;white-space:pre-wrap;display:none;pointer-events:auto;box-shadow:0 12px 44px rgba(0,0,0,.55)";
+    errBox.addEventListener("click", () => { errBox.style.display = "none"; });
+    if (document.body) document.body.appendChild(errBox);
+    let errShown = 0;
+    function reportError(label, info) {
+      console.error("[ARCANA]", label, info);
+      if (errShown++ < 4) {
+        errBox.textContent = `⚠ ${label}（已自動嘗試復原，請截圖回報此訊息）\n${info}`.slice(0, 600);
+        errBox.style.display = "block";
+      }
+    }
+    addEventListener("error", e => reportError("執行錯誤", `${e.message || ""} @${e.lineno || "?"}:${e.colno || "?"}\n${(e.error && e.error.stack || "").slice(0, 320)}`));
+    addEventListener("unhandledrejection", e => reportError("未處理的 Promise", String(e.reason && (e.reason.stack || e.reason.message) || e.reason).slice(0, 320)));
+
     const TAU = Math.PI * 2;
     const trails = [];
     const sparks = [];
@@ -732,6 +748,40 @@
       { name: "平衡", particles: 520, trails: 300, detectMs: 50, dpr: 1.4, glow: 5 },
       { name: "高", particles: 820, trails: 420, detectMs: 50, dpr: 2, glow: 9 }
     ];
+
+    // One Euro Filter：靜止抑抖、移動低延遲。極輕量（每次偵測僅數十個純量運算，不新增任何繪製負擔）。
+    class OneEuro {
+      constructor(minCutoff = 1.5, beta = 0.03, dCutoff = 1) {
+        this.minCutoff = minCutoff; this.beta = beta; this.dCutoff = dCutoff;
+        this.x = null; this.dx = 0; this.t = null;
+      }
+      static alpha(cutoff, dt) { const r = TAU * cutoff * dt; return r / (r + 1); }
+      filter(value, t) {
+        if (this.x === null || this.t === null) { this.x = value; this.t = t; return value; }
+        let dt = (t - this.t) / 1000;
+        if (!(dt > 0) || dt > 0.2) dt = 1 / 60;
+        this.t = t;
+        const dxRaw = (value - this.x) / dt;
+        this.dx += OneEuro.alpha(this.dCutoff, dt) * (dxRaw - this.dx);
+        const cutoff = this.minCutoff + this.beta * Math.abs(this.dx);
+        this.x += OneEuro.alpha(cutoff, dt) * (value - this.x);
+        return this.x;
+      }
+      reset() { this.x = null; this.dx = 0; this.t = null; }
+    }
+    const handFilters = [
+      Array.from({ length: 21 }, () => ({ x: new OneEuro(), y: new OneEuro() })),
+      Array.from({ length: 21 }, () => ({ x: new OneEuro(), y: new OneEuro() }))
+    ];
+    function filterHand(slot, hand, t) {
+      const bank = handFilters[slot];
+      const out = new Array(hand.length);
+      for (let i = 0; i < hand.length; i++) {
+        out[i] = { x: bank[i].x.filter(hand[i].x, t), y: bank[i].y.filter(hand[i].y, t), z: hand[i].z };
+      }
+      return out;
+    }
+    function resetFilterBank(slot) { for (const f of handFilters[slot]) { f.x.reset(); f.y.reset(); } }
 
     const palette = [
       [69, 246, 255],
@@ -1135,12 +1185,16 @@
     }
 
     function processHands(results, now) {
-      const hands = results?.landmarks || [];
-      latestHands = hands.slice(0, 2);
-      latestOfficialGestures = latestHands.map((_, index) => {
-        const category = results?.gestures?.[index]?.[0];
-        return category ? { name: category.categoryName, score: category.score } : null;
+      // 依手腕水平位置排穩定槽位（畫面左側→0），使 One Euro 濾波跨影格對應同一隻手；缺手即重置濾波器
+      const paired = (results?.landmarks || []).slice(0, 2).map((hand, idx) => {
+        const category = results?.gestures?.[idx]?.[0];
+        return { hand, official: category ? { name: category.categoryName, score: category.score } : null };
       });
+      if (paired.length === 2) paired.sort((a, b) => a.hand[0].x - b.hand[0].x);
+      latestHands = paired.map((p, index) => filterHand(index, p.hand, now)); // One Euro 平滑（輕量，不增繪製）
+      for (let s = paired.length; s < 2; s++) resetFilterBank(s);
+      const hands = latestHands;
+      latestOfficialGestures = paired.map(p => p.official);
       latestGestures = latestHands.map((hand, index) =>
         stabilizeGesture(index, classifyGesture(hand, latestOfficialGestures[index]))
       );
@@ -1712,33 +1766,40 @@
       const dt = now - lastFrame;
       lastFrame = now;
       fps += ((1000 / Math.max(1, dt)) - fps) * .06;
-      const detectInterval = QUALITY[qualityLevel].detectMs;
-      if (cameraRunning && modelReady && gestureRecognizer && video.readyState >= 2 &&
-          video.currentTime !== lastVideoTime && now - lastDetectAt >= detectInterval) {
-        lastDetectAt = now;
-        lastVideoTime = video.currentTime;
-        try {
-          processHands(gestureRecognizer.recognizeForVideo(video, now), now);
-        } catch (error) {
-          trackingText.textContent = "偵測重試中";
+      // 自我修復：任何單幀例外都不該永久凍結畫面 —— 記錄、重置畫布狀態、照常排下一幀
+      try {
+        const detectInterval = QUALITY[qualityLevel].detectMs;
+        if (cameraRunning && modelReady && gestureRecognizer && video.readyState >= 2 &&
+            video.currentTime !== lastVideoTime && now - lastDetectAt >= detectInterval) {
+          lastDetectAt = now;
+          lastVideoTime = video.currentTime;
+          try {
+            processHands(gestureRecognizer.recognizeForVideo(video, now), now);
+          } catch (error) {
+            trackingText.textContent = "偵測重試中";
+          }
         }
+        drawBackground();
+        drawTrails();
+        drawSparks();
+        drawGlyphs(now);
+        drawRings();
+        if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
+          const roundedFps = Math.round(fps);
+          fpsText.textContent = cameraRunning ? `${roundedFps} FPS・${latestHands.length} 手` : "觸控與滑鼠已就緒";
+          previewFps.textContent = `${roundedFps} FPS`;
+          canvas.dataset.fps = String(roundedFps);
+          canvas.dataset.particles = String(sparks.length);
+          canvas.dataset.trails = String(trails.length);
+          canvas.dataset.glyphs = String(glyphs.length);
+          canvas.dataset.quality = QUALITY[qualityLevel].name;
+        }
+      } catch (err) {
+        try { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1; ctx.shadowBlur = 0; } catch {}
+        reportError("動畫迴圈", `${(err && err.message) || err}\n${(err && err.stack || "").slice(0, 320)}`);
       }
-      drawBackground();
-      drawTrails();
-      drawSparks();
-      drawGlyphs(now);
-      drawRings();
-      if (Math.floor(now / 1000) !== Math.floor((now - dt) / 1000)) {
-        const roundedFps = Math.round(fps);
-        fpsText.textContent = cameraRunning ? `${roundedFps} FPS・${latestHands.length} 手` : "觸控與滑鼠已就緒";
-        previewFps.textContent = `${roundedFps} FPS`;
-        canvas.dataset.fps = String(roundedFps);
-        canvas.dataset.particles = String(sparks.length);
-        canvas.dataset.trails = String(trails.length);
-        canvas.dataset.glyphs = String(glyphs.length);
-        canvas.dataset.quality = QUALITY[qualityLevel].name;
-      }
-      if (cameraRunning || trails.length || sparks.length || glyphs.length || rings.length) {
+      // 無論是否發生例外都重新排程，確保畫面永不卡死
+      if (!appPaused && (cameraRunning || trails.length || sparks.length || glyphs.length || rings.length)) {
         animationFrameId = requestAnimationFrame(animate);
       }
     }
