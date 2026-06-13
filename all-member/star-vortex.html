@@ -297,11 +297,14 @@ const CFG = {
   }
 };
 
-// Quality tiers — strongest perf levers first. Auto-degrades under load.
+// Quality tiers. Effects (glow/particles) stay rich on ALL tiers — the half-res
+// bloom buffer + capped DPR make them cheap. We scale the cheap-to-trade levers:
+// main render resolution (renderScale × dpr), bloom-buffer resolution (fxRes),
+// detection rate, and star/particle counts. Auto-degrades only if FPS drops.
 const TIERS = {
-  high: { maxStars:26, maxParticles:340, glow:true, trails:true, renderScale:1.0,  detectMs:38, starsPerSpawn:2 },
-  med:  { maxStars:18, maxParticles:190, glow:true, trails:true, renderScale:0.85, detectMs:46, starsPerSpawn:1 },
-  low:  { maxStars:12, maxParticles:90,  glow:false,trails:false,renderScale:0.66, detectMs:60, starsPerSpawn:1 },
+  high: { maxStars:26, maxParticles:460, glow:true, renderScale:1.0,  fxRes:0.62, detectMs:38, starsPerSpawn:2 },
+  med:  { maxStars:20, maxParticles:320, glow:true, renderScale:0.9,  fxRes:0.55, detectMs:44, starsPerSpawn:2 },
+  low:  { maxStars:15, maxParticles:210, glow:true, renderScale:0.75, fxRes:0.5,  detectMs:55, starsPerSpawn:1 },
 };
 const TIER_ORDER = ["low","med","high"];
 
@@ -569,7 +572,7 @@ class Star{
   constructor(){ this.reset(); }
   reset(){ this.x=0;this.y=0;this.vx=0;this.vy=0;this.r=12;this.alive=false;
     this.color="#38f0ff";this.spin=rand(0,TAU);this.spawn=0;this.tx=0;this.ty=0;
-    this.captured=false;this.capBy=null;this.capGen=-1;this.orbitAng=0;this.orbitR=0; }
+    this.captured=false;this.capBy=null;this.capGen=-1;this.orbitAng=0;this.orbitR=0;this.bonus=false; }
   respawn(W,H){
     const m=40;
     this.x=rand(m,W-m); this.y=rand(m,H-m);
@@ -577,7 +580,7 @@ class Star{
     this.r=rand(9,15); this.color=STAR_COLORS[(Math.random()*STAR_COLORS.length)|0];
     this.spin=rand(0,TAU); this.spawn=0; this.alive=true;
     this.tx=this.x; this.ty=this.y;
-    this.captured=false; this.capBy=null; this.capGen=-1; this.orbitAng=0; this.orbitR=0;
+    this.captured=false; this.capBy=null; this.capGen=-1; this.orbitAng=0; this.orbitR=0; this.bonus=false;
   }
 }
 class Particle{
@@ -599,13 +602,18 @@ const Pool = {
   stars:[], parts:[], floats:[], shocks:[],
   initPool(){
     for(let i=0;i<40;i++) this.stars.push(new Star());
-    for(let i=0;i<400;i++) this.parts.push(new Particle());
+    for(let i=0;i<520;i++) this.parts.push(new Particle());
     for(let i=0;i<40;i++) this.floats.push(new Floater());
     for(let i=0;i<24;i++) this.shocks.push(new Shock());
   },
   liveStars(){ let n=0; for(const s of this.stars) if(s.alive)n++; return n; },
-  spawnStar(W,H){ for(const s of this.stars) if(!s.alive){ s.respawn(W,H); return s; }
-    const s=new Star(); s.respawn(W,H); this.stars.push(s); return s; },
+  hasBonus(){ for(const s of this.stars) if(s.alive && s.bonus) return true; return false; },
+  spawnStar(W,H,bonus){
+    let s=null; for(const o of this.stars) if(!o.alive){ s=o; break; }
+    if(!s){ s=new Star(); this.stars.push(s); }
+    s.respawn(W,H);
+    if(bonus){ s.bonus=true; s.r*=1.7; s.color="#ffd34d"; }   // rare ×5 superstar
+    return s; },
   addParticle(x,y,vx,vy,life,r,color){
     if(this.activeParts>=Perf.tier.maxParticles) return;
     for(const p of this.parts) if(!p.alive){ p.init(x,y,vx,vy,life,r,color); this.activeParts++; return; }  // live cap (don't blow budget on the ultimate frame)
@@ -626,13 +634,13 @@ const Pool = {
 const Game = {
   state:"loading",  // loading|start|countdown|play|pause|over
   score:0, combo:1, comboTimer:0, bestCombo:1, energy:0, time:CFG.ROUND_TIME,
-  shake:0, shockCd:0, ultCd:0, spawnTimer:0, cdNum:3, cdTimer:0, poppedAny:false, _cdHide:0,
+  shake:0, shockCd:0, ultCd:0, spawnTimer:0, bonusTimer:6, cdNum:3, cdTimer:0, poppedAny:false, _cdHide:0,
   W:0, H:0, minDim:0,
   best: +(localStorage.getItem("starVortexBest")||0),
 
   reset(){
     this.score=0; this.combo=1; this.comboTimer=0; this.bestCombo=1; this.energy=0;
-    this.time=CFG.ROUND_TIME; this.shake=0; this.shockCd=0; this.ultCd=0; this.spawnTimer=0;
+    this.time=CFG.ROUND_TIME; this.shake=0; this.shockCd=0; this.ultCd=0; this.spawnTimer=0; this.bonusTimer=6;
     this.poppedAny=false;
     Pool.clearAll(); Gesture.reset(); Tracker.lastVideoTime=-1;
     UI.setEnergy(0); UI.energyReady(false); UI.setCombo(1);
@@ -767,23 +775,28 @@ const Game = {
     }
   },
 
-  // scoring happens ONLY here (strike / shockwave / ultimate). captured stars score double.
+  // scoring happens ONLY here (strike / shockwave / ultimate).
+  // captured stars ×2, bonus superstars ×5.
   popStar(s, hand){
-    const cap=s.captured;
-    s.alive=false; s.captured=false; s.capBy=null;
-    const gain = CFG.SCORE_BASE*this.combo*(cap?CFG.CAP_MULT:1);
+    const cap=s.captured, bonus=s.bonus;
+    s.alive=false; s.captured=false; s.capBy=null; s.bonus=false;
+    const mult = bonus?5:(cap?CFG.CAP_MULT:1);
+    const gain = CFG.SCORE_BASE*this.combo*mult;
     this.score+=gain;
     this.bestCombo=Math.max(this.bestCombo,this.combo);
     this.combo=Math.min(99,this.combo+1);
     this.comboTimer=CFG.COMBO_WINDOW;
-    this.energy=Math.min(CFG.ENERGY_MAX,this.energy+(cap?CFG.ENERGY_PER_CAP:CFG.ENERGY_PER_POP));
+    this.energy=Math.min(CFG.ENERGY_MAX,this.energy+(bonus?12:cap?CFG.ENERGY_PER_CAP:CFG.ENERGY_PER_POP));
     this.poppedAny=true;
-    Pool.burst(s.x,s.y, Perf.tier.glow?(cap?18:13):8, s.color, cap?1.5:1);
-    Pool.float(s.x,s.y, "+"+gain, cap?"#ffd34d":s.color, cap?34:26);
-    if(this.combo>2 && this.combo%5===0) Pool.float(s.x,s.y-30, "連擊 x"+this.combo, "#ffd34d", 30);
-    this.shake=Math.min(16, this.shake + (cap?6:3));
+    Pool.burst(s.x,s.y, bonus?26:(cap?18:13), s.color, bonus?1.8:cap?1.5:1);
+    Pool.float(s.x,s.y, (bonus?"★ +":"+")+gain, bonus?"#ffd34d":cap?"#ffd34d":s.color, bonus?40:cap?34:26);
+    // combo-rank callouts (competitive juice)
+    const ranks={10:"好棒 GREAT!",20:"超強 AMAZING!",30:"無敵 INSANE!",40:"宇宙級 COSMIC!",50:"傳說 LEGEND!"};
+    if(ranks[this.combo]) Pool.float(this.W/2, this.H*0.3, ranks[this.combo], "#38f0ff", 44);
+    else if(this.combo>2 && this.combo%5===0) Pool.float(s.x,s.y-30, "連擊 x"+this.combo, "#ffd34d", 30);
+    this.shake=Math.min(18, this.shake + (bonus?9:cap?6:3));
     UI.flashScore(); UI.setCombo(this.combo);
-    Audio.pop(this.combo, cap);
+    Audio.pop(this.combo, cap||bonus);
   },
 
   doShockwave(x,y){
@@ -834,16 +847,22 @@ const Game = {
   },
 
   spawn(dt){
+    // difficulty ramp: field fills out and spawns quicken as the clock runs down
+    const prog = 1 - this.time/CFG.ROUND_TIME;                    // 0 → 1
+    const target = Math.round(Perf.tier.maxStars * (0.6 + 0.4*prog));
     this.spawnTimer-=dt;
-    const target = Perf.tier.maxStars;
     if(this.spawnTimer<=0 && Pool.liveStars()<target){
-      this.spawnTimer=0.55;
+      this.spawnTimer = 0.6 - 0.32*prog;                         // faster late-game
       const n=Perf.tier.starsPerSpawn;
       for(let i=0;i<n && Pool.liveStars()<target;i++){
         const s=Pool.spawnStar(this.W,this.H);
-        Pool.burst(s.x,s.y, Perf.tier.glow?6:3, s.color,0.4);
+        Pool.burst(s.x,s.y, 6, s.color,0.4);
       }
     }
+    // rare bonus superstar (one at a time) — high-value target to chase
+    this.bonusTimer-=dt;
+    if(this.bonusTimer<=0){ this.bonusTimer=rand(7,11);
+      if(!Pool.hasBonus()){ const s=Pool.spawnStar(this.W,this.H,true); Pool.burst(s.x,s.y,14,"#ffd34d",0.9); } }
   },
 
   stepEffects(dt){
@@ -936,16 +955,20 @@ const Sprites = {
 
 /* ============================ RENDER ============================= */
 const Render = {
-  cv:document.getElementById("game"), ctx:null, bg:null, bgctx:null, scale:1, dpr:1,
+  cv:document.getElementById("game"), ctx:null, bg:null, bgctx:null, fx:null, fxctx:null, scale:1, fxScale:1, dpr:1,
   init(){ this.ctx=this.cv.getContext("2d",{alpha:false});
     this.bg=document.createElement("canvas"); this.bgctx=this.bg.getContext("2d");
+    this.fx=document.createElement("canvas"); this.fxctx=this.fx.getContext("2d");   // half-res bloom layer
     Sprites.build(); },
 
   resize(){
     const cssW=window.innerWidth, cssH=window.innerHeight;
-    this.dpr=Math.min(window.devicePixelRatio||1, 2);
+    // cap DPR on phones/tablets — Retina fill-rate is the #1 cost; ~1.5 looks crisp enough
+    this.dpr=Math.min(window.devicePixelRatio||1, IS_MOBILE?1.5:2);
     this.scale = Perf.tier.renderScale * this.dpr;
+    this.fxScale = this.scale * Perf.tier.fxRes;   // glow buffer is rendered smaller, then upscaled
     this.cv.width=Math.round(cssW*this.scale); this.cv.height=Math.round(cssH*this.scale);
+    this.fx.width=Math.max(1,Math.round(cssW*this.fxScale)); this.fx.height=Math.max(1,Math.round(cssH*this.fxScale));
     Game.W=cssW; Game.H=cssH; Game.minDim=Math.min(cssW,cssH);
     this.buildBackground(cssW,cssH);
   },
@@ -971,56 +994,60 @@ const Render = {
   },
 
   frame(t){
-    const ctx=this.ctx, W=Game.W, H=Game.H, glow=Perf.tier.glow;
-    ctx.setTransform(this.scale,0,0,this.scale,0,0);
-    // screen shake
-    if(Game.shake>0.3){ ctx.translate(rand(-Game.shake,Game.shake),rand(-Game.shake,Game.shake)); }
-    ctx.drawImage(this.bg,0,0,W,H);
+    const main=this.ctx, fx=this.fxctx, W=Game.W, H=Game.H;
+    let sx=0, sy=0;
+    if(Game.shake>0.3){ sx=rand(-Game.shake,Game.shake); sy=rand(-Game.shake,Game.shake); }
 
-    if(glow) ctx.globalCompositeOperation="lighter";
+    // 1) background — full resolution & crisp (cheap pre-rendered blit)
+    main.setTransform(this.scale,0,0,this.scale,0,0); main.translate(sx,sy);
+    main.globalAlpha=1; main.globalCompositeOperation="source-over";
+    main.drawImage(this.bg,0,0,W,H);
 
-    // shockwaves (under stars)
+    // 2) ALL glowing dynamic content → half-resolution bloom buffer (≈4× less fill-rate)
+    fx.setTransform(this.fxScale,0,0,this.fxScale,0,0);
+    fx.globalCompositeOperation="source-over"; fx.globalAlpha=1;
+    fx.clearRect(0,0,W,H);
+    // shockwaves
+    fx.globalCompositeOperation="lighter";
     for(const s of Pool.shocks){ if(!s.alive) continue;
       const a=clamp(1-s.r/s.maxR,0,1);
-      ctx.globalAlpha=a*0.8; ctx.strokeStyle=s.color; ctx.lineWidth=3+8*a;
-      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,TAU); ctx.stroke();
-    }
-    ctx.globalAlpha=1;
-    if(glow) ctx.globalCompositeOperation="source-over";
-
-    // black holes at each active palm
-    for(const h of Gesture.hands) this.drawBlackHole(ctx,h,t,glow);
-
-    // stars
-    if(glow) ctx.globalCompositeOperation="lighter";
-    for(const s of Pool.stars){ if(!s.alive) continue; this.drawStar(ctx,s,glow); }
-
-    // particles
+      fx.globalAlpha=a*0.8; fx.strokeStyle=s.color; fx.lineWidth=3+8*a;
+      fx.beginPath(); fx.arc(s.x,s.y,s.r,0,TAU); fx.stroke(); }
+    fx.globalAlpha=1; fx.globalCompositeOperation="source-over";
+    // black holes
+    for(const h of Gesture.hands) this.drawBlackHole(fx,h,t,true);
+    // stars (additive)
+    fx.globalCompositeOperation="lighter";
+    for(const s of Pool.stars){ if(!s.alive) continue; this.drawStar(fx,s,true); }
+    fx.globalCompositeOperation="source-over";
+    // particles (additive)
+    fx.globalCompositeOperation="lighter";
     for(const p of Pool.parts){ if(!p.alive) continue;
       const a=clamp(p.life/p.max,0,1);
-      ctx.globalAlpha=a; ctx.fillStyle=p.color;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r*(0.4+a*0.6),0,TAU); ctx.fill();
-    }
-    ctx.globalAlpha=1;
-    if(glow) ctx.globalCompositeOperation="source-over";
+      fx.globalAlpha=a; fx.fillStyle=p.color;
+      fx.beginPath(); fx.arc(p.x,p.y,p.r*(0.4+a*0.6),0,TAU); fx.fill(); }
+    fx.globalAlpha=1; fx.globalCompositeOperation="source-over";
+    // nebula ultimate flash
+    if(Game.fxNebula>0){ const R=Math.max(W,H)*0.7;
+      fx.globalCompositeOperation="lighter"; fx.globalAlpha=Game.fxNebula*0.5;
+      fx.drawImage(Sprites.nebula, W/2-R, H/2-R, R*2, R*2);
+      fx.globalAlpha=1; fx.globalCompositeOperation="source-over"; }
 
-    // nebula ultimate flash (baked sprite — no per-frame gradient)
-    if(Game.fxNebula>0){
-      const R=Math.max(W,H)*0.7;
-      ctx.globalCompositeOperation="lighter"; ctx.globalAlpha=Game.fxNebula*0.5;
-      ctx.drawImage(Sprites.nebula, W/2-R, H/2-R, R*2, R*2);
-      ctx.globalAlpha=1; ctx.globalCompositeOperation="source-over";
-    }
+    // 3) composite bloom buffer onto main (one upscaled blit → natural soft glow)
+    main.setTransform(1,0,0,1,0,0); main.globalAlpha=1; main.globalCompositeOperation="source-over";
+    main.drawImage(this.fx, 0,0,this.fx.width,this.fx.height,
+                   sx*this.scale, sy*this.scale, W*this.scale, H*this.scale);
 
-    // floating texts
-    ctx.textAlign="center"; ctx.textBaseline="middle";
+    // 4) floating score text — crisp, full resolution, on top
+    main.setTransform(this.scale,0,0,this.scale,0,0); main.translate(sx,sy);
+    main.textAlign="center"; main.textBaseline="middle";
+    const blur = IS_MOBILE?0:8;
     for(const f of Pool.floats){ if(!f.alive) continue;
       const a=clamp(f.life,0,1);
-      ctx.globalAlpha=a; ctx.font=`900 ${f.size}px ${getFont()}`;
-      ctx.fillStyle=f.color; ctx.shadowColor=f.color; ctx.shadowBlur=glow?12:0;
-      ctx.fillText(f.text,f.x,f.y);
-    }
-    ctx.shadowBlur=0; ctx.globalAlpha=1;
+      main.globalAlpha=a; main.font=`900 ${f.size}px ${getFont()}`;
+      main.fillStyle=f.color; main.shadowColor=f.color; main.shadowBlur=blur;
+      main.fillText(f.text,f.x,f.y); }
+    main.shadowBlur=0; main.globalAlpha=1;
   },
 
   drawBlackHole(ctx,h,t,glow){
@@ -1082,7 +1109,12 @@ const Render = {
     const a=s.spawn, R=s.r*a, d=R*2.2;
     const sp=Sprites.star[s.color]||Sprites.star[STAR_COLORS[0]];
     ctx.drawImage(sp, s.x-d, s.y-d, d*2, d*2);
-    if(s.captured){                       // gold ring marks a held/charged star
+    if(s.bonus){                          // superstar: pulsing neon rings
+      ctx.lineWidth=2.5;
+      for(let k=0;k<2;k++){ ctx.globalAlpha=0.85; ctx.strokeStyle=k?"#38f0ff":"#ff3df0";
+        const rr=R*(1.7+0.4*Math.sin(s.spin*3+k*1.6)); ctx.beginPath(); ctx.arc(s.x,s.y,rr,0,TAU); ctx.stroke(); }
+      ctx.globalAlpha=1;
+    } else if(s.captured){                 // gold ring marks a held/charged star
       ctx.globalAlpha=0.85; ctx.strokeStyle="#ffd34d"; ctx.lineWidth=2;
       ctx.beginPath(); ctx.arc(s.x,s.y,R*1.55,0,TAU); ctx.stroke(); ctx.globalAlpha=1;
     }
