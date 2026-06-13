@@ -904,7 +904,7 @@
                 { word: "dollar",    zh: "元" },       { word: "train",     zh: "火車" },
                 { word: "tree",      zh: "樹" },       { word: "truck",     zh: "卡車" },
                 { word: "dragonfly", zh: "蜻蜓" },     { word: "draw",      zh: "畫圖" },
-                { word: "drum",      zh: "鼓" },
+                { word: "drum",      zh: "鼓" },       { word: "hundred",   zh: "百" },
             ],
             unit4: [
                 { word: "jacket",    zh: "夾克" },     { word: "smartphone", zh: "智慧型手機" },
@@ -913,20 +913,33 @@
                 { word: "whose",     zh: "誰的" },     { word: "spoon",     zh: "湯匙" },
                 { word: "spy",       zh: "間諜" },     { word: "star",      zh: "星星" },
                 { word: "storm",     zh: "暴風雨" },   { word: "ski",       zh: "滑雪" },
-                { word: "sky",       zh: "天空" },     { word: "reduce",    zh: "減少" },
-                { word: "reuse",     zh: "重複使用" }, { word: "recycle",   zh: "回收" },
-                { word: "Earth",     zh: "地球" },
+                { word: "sky",       zh: "天空" },
             ],
         };
         VOCAB_PRESETS["unit3+4"] = [...VOCAB_PRESETS.unit3, ...VOCAB_PRESETS.unit4];
 
+        // Stable, position-independent id: a word keeps its mastery history
+        // across list edits (add / remove / reorder). Used for preset AND custom.
+        function wordId(word) {
+            return "w-" + word.toLowerCase().replace(/[\s\-]+/g, "-");
+        }
         function buildVocabArray(items) {
-            return items.map((item, index) => ({
-                ...item,
-                category: "imported",
-                id: item.word.toLowerCase().replace(/[\s\-]+/g, "-") + "-" + index,
-                target: item.word.replace(/-/g, "").toUpperCase(),
-            }));
+            const seen = new Set();
+            const out = [];
+            items.forEach((item) => {
+                if (!item || !item.word) return;
+                const id = wordId(item.word);
+                if (seen.has(id)) return;                 // drop duplicate words
+                seen.add(id);
+                out.push({
+                    word: item.word,
+                    zh: item.zh || "（待填）",
+                    category: item.category || "imported",
+                    id,
+                    target: item.word.replace(/-/g, "").toUpperCase(),
+                });
+            });
+            return out;
         }
 
         let vocabulary = buildVocabArray(VOCAB_PRESETS["unit3+4"]);
@@ -1034,6 +1047,13 @@
 
         // --- 自訂單字匯入 ---
         const CUSTOM_WORDS_KEY = "word-quest-custom-words";
+        // Marker: the saved custom list is a FULL list (new model), not legacy add-ons.
+        const CUSTOM_WORDS_MODE_KEY = "word-quest-custom-words-full-v2";
+
+        // 內部分類（custom/imported）不對玩家顯示，也不寫回可編輯文字。
+        function categoryTag(c) {
+            return (c && c !== "custom" && c !== "imported") ? c : "";
+        }
 
         function loadCustomWords() {
             try {
@@ -1041,19 +1061,75 @@
             } catch(e) { return []; }
         }
 
-        function mergeCustomWords() {
-            const custom = loadCustomWords();
-            const existingWords = new Set(vocabulary.map(v => v.word.toLowerCase()));
-            const baseLen = vocabulary.length;
-            custom.forEach((item, i) => {
-                if (existingWords.has(item.word.toLowerCase())) return;
-                existingWords.add(item.word.toLowerCase());
-                vocabulary.push({
-                    ...item,
-                    id: item.word.toLowerCase().replace(/[\s\-]+/g, "-") + "-c" + i,
-                    target: item.word.replace(/-/g, "").toUpperCase()
-                });
+        // Legacy saves stored ONLY the user's added words (presets were merged at
+        // runtime by the old mergeCustomWords). In the new model the custom list IS
+        // the full vocabulary, so loading a legacy list as-is would silently drop the
+        // presets. Detect the missing v2 marker and fold the presets back in once.
+        function migrateLegacyCustomList() {
+            const raw = localStorage.getItem(CUSTOM_WORDS_KEY);
+            if (!raw || localStorage.getItem(CUSTOM_WORDS_MODE_KEY)) return;
+            let legacy;
+            try { legacy = JSON.parse(raw); } catch (e) { legacy = null; }
+            if (!Array.isArray(legacy) || !legacy.length) {
+                localStorage.setItem(CUSTOM_WORDS_MODE_KEY, "1");
+                return;
+            }
+            const seen = new Set();
+            const full = [];
+            [...VOCAB_PRESETS["unit3+4"], ...legacy].forEach(item => {
+                if (!item || !item.word) return;
+                const id = wordId(item.word);
+                if (seen.has(id)) return;
+                seen.add(id);
+                full.push({ word: item.word, zh: item.zh || "（待填）", category: item.category || "custom" });
             });
+            localStorage.setItem(CUSTOM_WORDS_KEY, JSON.stringify(full));
+            localStorage.setItem(CUSTOM_WORDS_MODE_KEY, "1");
+        }
+
+        // The custom list (when present) IS the full active vocabulary — it
+        // replaces the preset, so the editor can add and remove precisely.
+        function activeVocabItems() {
+            const custom = loadCustomWords();
+            return (Array.isArray(custom) && custom.length) ? custom : VOCAB_PRESETS["unit3+4"];
+        }
+
+        // Rebuild `vocabulary` in place so the shared reference stays valid.
+        // Never leave it empty (corrupt/empty custom list → fall back to presets).
+        function applyVocabulary(items) {
+            let built = buildVocabArray(items);
+            if (!built.length) built = buildVocabArray(VOCAB_PRESETS["unit3+4"]);
+            vocabulary.length = 0;
+            built.forEach(v => vocabulary.push(v));
+        }
+
+        // Serialize the live list back to editable text (word,zh[,category]).
+        function serializeVocab(list) {
+            return list.map(w => {
+                const tag = categoryTag(w.category);
+                return w.word + "," + w.zh + (tag ? "," + tag : "");
+            }).join("\n");
+        }
+
+        // One-time migration: re-home legacy progress (ids like "dress-0" /
+        // "word-c3") onto the position-independent "w-<word>" id, by word match,
+        // then drop the stale keys so stats don't double-count.
+        function migrateProgressIds() {
+            const keys = Object.keys(saveState.progress);
+            if (!keys.length || keys.every(k => k.startsWith("w-"))) return;
+            const byId = {};
+            keys.forEach(k => {
+                const p = saveState.progress[k];
+                if (p && p.word) {
+                    const id = wordId(p.word);   // same normalization used to key the live vocabulary
+                    if (!byId[id] || (p.seenCount || 0) >= (byId[id].seenCount || 0)) byId[id] = p;
+                }
+            });
+            Object.keys(byId).forEach(id => {
+                if (!saveState.progress[id]) saveState.progress[id] = byId[id];
+            });
+            keys.filter(k => !k.startsWith("w-")).forEach(k => { delete saveState.progress[k]; });
+            persistSave();
         }
 
         let _importParsed = null;
@@ -1137,12 +1213,17 @@
 
         function confirmImport() {
             if (!_importParsed || !_importParsed.valid.length) return;
-            localStorage.setItem(CUSTOM_WORDS_KEY, JSON.stringify(_importParsed.valid));
-            const keep = vocabulary.filter(v => !v.id.includes('-c'));
-            vocabulary.length = 0; keep.forEach(v => vocabulary.push(v));
-            mergeCustomWords();
+            // Full replace: the edited text becomes the ENTIRE word list.
+            applyVocabulary(_importParsed.valid);
+            // Persist the deduped/canonical list so disk matches the live vocabulary
+            // (avoids silently-dropped rows reappearing on reopen).
+            const canonical = vocabulary.map(v => ({ word: v.word, zh: v.zh, category: v.category }));
+            localStorage.setItem(CUSTOM_WORDS_KEY, JSON.stringify(canonical));
+            localStorage.setItem(CUSTOM_WORDS_MODE_KEY, "1");
+            const merged = _importParsed.valid.length - vocabulary.length;
             const st = document.getElementById('import-status');
-            st.textContent = '✅ 已匯入 ' + _importParsed.valid.length + ' 個，共 ' + vocabulary.length + ' 個';
+            st.textContent = '✅ 已套用，共 ' + vocabulary.length + ' 個單字'
+                + (merged > 0 ? '（已合併 ' + merged + ' 個重複）' : '');
             st.style.color = '#27ae60';
             _importParsed = null;
             setTimeout(closeImportDialog, 1400);
@@ -1151,17 +1232,13 @@
         function openImportDialog() {
             if (gameState.state === GAME_STATE.PLAYING || gameState.state === GAME_STATE.TRANSITION) return;
             const ta = document.getElementById('import-text');
-            const existing = loadCustomWords();
-            if (existing.length > 0) {
-                ta.value = existing.map(w => w.word + ',' + w.zh + (w.category && w.category !== 'custom' ? ',' + w.category : '')).join('\n');
-                _importParsed = parseWordInput(ta.value);
-                renderImportPreview(_importParsed);
-            } else {
-                ta.value = '';
-                _importParsed = null;
-                renderImportPreview(null);
-            }
-            document.getElementById('import-status').textContent = '';
+            // Show the REAL current list so add/remove edits are precise.
+            ta.value = serializeVocab(vocabulary);
+            _importParsed = parseWordInput(ta.value);
+            renderImportPreview(_importParsed);
+            const st = document.getElementById('import-status');
+            st.textContent = '目前共 ' + vocabulary.length + ' 個單字，可直接增刪後按「確認匯入」。';
+            st.style.color = 'rgba(180,200,255,0.7)';
             document.getElementById('import-dialog').classList.remove('hidden');
         }
 
@@ -1183,15 +1260,20 @@
 
         function clearImportedWords() {
             localStorage.removeItem(CUSTOM_WORDS_KEY);
-            const keep = vocabulary.filter(v => !v.id.includes('-c'));
-            vocabulary.length = 0;
-            keep.forEach(v => vocabulary.push(v));
-            document.getElementById('import-text').value = '';
-            document.getElementById('import-status').textContent = 'Cleared. Total: ' + vocabulary.length;
-            document.getElementById('import-status').style.color = '#e67e22';
+            localStorage.removeItem(CUSTOM_WORDS_MODE_KEY);
+            applyVocabulary(VOCAB_PRESETS["unit3+4"]);
+            const ta = document.getElementById('import-text');
+            ta.value = serializeVocab(vocabulary);
+            _importParsed = parseWordInput(ta.value);
+            renderImportPreview(_importParsed);
+            const st = document.getElementById('import-status');
+            st.textContent = '已重設為預設單字表，共 ' + vocabulary.length + ' 個';
+            st.style.color = '#e67e22';
         }
 
-        mergeCustomWords();
+        migrateLegacyCustomList();
+        applyVocabulary(activeVocabItems());
+        migrateProgressIds();
 
         const boxColors = ["#ff9ff3", "#ff6b6b", "#48dbfb", "#1dd1a1", "#5f27cd"];
 
@@ -2203,6 +2285,28 @@
             return "core";
         }
 
+        // 內在難度 0..10：長度 + 多字母字素(digraph/trigraph) + 重複字母。
+        // 純函式、與存檔無關，供「較難字微幅提升出現率」使用。
+        // 結果快取在單字物件上（wordPriority 在 sort 比較器中高頻呼叫，避免重複掃描）。
+        function wordDifficulty(wordEntry) {
+            if (wordEntry && wordEntry._difficulty != null) return wordEntry._difficulty;
+            const w = (wordEntry.target || wordEntry.word.toUpperCase()).replace(/[^A-Z]/g, "");
+            let d = Math.min(5, Math.max(0, w.length - 4));     // 5 字母以上逐步加分，上限 5
+            let i = 0, multi = 0;
+            const lw = w.toLowerCase();
+            while (i < lw.length) {
+                if (QUAD_GRAPHEMES.has(lw.slice(i, i + 4)))      { multi++; i += 4; }
+                else if (TRI_GRAPHEMES.has(lw.slice(i, i + 3)))  { multi++; i += 3; }
+                else if (DI_GRAPHEMES.has(lw.slice(i, i + 2)))   { multi++; i += 2; }
+                else i++;
+            }
+            d += Math.min(3, multi);                            // 拼字陷阱（多字母字素）
+            if (/(.)\1/.test(lw)) d += 1;                       // 連續重複字母
+            d = Math.min(10, d);
+            if (wordEntry) wordEntry._difficulty = d;
+            return d;
+        }
+
         function wordPriority(wordEntry, source, stageMeta) {
             const progress = getProgress(wordEntry);
             const due = progress.nextDueAt && progress.nextDueAt <= Date.now() ? 80 : 0;
@@ -2210,8 +2314,21 @@
             const fresh = (progress.seenCount || 0) === 0 ? 40 : Math.max(0, 15 - progress.seenCount * 3);
             const corrected = (progress.correctAfterCorrectionCount || 0) * 10;
             const sourceWeight = source === "due" ? due : source === "weak" ? weak + corrected : fresh;
+
+            // 平均出現（主要）：少被選 / 久未出現的字優先補上，讓涵蓋率隨遊玩自然輪替。
+            // 依存檔 (seenCount / lastSeenAt) 演進，無亂數，保持可重現。
+            const seen = progress.seenCount || 0;
+            const sinceSeenHr = progress.lastSeenAt ? (Date.now() - progress.lastSeenAt) / 3600000 : null;
+            const recencyBoost = sinceSeenHr === null ? 16 : Math.min(16, sinceSeenHr);   // 未見→16；每小時 +1，上限 16
+            const underExposure = Math.max(0, 18 - seen * 3);                              // 被選越多分數越低
+            const coverage = underExposure + recencyBoost;                                // 0..34（主導，確保平均出現）
+
+            // 微幅（次要）：較難字 + 易錯字小幅提升出現率，權重刻意低於 coverage。
+            const errorProne = Math.min(10, (progress.wrongCount || 0) * 4 + (progress.timeoutCount || 0) * 5 + (progress.correctAfterCorrectionCount || 0) * 2);
+            const difficultyNudge = (wordDifficulty(wordEntry) + errorProne) * 0.6;        // 0..12
+
             const tie = hashSeed(`${wordEntry.id}-${stageMeta.stageNumber}-${source}`) % 1000 / 1000;
-            return sourceWeight + tie;
+            return sourceWeight + coverage + difficultyNudge + tie;
         }
 
         function takeBySource(source, quota, used, stageMeta) {
@@ -2225,12 +2342,21 @@
                 });
         }
 
+        // 牌庫小於關卡回合數時（自訂清單可能很小），循環重複既有計畫補滿到 count，
+        // 避免關卡比 roundCount 短或為空。plans 為空時原樣返回（交由上層處理）。
+        function padPlansToCount(plans, count) {
+            if (!plans.length) return plans;
+            const out = plans.slice(0, count);
+            for (let i = 0; out.length < count; i++) out.push({ ...plans[i % plans.length] });
+            return out;
+        }
+
         function selectWordsForMode(mode, count, stageMeta) {
             const used = new Set();
             if (mode === "review") {
                 const review = takeBySource("due", Math.ceil(count / 2), used, stageMeta)
                     .concat(takeBySource("weak", count, used, stageMeta));
-                return review.slice(0, count).map((plan, index) => ({ ...plan, wave: "review" }));
+                return padPlansToCount(review, count).map((plan) => ({ ...plan, wave: "review" }));
             }
             if (stageMeta.isBoss) {
                 // boss 模式：只取已見詞（seenCount > 0）
@@ -2245,9 +2371,10 @@
                     const sc = p.seenCount || 0;
                     return sc >= 1 && sc <= 2;
                 });
-                const bossVocab = bossPool.length >= count ? bossPool
+                let bossVocab = bossPool.length >= count ? bossPool
                     : [...bossPool, ...lowSeenPool.filter((w) => !bossPool.find((b) => b.id === w.id))];
-                const usedBoss = new Set();
+                // 全新或極小牌庫尚無已見詞 → 允許任何字，避免空關卡（"No words!" 死路）。
+                if (!bossVocab.length) bossVocab = vocabulary.slice();
                 const bossPlan = bossVocab
                     .filter((word) => !used.has(word.id))
                     .sort((a, b) => wordPriority(b, "weak", stageMeta) - wordPriority(a, "weak", stageMeta))
@@ -2256,7 +2383,7 @@
                         used.add(word.id);
                         return { wordEntry: word, source: "boss", wave: "boss" };
                     });
-                return bossPlan;
+                return padPlansToCount(bossPlan, count);
             }
             const mix = stageMeta.curve.mix;
             const freshQuota = Math.round(count * mix.fresh);
@@ -2267,7 +2394,7 @@
                 .concat(takeBySource("weak", weakQuota, used, stageMeta))
                 .concat(takeBySource("due", dueQuota, used, stageMeta));
             if (plans.length < count) plans.push(...takeBySource("weak", count - plans.length, used, stageMeta));
-            return plans.slice(0, count).map((plan, index) => ({
+            return padPlansToCount(plans, count).map((plan, index) => ({
                 ...plan,
                 wave: waveForRound(index, count, stageMeta)
             }));
@@ -2846,7 +2973,8 @@
 
         function updateUI() {
             const round = gameState.currentRound;
-            document.getElementById('chinese-hint').innerText = `${round.zh}  ${round.category ? "· " + round.category : ""}`;
+            const tag = categoryTag(round.category);
+            document.getElementById('chinese-hint').innerText = `${round.zh}  ${tag ? "· " + tag : ""}`.trim();
             document.getElementById('level-indicator').innerText = `${gameState.mode.toUpperCase()} Stage ${gameState.stageMeta.stageNumber} · ${gameState.currentLevelIndex + 1}/${gameState.levelOrder.length}`;
             document.getElementById('score-board').innerText = `⭐ ${gameState.score}`;
             document.getElementById('mode-indicator').innerHTML = `<strong>模式</strong> ${gameState.mode === "adventure" ? "冒險" : gameState.mode === "review" ? "複習" : "練習"}`;
