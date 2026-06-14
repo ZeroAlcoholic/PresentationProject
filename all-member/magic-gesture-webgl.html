@@ -345,8 +345,8 @@
     }
 
     // 累積緩衝解析度倍率（相對 drawingBuffer）。提高＝更細緻不粗糙；adapt() 在吃緊時可下調。
-    // 觸控 0.72、桌機 0.85（原本 0.5 → 明顯更銳利、顆粒更細）；adapt() 吃緊時下調回 0.5。
-    let accScale = isTouch ? 0.72 : 0.85;
+    // 觸控 0.85、桌機 1.0（原本 0.5 → 大幅更銳利、顆粒更細，解決「解析度低」）；adapt() 吃緊時下調回 0.6/0.5。
+    let accScale = isTouch ? 0.85 : 1.0;
     function destroyTargets(){
       const gl = GL.gl; if (!gl) return;
       // 釋放舊的 FBO／貼圖，避免每次 resize／轉向重配時洩漏 GPU 記憶體（平板長玩易因此 OOM→內容遺失）
@@ -495,7 +495,7 @@
     let W = innerWidth, H = innerHeight, dpr = 1;
     function resize(){
       W = innerWidth; H = innerHeight;
-      dpr = Math.min(devicePixelRatio || 1, isTouch ? 1 : 1.5);
+      dpr = Math.min(devicePixelRatio || 1, isTouch ? 1.3 : 1.5); // 觸控由 1 提到 1.3：Retina 平板上明顯更銳利
       fxCanvas.width = Math.max(2, Math.round(W * dpr));
       fxCanvas.height = Math.max(2, Math.round(H * dpr));
       fxCanvas.style.width = W + "px"; fxCanvas.style.height = H + "px";
@@ -780,7 +780,7 @@
       if (fps < 40){ // 吃緊：① 關 bloom → ② 砍粒子上限 → ③ 降累積解析度（最後手段）
         if (GL.bloomOn) GL.bloomOn = false;
         else if (MAX_P > 1400){ MAX_P = Math.max(1400, Math.round(MAX_P*0.8)); if (parts.length > MAX_P) parts.length = MAX_P; }
-        else if (accScale > 0.5){ accScale = 0.5; allocTargets(); }
+        else if (accScale > 0.5){ accScale = Math.max(0.5, accScale - 0.2); allocTargets(); }
       } else if (fps > 56){ // 餘裕充足：恢復 bloom（解析度與粒子上限不自動回升，避免來回抖動）
         if (!GL.bloomOn) GL.bloomOn = true;
       }
