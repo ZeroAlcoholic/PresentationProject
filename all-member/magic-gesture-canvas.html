@@ -1603,7 +1603,8 @@
         ctx.fillStyle = colorAt(g.hue + .22, alpha * .14);
         ctx.lineWidth = qualityLevel === 0 ? 1.5 : 2.5;
         ctx.shadowColor = colorAt(g.hue, 1);
-        ctx.shadowBlur = QUALITY[qualityLevel].glow + 8;
+        // 省電階：完全不用 shadowBlur（平板卡頓主因），靠 lighter 加色仍有發光感
+        ctx.shadowBlur = qualityLevel === 0 ? 0 : QUALITY[qualityLevel].glow + 8;
 
         if (g.type === "ORB") {
           ctx.beginPath();
@@ -1895,10 +1896,11 @@
       if (event.key.toLowerCase() === "p" && !pauseButton.disabled) pauseButton.click();
     });
 
-    // 運算效能優化：手機/平板（觸控）從「平衡」起跳（DPR 1.4、glow 5、粒子 520），
-    // 約省一半填色與陰影模糊成本，仍保留所有手勢與輝光；桌機維持「高」。
+    // 運算效能優化：手機/平板（觸控）從「省電」起跳（DPR 1、無 shadowBlur、粒子 260），
+    // 這是最輕的渲染負擔，先確保流暢不卡；若裝置有餘裕，看門狗會自動升到「平衡」(上限)。
+    // 關鍵：Canvas-2D 的 shadowBlur(輝光) 是平板卡頓主因，省電階完全不用，故全部手勢仍可即時觸發。
     const isTouchDevice = (matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0);
-    if (isTouchDevice) qualityLevel = 1;
+    if (isTouchDevice) qualityLevel = 0;
     qualityBadge.textContent = `效果：${QUALITY[qualityLevel].name}`;
     buildSparkSprites();
     resize();
