@@ -290,6 +290,7 @@ const CFG = {
   STRIKE_OFF: 0.34,
   CAP_MULT: 2,                    // captured stars score double (reward gather→smash)
   SCORE_BASE: 10,
+  TRAIL_FADE: 0.5,                // bloom-buffer feedback: higher = shorter trails (free motion streaks)
   model: {
     esm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm",
     wasm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm",
@@ -895,15 +896,21 @@ const Game = {
    (scale/rotate) each frame. Eliminates per-frame gradient allocation —
    the biggest GC/heat win on phones & tablets.                        */
 const Sprites = {
-  star:{}, glow:null, disk:null, core:null, coreFist:null, nebula:null,
-  diskRef:40, coreRef:44,
+  star:{}, nebula:null, diskRef:40, coreRef:44,
+  // per-side sets: L = 紫(吸) · R = 青(打)  → left/right hands look clearly different
+  glow:{}, disk:{}, core:{}, coreFist:null,
+  // palettes [accretion A, accretion B, glow rgb, core edge, core ring, trail]
+  PAL:{ L:["#ff3df0","#9b5cff","155,92,255","#9b5cff","#caa3ff","#d59bff"],
+        R:["#38f0ff","#5b8cff","56,240,255","#2aa8ff","#7fd9ff","#aef6ff"] },
   _cv(s){ const cv=document.createElement("canvas"); cv.width=cv.height=s; return cv; },
   build(){
     for(const col of STAR_COLORS) this.star[col]=this.makeStar(col);
-    this.glow=this.makeGlow();
-    this.disk=this.makeDisk();
-    this.core=this.makeCore("#9b5cff","#7fd9ff");
-    this.coreFist=this.makeCore("#ff3df0","#ff5470");
+    for(const side of ["L","R"]){ const p=this.PAL[side];
+      this.glow[side]=this.makeGlow(p[2]);
+      this.disk[side]=this.makeDisk(p[0],p[1]);
+      this.core[side]=this.makeCore(p[3],p[4]);
+    }
+    this.coreFist=this.makeCore("#ff3df0","#ff5470");   // fist = red, regardless of side
     this.nebula=this.makeNebula();
   },
   makeNebula(){
@@ -920,25 +927,25 @@ const Sprites = {
     c.fillStyle=g; c.beginPath(); c.arc(r,r,r,0,TAU); c.fill();
     return cv;
   },
-  makeGlow(){
+  makeGlow(rgb){
     const S=256, r=S/2, cv=this._cv(S), c=cv.getContext("2d");
     const g=c.createRadialGradient(r,r,0,r,r,r);
-    g.addColorStop(0,"rgba(155,92,255,0.20)"); g.addColorStop(0.22,"rgba(155,92,255,0.17)");
-    g.addColorStop(0.7,"rgba(56,240,255,0.06)"); g.addColorStop(1,"transparent");
+    g.addColorStop(0,`rgba(${rgb},0.22)`); g.addColorStop(0.25,`rgba(${rgb},0.16)`);
+    g.addColorStop(0.7,`rgba(${rgb},0.05)`); g.addColorStop(1,"transparent");
     c.fillStyle=g; c.beginPath(); c.arc(r,r,r,0,TAU); c.fill();
     return cv;
   },
-  makeDisk(){
+  makeDisk(colA,colB){
     const core=this.diskRef, ext=Math.ceil(core*2.9+8), S=ext*2, cx=ext, cv=this._cv(S), c=cv.getContext("2d");
     for(let i=0;i<3;i++){
       const rr=core*(1.5+i*0.55), a=i*1.1;
       c.lineWidth=core*0.28;
       if(c.createConicGradient){
         const g=c.createConicGradient(a,cx,cx);
-        g.addColorStop(0,"rgba(56,240,255,0)"); g.addColorStop(0.25,i%2?"#ff3df0":"#38f0ff");
-        g.addColorStop(0.5,"rgba(155,92,255,0)"); g.addColorStop(0.75,i%2?"#38f0ff":"#ff3df0"); g.addColorStop(1,"rgba(56,240,255,0)");
+        g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(0.25,i%2?colA:colB);
+        g.addColorStop(0.5,"rgba(0,0,0,0)"); g.addColorStop(0.75,i%2?colB:colA); g.addColorStop(1,"rgba(0,0,0,0)");
         c.strokeStyle=g;
-      } else c.strokeStyle= i%2?"rgba(255,61,240,0.6)":"rgba(56,240,255,0.6)";
+      } else c.strokeStyle= i%2?colA:colB;
       c.beginPath(); c.arc(cx,cx,rr,0,TAU); c.stroke();
     }
     return cv;
@@ -1003,43 +1010,47 @@ const Render = {
     main.globalAlpha=1; main.globalCompositeOperation="source-over";
     main.drawImage(this.bg,0,0,W,H);
 
-    // 2) ALL glowing dynamic content → half-resolution bloom buffer (≈4× less fill-rate)
+    // 2) GLOW buffer (half-res, PERSISTENT). Instead of clearing, FADE the last frame
+    //    toward transparent → moving glows leave light trails for ~free. Then draw this
+    //    frame additively. Buffer holds ONLY glow (no dark core) so it composites with
+    //    'lighter' = vivid additive bloom + trails.
     fx.setTransform(this.fxScale,0,0,this.fxScale,0,0);
-    fx.globalCompositeOperation="source-over"; fx.globalAlpha=1;
-    fx.clearRect(0,0,W,H);
+    fx.globalCompositeOperation="destination-out"; fx.globalAlpha=1;
+    fx.fillStyle=`rgba(0,0,0,${CFG.TRAIL_FADE})`; fx.fillRect(0,0,W,H);
+    fx.globalCompositeOperation="lighter"; fx.globalAlpha=1;
     // shockwaves
-    fx.globalCompositeOperation="lighter";
     for(const s of Pool.shocks){ if(!s.alive) continue;
       const a=clamp(1-s.r/s.maxR,0,1);
       fx.globalAlpha=a*0.8; fx.strokeStyle=s.color; fx.lineWidth=3+8*a;
       fx.beginPath(); fx.arc(s.x,s.y,s.r,0,TAU); fx.stroke(); }
-    fx.globalAlpha=1; fx.globalCompositeOperation="source-over";
-    // black holes
-    for(const h of Gesture.hands) this.drawBlackHole(fx,h,t,true);
+    fx.globalAlpha=1;
+    // hand glow (field / disk / streak / fingertips) — additive, side-tinted
+    for(const h of Gesture.hands) this.drawHandGlow(fx,h,t);
     // stars (additive)
-    fx.globalCompositeOperation="lighter";
-    for(const s of Pool.stars){ if(!s.alive) continue; this.drawStar(fx,s,true); }
-    fx.globalCompositeOperation="source-over";
+    for(const s of Pool.stars){ if(!s.alive) continue; this.drawStar(fx,s); }
     // particles (additive)
-    fx.globalCompositeOperation="lighter";
     for(const p of Pool.parts){ if(!p.alive) continue;
       const a=clamp(p.life/p.max,0,1);
       fx.globalAlpha=a; fx.fillStyle=p.color;
       fx.beginPath(); fx.arc(p.x,p.y,p.r*(0.4+a*0.6),0,TAU); fx.fill(); }
-    fx.globalAlpha=1; fx.globalCompositeOperation="source-over";
+    fx.globalAlpha=1;
     // nebula ultimate flash
     if(Game.fxNebula>0){ const R=Math.max(W,H)*0.7;
-      fx.globalCompositeOperation="lighter"; fx.globalAlpha=Game.fxNebula*0.5;
-      fx.drawImage(Sprites.nebula, W/2-R, H/2-R, R*2, R*2);
-      fx.globalAlpha=1; fx.globalCompositeOperation="source-over"; }
+      fx.globalAlpha=Game.fxNebula*0.5; fx.drawImage(Sprites.nebula, W/2-R, H/2-R, R*2, R*2); fx.globalAlpha=1; }
+    fx.globalCompositeOperation="source-over";
 
-    // 3) composite bloom buffer onto main (one upscaled blit → natural soft glow)
-    main.setTransform(1,0,0,1,0,0); main.globalAlpha=1; main.globalCompositeOperation="source-over";
+    // 3) composite glow buffer ADDITIVELY onto bg (one upscaled blit → vivid bloom + trails)
+    main.setTransform(1,0,0,1,0,0); main.globalAlpha=1; main.globalCompositeOperation="lighter";
     main.drawImage(this.fx, 0,0,this.fx.width,this.fx.height,
                    sx*this.scale, sy*this.scale, W*this.scale, H*this.scale);
+    main.globalCompositeOperation="source-over";
 
-    // 4) floating score text — crisp, full resolution, on top
+    // 4) black-hole dark cores + per-hand labels (crisp, full-res, over the glow)
     main.setTransform(this.scale,0,0,this.scale,0,0); main.translate(sx,sy);
+    const two=Gesture.hands.length>=2;
+    for(const h of Gesture.hands) this.drawHandCore(main,h,two,t);
+
+    // 5) floating score text — crisp
     main.textAlign="center"; main.textBaseline="middle";
     const blur = IS_MOBILE?0:8;
     for(const f of Pool.floats){ if(!f.alive) continue;
@@ -1050,59 +1061,58 @@ const Render = {
     main.shadowBlur=0; main.globalAlpha=1;
   },
 
-  drawBlackHole(ctx,h,t,glow){
+  // glowing layer of a hand → additive bloom buffer, tinted by side (L=紫/吸, R=青/打)
+  drawHandGlow(fx,h,t){
     const x=h.dpalm.x, y=h.dpalm.y, md=Game.minDim;
     const role=h.role||"idle", striking=h.striking||false, core=CFG.R_CORE*md;
+    const side=h.side==="R"?"R":"L", pal=Sprites.PAL[side], glowS=Sprites.glow[side], diskS=Sprites.disk[side];
+    const tcol=pal[5];
 
-    // STRIKE: hot motion streak so it's unmistakably "hitting"
+    // strike streak (bright leading dots; the buffer feedback also trails it)
     if(striking && h.trail && h.trail.length>=6){
-      if(glow) ctx.globalCompositeOperation="lighter";
       const tr=h.trail, n=tr.length>>1;
-      for(let i=0;i<n;i++){ const a=i/n;
-        ctx.globalAlpha=a*0.55; ctx.fillStyle="#aef6ff";
-        ctx.beginPath(); ctx.arc(tr[i*2],tr[i*2+1], core*0.5*a+2, 0,TAU); ctx.fill(); }
-      ctx.globalAlpha=1; if(glow) ctx.globalCompositeOperation="source-over";
+      for(let i=0;i<n;i++){ const a=i/n; fx.globalAlpha=a*0.5; fx.fillStyle=tcol;
+        fx.beginPath(); fx.arc(tr[i*2],tr[i*2+1], core*0.45*a+1.5, 0,TAU); fx.fill(); }
+      fx.globalAlpha=1;
     }
-
-    // GATHER: suction field + orbit ring (where captured stars collect)
+    // gather: suction field + orbit ring
     if(role==="gather"){
       const rS=CFG.R_SUCTION_OPEN*md*(0.7+0.5*h.openAmt);
-      ctx.drawImage(Sprites.glow, x-rS, y-rS, rS*2, rS*2);
-      ctx.globalAlpha=0.4; ctx.strokeStyle="rgba(120,180,255,0.7)"; ctx.lineWidth=1.5;
-      ctx.setLineDash([6,10]); ctx.lineDashOffset=-t*0.04; ctx.beginPath(); ctx.arc(x,y,rS,0,TAU); ctx.stroke();
-      ctx.setLineDash([]); ctx.globalAlpha=1;
-      if(glow) ctx.globalCompositeOperation="lighter";
-      ctx.globalAlpha=0.55; ctx.strokeStyle="#9b5cff"; ctx.lineWidth=2.5;
-      ctx.beginPath(); ctx.arc(x,y,CFG.R_ORBIT*md*1.25,0,TAU); ctx.stroke();
-      ctx.globalAlpha=1; if(glow) ctx.globalCompositeOperation="source-over";
+      fx.drawImage(glowS, x-rS, y-rS, rS*2, rS*2);
+      fx.globalAlpha=0.4; fx.strokeStyle=pal[4]; fx.lineWidth=1.5;
+      fx.setLineDash([6,10]); fx.lineDashOffset=-t*0.04; fx.beginPath(); fx.arc(x,y,rS,0,TAU); fx.stroke(); fx.setLineDash([]);
+      fx.globalAlpha=0.55; fx.strokeStyle=pal[3]; fx.lineWidth=2.5;
+      fx.beginPath(); fx.arc(x,y,CFG.R_ORBIT*md*1.25,0,TAU); fx.stroke(); fx.globalAlpha=1;
     } else if(!striking){
-      const rS=CFG.R_SUCTION*md*0.8;       // idle: faint hint of reach
-      ctx.globalAlpha=0.5; ctx.drawImage(Sprites.glow, x-rS, y-rS, rS*2, rS*2); ctx.globalAlpha=1;
+      const rS=CFG.R_SUCTION*md*0.8; fx.globalAlpha=0.5; fx.drawImage(glowS, x-rS,y-rS,rS*2,rS*2); fx.globalAlpha=1;
     }
+    // accretion disk (rotating, side-tinted)
+    const dsc=core/Sprites.diskRef, dw=diskS.width*dsc;
+    fx.save(); fx.translate(x,y); fx.rotate(t*0.004); fx.drawImage(diskS,-dw/2,-dw/2,dw,dw); fx.restore();
+    // fingertip dots
+    fx.fillStyle=tcol;
+    for(let f=0; f<5; f++){ fx.beginPath(); fx.arc(h.tips[f].x,h.tips[f].y, f===1?5:3,0,TAU); fx.fill(); }
+  },
 
-    // accretion disk: baked sprite rotated via transform (no per-frame gradient)
-    if(glow) ctx.globalCompositeOperation="lighter";
-    const ds=Sprites.disk, dsc=core/Sprites.diskRef, dw=ds.width*dsc;
-    ctx.save(); ctx.translate(x,y); ctx.rotate(t*0.004);
-    ctx.drawImage(ds, -dw/2, -dw/2, dw, dw); ctx.restore();
-    if(glow) ctx.globalCompositeOperation="source-over";
-    // event-horizon core — hot/red when striking or fist
-    const hot=striking||role==="fist";
-    const cs=hot?Sprites.coreFist:Sprites.core, csc=core/Sprites.coreRef, cw=cs.width*csc;
-    ctx.drawImage(cs, x-cw/2, y-cw/2, cw, cw);
-
-    // captured-count badge
-    if(h.cap>0){
-      ctx.fillStyle="#ffd34d"; ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.font=`900 ${Math.round(core*0.7)}px ${getFont()}`;
-      ctx.fillText("×"+h.cap, x, y-core-12);
+  // crisp dark core + ring + labels on the main canvas (drawn over the composited glow)
+  drawHandCore(main,h,two,t){
+    const x=h.dpalm.x, y=h.dpalm.y, md=Game.minDim, core=CFG.R_CORE*md;
+    const role=h.role||"idle", striking=h.striking||false;
+    const side=h.side==="R"?"R":"L", pal=Sprites.PAL[side];
+    const cs=(role==="fist")?Sprites.coreFist:Sprites.core[side], csc=core/Sprites.coreRef, cw=cs.width*csc;
+    main.globalCompositeOperation="source-over"; main.globalAlpha=1;
+    main.drawImage(cs, x-cw/2, y-cw/2, cw, cw);
+    if(striking){ main.globalAlpha=0.9; main.strokeStyle=pal[5]; main.lineWidth=2.5;
+      main.beginPath(); main.arc(x,y,core*1.04,0,TAU); main.stroke(); main.globalAlpha=1; }
+    if(h.cap>0){ main.fillStyle="#ffd34d"; main.textAlign="center"; main.textBaseline="middle";
+      main.font=`900 ${Math.round(core*0.7)}px ${getFont()}`; main.fillText("×"+h.cap, x, y-core-12); }
+    // side·role label — only with two hands (when telling them apart matters)
+    if(two){
+      const word = striking?"打":role==="gather"?"吸":role==="fist"?"拳":"·";
+      main.fillStyle=pal[4]; main.textAlign="center"; main.textBaseline="middle";
+      main.font=`900 ${Math.round(core*0.5)}px ${getFont()}`;
+      main.fillText((side==="L"?"左":"右")+"·"+word, x, y+core+core*0.62);
     }
-
-    // fingertip dots (brighter while striking)
-    if(glow) ctx.globalCompositeOperation="lighter";
-    ctx.fillStyle = striking ? "rgba(174,246,255,0.95)" : "rgba(56,240,255,0.8)";
-    for(let f=0; f<5; f++){ ctx.beginPath(); ctx.arc(h.tips[f].x,h.tips[f].y, f===1?5:3, 0,TAU); ctx.fill(); }
-    if(glow) ctx.globalCompositeOperation="source-over";
   },
 
   drawStar(ctx,s,glow){
