@@ -344,17 +344,30 @@
       return true;
     }
 
+    // 累積緩衝解析度倍率（相對 drawingBuffer）。提高＝更細緻不粗糙；adapt() 在吃緊時可下調。
+    // 觸控 0.72、桌機 0.85（原本 0.5 → 明顯更銳利、顆粒更細）；adapt() 吃緊時下調回 0.5。
+    let accScale = isTouch ? 0.72 : 0.85;
+    function destroyTargets(){
+      const gl = GL.gl; if (!gl) return;
+      // 釋放舊的 FBO／貼圖，避免每次 resize／轉向重配時洩漏 GPU 記憶體（平板長玩易因此 OOM→內容遺失）
+      for (const rt of [GL.accum[0], GL.accum[1], GL.bloom[0], GL.bloom[1]]){
+        if (rt){ if (rt.fb) gl.deleteFramebuffer(rt.fb); if (rt.tex) gl.deleteTexture(rt.tex); }
+      }
+      GL.accum = [null,null]; GL.bloom = [null,null];
+    }
     function allocTargets(){
       const gl = GL.gl; if (!gl) return;
-      // 半解析累積、1/4 解析 bloom（手機填色省一大半）
-      GL.AW = Math.max(2, Math.round(GL.W * 0.5));
-      GL.AH = Math.max(2, Math.round(GL.H * 0.5));
+      destroyTargets();
+      // 累積（可調解析）、1/4 解析 bloom（bloom 本就模糊，低解析無損外觀）
+      GL.AW = Math.max(2, Math.round(GL.W * accScale));
+      GL.AH = Math.max(2, Math.round(GL.H * accScale));
       GL.BW = Math.max(2, Math.round(GL.W * 0.25));
       GL.BH = Math.max(2, Math.round(GL.H * 0.25));
       GL.accum[0] = makeRT(gl, GL.AW, GL.AH); GL.accumTex[0] = GL.accum[0].tex;
       GL.accum[1] = makeRT(gl, GL.AW, GL.AH); GL.accumTex[1] = GL.accum[1].tex;
       GL.bloom[0] = makeRT(gl, GL.BW, GL.BH); GL.bloomTex[0] = GL.bloom[0].tex;
       GL.bloom[1] = makeRT(gl, GL.BW, GL.BH); GL.bloomTex[1] = GL.bloom[1].tex;
+      GL.cur = 0;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
@@ -371,7 +384,7 @@
 
     // 粒子池（CPU 狀態，GPU 繪製）。座標單位＝累積緩衝像素（左上原點）
     const P_STRIDE = 7; // clipX, clipY, size, r,g,b,a
-    let MAX_P = isTouch ? 2600 : 6000;
+    let MAX_P = isTouch ? 3600 : 7200;
     let parts = [];           // {x,y,vx,vy,life,decay,size,r,g,b}
     let vtx = new Float32Array(MAX_P * P_STRIDE);
     const palette = [[69,246,255],[139,92,255],[255,61,169],[255,209,102]];
@@ -387,7 +400,7 @@
         if (parts.length >= MAX_P) break;
         const ang = opts.ang!==undefined ? opts.ang + (Math.random()-.5)*(opts.spread||0.6) : Math.random()*TAU;
         const spd = (opts.spd||1) * (0.4 + Math.random()*1.2);
-        const col = colorAt(opts.hue!==undefined ? opts.hue + (Math.random()-.5)*0.5 : Math.random()*4);
+        const col = colorAt(opts.hue!==undefined ? opts.hue + (Math.random()-.5)*0.3 : Math.random()*4);
         parts.push({
           x, y,
           vx:(opts.vx||0) + Math.cos(ang)*spd, vy:(opts.vy||0) + Math.sin(ang)*spd,
@@ -465,9 +478,9 @@
       gl.disable(gl.BLEND);
       drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.bgTex); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.0); });
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
-      drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.accumTex[GL.cur]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.3); });
+      drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.accumTex[GL.cur]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.8); });
       if (GL.bloomOn){
-        drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.bloomTex[0]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),1.7); });
+        drawFullQuad(GL.progComp, (gl,p)=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.bloomTex[0]); gl.uniform1i(gl.getUniformLocation(p,"uTex"),0); gl.uniform1f(gl.getUniformLocation(p,"uAlpha"),2.1); });
       }
     }
 
@@ -513,7 +526,7 @@
       reset(){ this.x=null; this.dx=0; this.t=null; }
     }
     const HAND_CONNECTIONS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-    const NUM_HANDS = isTouch ? 1 : 2;
+    const NUM_HANDS = 2; // 雙手始終啟用：日蝕／光橋／能量弦等雙手合擊在平板上也能玩
     const filt = Array.from({length:NUM_HANDS}, () => Array.from({length:21}, () => ({x:new OneEuro(), y:new OneEuro()})));
     function resetFilt(s){ for (const f of filt[s]) { f.x.reset(); f.y.reset(); } }
 
@@ -523,6 +536,7 @@
     let latestHands = [];
     const draw = Array.from({length:NUM_HANDS}, () => ({active:false, gesture:"", x:0, y:0, px:0, py:0, primed:false}));
     let fistSince = new Array(NUM_HANDS).fill(0);
+    const handHistory = Array.from({length:NUM_HANDS}, () => []); // 每手近 ~850ms 軌跡，用於揮動／畫圓動作判讀
     const rvfc = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
 
     function extendedFingers(hand){
@@ -573,6 +587,50 @@
       });
     }
     const POSE_SPELLS = ["OPEN","THUMB_UP","THUMB_DOWN","VICTORY","ILY","THREE","HORNS"];
+    Object.assign(LABEL, { SWIPE:"揮動・風刃", PORTAL:"畫圓・傳送門", BEAM:"雙捏合・能量弦" });
+
+    // 動作型咒語（揮動風刃 / 畫圓傳送門）→ GPU 粒子
+    function castMotion(type, cssX, cssY, vec, s){
+      triggerOnce(type + "-" + s, type === "PORTAL" ? 1800 : 850, () => {
+        const [ax, ay] = toAccum(cssX, cssY);
+        if (type === "PORTAL"){
+          for (let r=0;r<3;r++){ const RR=34+r*26; for (let i=0;i<44;i++){ const a=i/44*TAU; spawn(ax+Math.cos(a)*RR, ay+Math.sin(a)*RR, 1, {ang:a+1.57, spread:0.25, spd:1.1, size:8, hue:1+r*0.22, decay:0.028}); } }
+          spawn(ax, ay, 16, {spd:0.6, size:10, hue:1, decay:0.04});
+          modeName.textContent = LABEL.PORTAL; showToast("圓環完成・傳送門開啟"); if (navigator.vibrate) navigator.vibrate(22);
+        } else { // SWIPE：沿揮動方向的風刃
+          const ang = Math.atan2(vec.y, vec.x);
+          for (let i=0;i<64;i++){ const t=i/64, along=(t-0.5)*70, perp=(Math.random()-0.5)*100;
+            spawn(ax + Math.cos(ang)*along + Math.cos(ang+1.57)*perp, ay + Math.sin(ang)*along + Math.sin(ang+1.57)*perp, 1,
+              {ang, spread:0.3, spd:7, size:9, hue: vec.x>0?0:2, decay:0.05, vx:vec.x*3.4, vy:vec.y*3.4}); }
+          modeName.textContent = LABEL.SWIPE; showToast(Math.abs(vec.x) > Math.abs(vec.y) ? "橫向風刃" : vec.y < 0 ? "昇空氣流" : "墜落衝擊");
+          if (navigator.vibrate) navigator.vibrate(16);
+        }
+      });
+    }
+    // 軌跡判讀：快速直線揮動→SWIPE；POINT/PINCH 畫一圈→PORTAL（沿用穩定的原版啟發式）
+    function trackMotion(hand, gesture, s, now){
+      const src = gesture === "PINCH" ? { x:(hand[4].x+hand[8].x)/2, y:(hand[4].y+hand[8].y)/2 } : gesture === "POINT" ? hand[8] : hand[9];
+      const hist = handHistory[s];
+      hist.push({ x:1-src.x, y:src.y, t:now });
+      while (hist.length && now - hist[0].t > 850) hist.shift();
+      if (hist.length < 5) return;
+      const cur = hist[hist.length-1];
+      const old = hist.find(p => now - p.t > 190);
+      if (old && gesture !== "POINT" && gesture !== "PINCH"){
+        const dx = cur.x-old.x, dy = cur.y-old.y, distN = Math.hypot(dx,dy);
+        let path = 0; for (let i=1;i<hist.length;i++) path += Math.hypot(hist[i].x-hist[i-1].x, hist[i].y-hist[i-1].y);
+        if (distN > 0.2 && distN/Math.max(path,0.001) > 0.7){ castMotion("SWIPE", cur.x*W, cur.y*H, {x:dx/distN, y:dy/distN}, s); hist.length = 0; return; }
+      }
+      if ((gesture === "POINT" || gesture === "PINCH") && hist.length >= 12 && now - hist[0].t > 480){
+        let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity,cx=0,cy=0;
+        for (const p of hist){ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y; cx+=p.x; cy+=p.y; }
+        cx/=hist.length; cy/=hist.length;
+        const w=maxX-minX, h=maxY-minY, start=hist[0], closed=Math.hypot(cur.x-start.x, cur.y-start.y);
+        let turn=0, prev=Math.atan2(hist[0].y-cy, hist[0].x-cx);
+        for (let i=1;i<hist.length;i++){ const a=Math.atan2(hist[i].y-cy, hist[i].x-cx); let dl=a-prev; if(dl>Math.PI)dl-=TAU; if(dl<-Math.PI)dl+=TAU; turn+=dl; prev=a; }
+        if (w>0.13 && h>0.13 && closed<0.14 && Math.abs(turn)>4.5){ castMotion("PORTAL", cx*W, cy*H, {x:0,y:0}, s); hist.length = 0; }
+      }
+    }
 
     function processHands(results, now){
       const dets = (results?.landmarks || []).slice(0, NUM_HANDS);
@@ -586,7 +644,7 @@
 
       if (!latestHands.length){
         modeName.textContent = "尋找雙手";
-        for (let s=0;s<NUM_HANDS;s++){ draw[s].active=false; draw[s].primed=false; fistSince[s]=0; }
+        for (let s=0;s<NUM_HANDS;s++){ draw[s].active=false; draw[s].primed=false; fistSince[s]=0; handHistory[s].length=0; }
         drawPreview(); return;
       }
 
@@ -598,6 +656,7 @@
         const tipCss = { x:(1-hand[8].x)*W, y:hand[8].y*H };
         const palmCss = { x:(1-hand[9].x)*W, y:hand[9].y*H };
         centers[s] = palmCss;
+        trackMotion(hand, g, s, now);
 
         if (g === "POINT" || g === "MOVE"){ d.gesture=g; d.active=true; d.tx=tipCss.x; d.ty=tipCss.y; }
         else if (g === "PINCH"){ d.gesture="PINCH"; d.active=true; d.tx=(1-(hand[4].x+hand[8].x)/2)*W; d.ty=((hand[4].y+hand[8].y)/2)*H; }
@@ -611,7 +670,7 @@
         if (POSE_SPELLS.includes(g)) castSpell(g, palmCss.x, palmCss.y, s);
         modeName.textContent = LABEL[g] || "尋找手勢";
       });
-      for (let s=latestHands.length; s<NUM_HANDS; s++){ draw[s].active=false; draw[s].primed=false; fistSince[s]=0; }
+      for (let s=latestHands.length; s<NUM_HANDS; s++){ draw[s].active=false; draw[s].primed=false; fistSince[s]=0; handHistory[s].length=0; }
 
       // 雙手合擊
       if (centers.length === 2){
@@ -629,7 +688,11 @@
         } else if (gestures[0]==="OPEN" && gestures[1]==="OPEN"){
           modeName.textContent = LABEL.BRIDGE;
           const [x0,y0]=toAccum(centers[0].x,centers[0].y), [x1,y1]=toAccum(centers[1].x,centers[1].y);
-          for (let j=0;j<10;j++){ const t=j/10; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t - Math.sin(t*Math.PI)*40, 1, {spd:0.3,size:9,hue:1.8+t*0.6,decay:0.05}); }
+          for (let j=0;j<14;j++){ const t=j/14; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t - Math.sin(t*Math.PI)*40, 1, {spd:0.3,size:8,hue:1.8+t*0.6,decay:0.05}); }
+        } else if (gestures[0]==="PINCH" && gestures[1]==="PINCH"){ // 雙捏合・能量弦：兩指間的高張力直線光束
+          modeName.textContent = LABEL.BEAM;
+          const [x0,y0]=toAccum(centers[0].x,centers[0].y), [x1,y1]=toAccum(centers[1].x,centers[1].y);
+          for (let j=0;j<18;j++){ const t=j/18; const jit=(Math.random()-0.5)*10; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t + jit, 1, {spd:0.2,size:7,hue:0.4,decay:0.06}); }
         }
       }
       drawPreview();
@@ -666,17 +729,20 @@
         const [apx,apy] = toAccum(d.px, d.py);
         const dx = ax-apx, dy = ay-apy, dist = Math.hypot(dx,dy);
         const ang = Math.atan2(dy, dx);
-        const steps = Math.max(1, Math.min(12, Math.round(dist/2.5)));
+        // 更細緻：步距更密、粒子更小，光帶從粗塊變成滑順細線（拖尾仍由累積層產生）
+        const steps = Math.max(1, Math.min(20, Math.round(dist/1.6)));
         // 同一筆畫用緩慢連貫的色相（避免每顆亂色疊成灰白）
         const baseHue = d.gesture === "PINCH" ? (s?2.2:0.2) : (performance.now()*0.00018 + s*1.5);
         for (let i=0;i<steps;i++){
           const t = i/steps, x = apx+dx*t, y = apy+dy*t;
-          // 主光帶：高密度、低速、大、連貫色、短壽命（拖尾交給累積層，避免長條拉絲）
-          spawn(x, y, 2, { ang, spread:0.12, spd:0.12, size:16, hue:baseHue, decay:0.08, vx:dx*0.02, vy:dy*0.02 });
+          // 主光帶：高密度、低速、連貫色、短壽命（拖尾交給累積層）
+          spawn(x, y, 2, { ang, spread:0.1, spd:0.1, size:12, hue:baseHue, decay:0.075, vx:dx*0.02, vy:dy*0.02 });
+          // 亮芯：更亮更小的核心，讓線條有「實心霓虹管」質感（隔點放置，避免中心過曝成白）
+          if (i % 2 === 0) spawn(x, y, 1, { spd:0.05, size:6, hue:baseHue, decay:0.05 });
         }
         if (d.gesture === "PINCH"){ // 朝中心吸聚的環
           const [ax2,ay2] = toAccum(d.tx, d.ty);
-          for (let k=0;k<6;k++){ const a=Math.random()*TAU, rad=18+Math.random()*22; spawn(ax2+Math.cos(a)*rad, ay2+Math.sin(a)*rad, 1, { ang:a+Math.PI, spd:1.4, size:9, hue:baseHue, decay:0.04 }); }
+          for (let k=0;k<6;k++){ const a=Math.random()*TAU, rad=18+Math.random()*22; spawn(ax2+Math.cos(a)*rad, ay2+Math.sin(a)*rad, 1, { ang:a+Math.PI, spd:1.4, size:7, hue:baseHue, decay:0.04 }); }
         }
       }
     }
@@ -711,12 +777,11 @@
 
     function adapt(now){
       if (now - qualityCheckAt < 1200) return; qualityCheckAt = now;
-      if (fps < 40){ // 吃緊：先關 bloom，再砍粒子上限
+      if (fps < 40){ // 吃緊：① 關 bloom → ② 砍粒子上限 → ③ 降累積解析度（最後手段）
         if (GL.bloomOn) GL.bloomOn = false;
-        else MAX_P = Math.max(800, Math.round(MAX_P*0.8));
-        if (parts.length > MAX_P) parts.length = MAX_P;
-        if (vtx.length < MAX_P*P_STRIDE) {} else if (MAX_P*P_STRIDE < vtx.length) {/* keep buffer */}
-      } else if (fps > 56){
+        else if (MAX_P > 1400){ MAX_P = Math.max(1400, Math.round(MAX_P*0.8)); if (parts.length > MAX_P) parts.length = MAX_P; }
+        else if (accScale > 0.5){ accScale = 0.5; allocTargets(); }
+      } else if (fps > 56){ // 餘裕充足：恢復 bloom（解析度與粒子上限不自動回升，避免來回抖動）
         if (!GL.bloomOn) GL.bloomOn = true;
       }
     }
@@ -789,7 +854,7 @@
     /* =========================== 滑鼠/觸控 後備 =========================== */
     const pointers = new Map();
     fxCanvas.addEventListener("pointerdown", e => { document.body.classList.add("started"); try{ fxCanvas.setPointerCapture(e.pointerId);}catch{} pointers.set(e.pointerId, {x:e.clientX,y:e.clientY}); const [ax,ay]=toAccum(e.clientX,e.clientY); spawn(ax,ay, 16, {spd:2.5,size:14,decay:0.06,grav:0.01}); ensureLoop(); });
-    fxCanvas.addEventListener("pointermove", e => { const o = pointers.get(e.pointerId); if (!o) return; const dx=e.clientX-o.x, dy=e.clientY-o.y, dist=Math.hypot(dx,dy); const ang=Math.atan2(dy,dx); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); const steps=Math.max(1,Math.min(12,Math.round(dist/2.5))); const baseHue=performance.now()*0.00018; for(let i=0;i<steps;i++){ const t=i/steps; const [ax,ay]=toAccum(o.x+dx*t,o.y+dy*t); spawn(ax,ay,2,{ang,spread:0.12,spd:0.12,size:16,hue:baseHue,decay:0.08,vx:dx*0.02,vy:dy*0.02}); } ensureLoop(); });
+    fxCanvas.addEventListener("pointermove", e => { const o = pointers.get(e.pointerId); if (!o) return; const dx=e.clientX-o.x, dy=e.clientY-o.y, dist=Math.hypot(dx,dy); const ang=Math.atan2(dy,dx); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); const steps=Math.max(1,Math.min(24,Math.round(dist/1.4))); const baseHue=performance.now()*0.00018; for(let i=0;i<steps;i++){ const t=i/steps; const [ax,ay]=toAccum(o.x+dx*t,o.y+dy*t); spawn(ax,ay,2,{ang,spread:0.1,spd:0.1,size:12,hue:baseHue,decay:0.075,vx:dx*0.02,vy:dy*0.02}); if(i%2===0) spawn(ax,ay,1,{spd:0.05,size:6,hue:baseHue,decay:0.05}); } ensureLoop(); });
     const relPtr = e => pointers.delete(e.pointerId);
     fxCanvas.addEventListener("pointerup", relPtr); fxCanvas.addEventListener("pointercancel", relPtr);
 
