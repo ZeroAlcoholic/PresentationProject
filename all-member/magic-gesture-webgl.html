@@ -579,13 +579,14 @@
     function castSpell(g, cssX, cssY, s){
       triggerOnce(g + "-" + s, g === "OPEN" ? 650 : 1050, () => {
         const [ax, ay] = toAccum(cssX, cssY);
-        if (g === "OPEN"){ for (let i=0;i<46;i++){ const a=Math.random()*TAU; spawn(ax,ay,1,{ang:a,spread:0.1,spd:6,size:14,hue:s?2.1:0.1,decay:0.05,grav:0.02}); } }
-        else if (g === "THUMB_UP"){ for (let i=0;i<48;i++){ const a=i/48*TAU; spawn(ax,ay,1,{ang:a,spread:0.04,spd:5.2,size:13,hue:3,decay:0.05}); } spawn(ax,ay,18,{spd:1,size:19,hue:3,decay:0.04}); }
-        else if (g === "THUMB_DOWN"){ for (let i=0;i<44;i++){ const a=i/44*TAU, R=95; spawn(ax+Math.cos(a)*R, ay+Math.sin(a)*R, 1, {ang:a+Math.PI+0.55, spd:3.2, size:11, hue:1.2, decay:0.045}); } }
-        else if (g === "VICTORY"){ for (let b=0;b<5;b++){ const a=-0.55+b*0.27; for (let j=1;j<=14;j++){ const r=j*8; spawn(ax+Math.cos(a)*r, ay+Math.sin(a)*r, 1, {ang:a,spread:0.08,spd:1.6,size:9,hue:b*0.45,decay:0.025}); } } }
-        else if (g === "ILY"){ for (let i=0;i<64;i++){ const t=i/64; spawn(ax+(t-0.5)*320, ay+Math.sin(t*TAU*1.5)*42, 1, {ang:-1.57,spread:0.4,spd:1.1,size:12,hue:1.6+t*0.9,decay:0.02,vy:-1}); } }
-        else if (g === "THREE"){ for (let e=0;e<3;e++){ const a0=-Math.PI/2+e/3*TAU, a1=-Math.PI/2+(e+1)/3*TAU, R=92; const x0=ax+Math.cos(a0)*R,y0=ay+Math.sin(a0)*R,x1=ax+Math.cos(a1)*R,y1=ay+Math.sin(a1)*R; for (let j=0;j<15;j++){ const t=j/15; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t, 1, {spd:0.4,size:9,hue:2.5,decay:0.02}); } } }
-        else if (g === "HORNS"){ for (let b=0;b<5;b++){ const a=b/5*TAU; for (let j=1;j<=8;j++){ const r=j/8*120, jit=(Math.random()-0.5)*30; spawn(ax+Math.cos(a)*r+Math.cos(a+1.57)*jit, ay+Math.sin(a)*r+Math.sin(a+1.57)*jit, 2, {spd:0.5,size:8,hue:0.05,decay:0.03}); } } }
+        // decay 全面調慢：咒語停留 ~1~1.5s 清楚可見，不再一閃而逝
+        if (g === "OPEN"){ for (let i=0;i<46;i++){ const a=Math.random()*TAU; spawn(ax,ay,1,{ang:a,spread:0.1,spd:6,size:14,hue:s?2.1:0.1,decay:0.022,grav:0.02}); } }
+        else if (g === "THUMB_UP"){ for (let i=0;i<48;i++){ const a=i/48*TAU; spawn(ax,ay,1,{ang:a,spread:0.04,spd:5.2,size:13,hue:3,decay:0.02}); } spawn(ax,ay,18,{spd:1,size:19,hue:3,decay:0.016}); }
+        else if (g === "THUMB_DOWN"){ for (let i=0;i<44;i++){ const a=i/44*TAU, R=95; spawn(ax+Math.cos(a)*R, ay+Math.sin(a)*R, 1, {ang:a+Math.PI+0.55, spd:3.2, size:11, hue:1.2, decay:0.02}); } }
+        else if (g === "VICTORY"){ for (let b=0;b<5;b++){ const a=-0.55+b*0.27; for (let j=1;j<=14;j++){ const r=j*8; spawn(ax+Math.cos(a)*r, ay+Math.sin(a)*r, 1, {ang:a,spread:0.08,spd:1.6,size:9,hue:b*0.45,decay:0.016}); } } }
+        else if (g === "ILY"){ for (let i=0;i<64;i++){ const t=i/64; spawn(ax+(t-0.5)*320, ay+Math.sin(t*TAU*1.5)*42, 1, {ang:-1.57,spread:0.4,spd:1.1,size:12,hue:1.6+t*0.9,decay:0.013,vy:-1}); } }
+        else if (g === "THREE"){ for (let e=0;e<3;e++){ const a0=-Math.PI/2+e/3*TAU, a1=-Math.PI/2+(e+1)/3*TAU, R=92; const x0=ax+Math.cos(a0)*R,y0=ay+Math.sin(a0)*R,x1=ax+Math.cos(a1)*R,y1=ay+Math.sin(a1)*R; for (let j=0;j<15;j++){ const t=j/15; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t, 1, {spd:0.4,size:9,hue:2.5,decay:0.014}); } } }
+        else if (g === "HORNS"){ for (let b=0;b<5;b++){ const a=b/5*TAU; for (let j=1;j<=8;j++){ const r=j/8*120, jit=(Math.random()-0.5)*30; spawn(ax+Math.cos(a)*r+Math.cos(a+1.57)*jit, ay+Math.sin(a)*r+Math.sin(a+1.57)*jit, 2, {spd:0.5,size:8,hue:0.05,decay:0.018}); } } }
         if (navigator.vibrate && g !== "OPEN") navigator.vibrate(18);
       });
     }
@@ -597,14 +598,14 @@
       triggerOnce(type + "-" + s, type === "PORTAL" ? 1800 : 850, () => {
         const [ax, ay] = toAccum(cssX, cssY);
         if (type === "PORTAL"){
-          for (let r=0;r<3;r++){ const RR=34+r*26; for (let i=0;i<44;i++){ const a=i/44*TAU; spawn(ax+Math.cos(a)*RR, ay+Math.sin(a)*RR, 1, {ang:a+1.57, spread:0.25, spd:1.1, size:8, hue:1+r*0.22, decay:0.028}); } }
-          spawn(ax, ay, 16, {spd:0.6, size:10, hue:1, decay:0.04});
+          for (let r=0;r<3;r++){ const RR=34+r*26; for (let i=0;i<44;i++){ const a=i/44*TAU; spawn(ax+Math.cos(a)*RR, ay+Math.sin(a)*RR, 1, {ang:a+1.57, spread:0.25, spd:1.1, size:8, hue:1+r*0.22, decay:0.016}); } }
+          spawn(ax, ay, 16, {spd:0.6, size:10, hue:1, decay:0.02});
           modeName.textContent = LABEL.PORTAL; showToast("圓環完成・傳送門開啟"); if (navigator.vibrate) navigator.vibrate(22);
         } else { // SWIPE：沿揮動方向的風刃
           const ang = Math.atan2(vec.y, vec.x);
           for (let i=0;i<64;i++){ const t=i/64, along=(t-0.5)*70, perp=(Math.random()-0.5)*100;
             spawn(ax + Math.cos(ang)*along + Math.cos(ang+1.57)*perp, ay + Math.sin(ang)*along + Math.sin(ang+1.57)*perp, 1,
-              {ang, spread:0.3, spd:7, size:9, hue: vec.x>0?0:2, decay:0.05, vx:vec.x*3.4, vy:vec.y*3.4}); }
+              {ang, spread:0.3, spd:7, size:9, hue: vec.x>0?0:2, decay:0.025, vx:vec.x*3.4, vy:vec.y*3.4}); }
           modeName.textContent = LABEL.SWIPE; showToast(Math.abs(vec.x) > Math.abs(vec.y) ? "橫向風刃" : vec.y < 0 ? "昇空氣流" : "墜落衝擊");
           if (navigator.vibrate) navigator.vibrate(16);
         }
@@ -685,11 +686,11 @@
           ultimateCharge = Math.min(1, ultimateCharge + 0.05);
           modeName.textContent = `日蝕蓄力 ${Math.round(ultimateCharge*100)}%`;
           const [ax,ay] = toAccum(mx,my);
-          for (let i=0;i<10;i++){ const a=Math.random()*TAU, rr=20+ultimateCharge*95; spawn(ax+Math.cos(a)*rr, ay+Math.sin(a)*rr, 1, {ang:a+1.57, spd:1.1, size:8, hue:3.2, decay:0.05}); }
+          for (let i=0;i<10;i++){ const a=Math.random()*TAU, rr=20+ultimateCharge*95; spawn(ax+Math.cos(a)*rr, ay+Math.sin(a)*rr, 1, {ang:a+1.57, spd:1.1, size:8, hue:3.2, decay:0.03}); }
           if (ultimateCharge >= 1 && now - lastUltimate > 1800){
             lastUltimate = now; ultimateCharge = 0;
-            for (let i=0;i<170;i++){ const a=Math.random()*TAU; spawn(ax,ay,1,{ang:a,spread:0.1,spd:9,size:15,hue:2.6+Math.random()*0.9,decay:0.04,grav:0.005}); }
-            spawn(ax,ay,40,{spd:1,size:24,hue:3,decay:0.03});
+            for (let i=0;i<170;i++){ const a=Math.random()*TAU; spawn(ax,ay,1,{ang:a,spread:0.1,spd:9,size:15,hue:2.6+Math.random()*0.9,decay:0.02,grav:0.005}); }
+            spawn(ax,ay,40,{spd:1,size:24,hue:3,decay:0.015});
             if (navigator.vibrate) navigator.vibrate([40,30,90]);
             showToast("✦ 日蝕共鳴・解放 ✦");
           }
@@ -697,12 +698,12 @@
           ultimateCharge = Math.max(0, ultimateCharge - 0.03);
           modeName.textContent = LABEL.BRIDGE;
           const [x0,y0]=toAccum(centers[0].x,centers[0].y), [x1,y1]=toAccum(centers[1].x,centers[1].y);
-          for (let j=0;j<14;j++){ const t=j/14; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t - Math.sin(t*Math.PI)*40, 1, {spd:0.3,size:8,hue:1.8+t*0.6,decay:0.05}); }
+          for (let j=0;j<14;j++){ const t=j/14; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t - Math.sin(t*Math.PI)*40, 1, {spd:0.3,size:8,hue:1.8+t*0.6,decay:0.03}); }
         } else if (gestures[0]==="PINCH" && gestures[1]==="PINCH"){ // 雙捏合・能量弦：兩指間的高張力直線光束
           ultimateCharge = Math.max(0, ultimateCharge - 0.03);
           modeName.textContent = LABEL.BEAM;
           const [x0,y0]=toAccum(centers[0].x,centers[0].y), [x1,y1]=toAccum(centers[1].x,centers[1].y);
-          for (let j=0;j<18;j++){ const t=j/18; const jit=(Math.random()-0.5)*10; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t + jit, 1, {spd:0.2,size:7,hue:0.4,decay:0.06}); }
+          for (let j=0;j<18;j++){ const t=j/18; const jit=(Math.random()-0.5)*10; spawn(x0+(x1-x0)*t, y0+(y1-y0)*t + jit, 1, {spd:0.2,size:7,hue:0.4,decay:0.035}); }
         } else {
           ultimateCharge = Math.max(0, ultimateCharge - 0.03); // 雙手分開但未擺出合擊手勢：洩力
         }
