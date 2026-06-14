@@ -769,9 +769,11 @@
       }
       reset() { this.x = null; this.dx = 0; this.t = null; }
     }
+    // 較高 minCutoff/beta：移動時更跟手、低延遲（優先「靈敏」），靜止時仍抑抖
+    const mkEuro = () => new OneEuro(2.2, 0.05);
     const handFilters = [
-      Array.from({ length: 21 }, () => ({ x: new OneEuro(), y: new OneEuro() })),
-      Array.from({ length: 21 }, () => ({ x: new OneEuro(), y: new OneEuro() }))
+      Array.from({ length: 21 }, () => ({ x: mkEuro(), y: mkEuro() })),
+      Array.from({ length: 21 }, () => ({ x: mkEuro(), y: mkEuro() }))
     ];
     function filterHand(slot, hand, t) {
       const bank = handFilters[slot];
@@ -1760,6 +1762,26 @@
       ctx.shadowBlur = 0;
     }
 
+    // FPS 看門狗：補上原本是死碼的 setQuality()。持續低 FPS → 自動降一階（防止運算螺旋→平板當機），
+    // 充裕很久才升回；門檻拉開(40↔56)避免來回抖動。觸控不自動升到最高階(DPR2)以防記憶體壓力。
+    let lowFpsSince = 0, highFpsSince = 0, lastQualityShift = 0;
+    function adaptiveQuality(now, currentFps) {
+      if (!magicStarted || now - lastQualityShift < 2500) return;
+      const maxAutoTier = isTouchDevice ? 1 : QUALITY.length - 1;
+      if (currentFps < 40 && qualityLevel > 0) {
+        highFpsSince = 0;
+        if (!lowFpsSince) lowFpsSince = now;
+        else if (now - lowFpsSince > 1800) {
+          setQuality(qualityLevel - 1); lastQualityShift = now; lowFpsSince = 0;
+          showToast(`效能調節・降為「${QUALITY[qualityLevel].name}」`);
+        }
+      } else if (currentFps > 56 && qualityLevel < maxAutoTier) {
+        lowFpsSince = 0;
+        if (!highFpsSince) highFpsSince = now;
+        else if (now - highFpsSince > 6000) { setQuality(qualityLevel + 1); lastQualityShift = now; highFpsSince = 0; }
+      } else { lowFpsSince = 0; highFpsSince = 0; }
+    }
+
     function animate(now) {
       animationFrameId = 0;
       if (appPaused) return;
@@ -1793,6 +1815,7 @@
           canvas.dataset.trails = String(trails.length);
           canvas.dataset.glyphs = String(glyphs.length);
           canvas.dataset.quality = QUALITY[qualityLevel].name;
+          adaptiveQuality(now, roundedFps);
         }
       } catch (err) {
         try { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1; ctx.shadowBlur = 0; } catch {}
