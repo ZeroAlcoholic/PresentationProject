@@ -275,6 +275,7 @@ const VoiceInput = {
   ready:false, ctx:null, stream:null, analyser:null, buf:null,
   floor:0.02, fast:0, slow:0, level:0,
   overTimer:0, glideTimer:0, lastJump:-9999, lastDash:-9999,
+  resetRound(){ this.overTimer=0; this.glideTimer=0; this.fast=0; this.slow=0; this.lastJump=-9999; this.lastDash=-9999; },  // 跨局重置，避免殘留計時器誤觸
 
   async init(){
     this.ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -352,6 +353,7 @@ const Input = {
   queueJump(){ this._jumpQ = true; this._pulse = 1; },
   queueDash(){ this._dashQ = true; this._pulse = 1; },
   setGlide(v){ this._glide = v; },
+  reset(){ this._jumpQ=false; this._dashQ=false; this._glide=false; this._pulse=0; },  // 清掉上一局殘留（避免開局幻影跳/滑）
   poll(dt, now){
     if(this.mode === 'voice') return VoiceInput.poll(dt, now);
     const j=this._jumpQ, d=this._dashQ; this._jumpQ=false; this._dashQ=false;
@@ -442,8 +444,8 @@ const Sfx = {
    欄位：暱稱、分數、最高 Combo、稱號、日期
    ===================================================================== */
 const Board = {
-  read(){ try{ return JSON.parse(localStorage.getItem(LS.board)||'[]'); }catch(e){ return []; } },
-  write(a){ localStorage.setItem(LS.board, JSON.stringify(a.slice(0,5))); },
+  read(){ try{ const a = JSON.parse(localStorage.getItem(LS.board)||'[]'); return Array.isArray(a) ? a : []; }catch(e){ return []; } },
+  write(a){ try{ localStorage.setItem(LS.board, JSON.stringify(a.slice(0,5))); }catch(e){} },  // 隱私模式/配額爆掉不致命
   add(entry){
     const a = this.read(); a.push(entry);
     a.sort((x,y)=>y.score - x.score);
@@ -661,10 +663,12 @@ class GameScene extends Phaser.Scene {
     else tex = {star:'star',ring:'gemYellow',bubble:'springboardUp',jelly:'slimeBlock',cactus:'cactus',gate:'flagBlue'}[type];
     const o = this.objects.create(x, y, tex);
     o.objType = type; o.hit=false; o.setDepth(6);
-    if(type==='jelly'){        // 軟糖牆：拉長的 Kenney slime 方塊（中心原點＋預設 body 置中，碰撞穩定）
+    if(type==='jelly'){        // 軟糖牆：拉長的 Kenney slime 方塊
       o.setOrigin(0.5,0.5).setScale(1.35,3.0); o.y = GROUND_Y + 6 - o.displayHeight/2;
-    } else if(type==='gate'){  // 終點派對旗（中心原點＋預設 body 置中）
+      o.body.reset(o.x, o.y);  // 縮放後必須 reset，body 才會對齊整面牆（否則停在建立時的 y≈0 → 不會碰撞）
+    } else if(type==='gate'){  // 終點派對旗
       o.setOrigin(0.5,0.5).setScale(2.0); o.y = GROUND_Y + 6 - o.displayHeight/2;
+      o.body.reset(o.x, o.y);
     } else if(type==='cactus'){
       o.setOrigin(0.5,1); o.y=GROUND_Y+6; o.body.setSize(46,60);
     } else if(type==='bubble'){ // 彈跳糖板（地面彈簧）
@@ -989,13 +993,17 @@ const App = {
       this.fallback('這個瀏覽器不支援麥克風，改用觸控玩！'); return;
     }
     try{
-      if(!VoiceInput.ready) await VoiceInput.init();
+      // 加上逾時：使用者若「略過」權限提示（既非允許也非拒絕），不會卡死，15 秒後自動轉觸控
+      if(!VoiceInput.ready) await Promise.race([
+        VoiceInput.init(),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('mic-timeout')), 15000))
+      ]);
       Input.mode='voice';
       await this.calibrate();
       this.startGame('voice');
     }catch(err){
       console.warn('mic unavailable:', err && err.name);
-      this.fallback('沒拿到麥克風權限，改用觸控玩一樣好玩！');
+      this.fallback('沒拿到麥克風，改用觸控玩一樣好玩！');
     }
   },
   fallback(msg){
@@ -1036,6 +1044,8 @@ const App = {
 
   startGame(mode){
     Input.mode = mode;
+    Input.reset();                 // 清掉上一局殘留輸入
+    if(VoiceInput.ready) VoiceInput.resetRound();
     Sfx.ensure();
     this.ensureGame();
     this.show(null); // 隱藏所有 DOM 畫面，顯示遊戲 + 右上鈕
@@ -1075,7 +1085,7 @@ const App = {
   saveScore(){
     if(this._saved) return;
     let name = (this.el('res-name').value||'').trim().slice(0,8) || '小怪獸';
-    localStorage.setItem(LS.name, name);
+    try{ localStorage.setItem(LS.name, name); }catch(e){}
     const d = new Date();
     const entry = {
       name, score:this.last.score, combo:this.last.combo,
