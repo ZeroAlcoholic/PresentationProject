@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Sound Monster Run｜聲控怪獸跑酷</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>👾</text></svg>" />
+<!-- ============================================================
+  Sound Monster Run — 60 秒聲控橫向跑酷
+  Renderer: Phaser 3.80 (WebGL/Canvas auto)  ‧  Audio: Web Audio API
+  單頁封裝：全部 CSS / 遊戲邏輯內嵌，僅 Phaser 由固定版本 CDN 載入。
+  程式分區：CONFIG ‧ AUDIO(VoiceInput) ‧ INPUT ‧ SFX ‧ LEADERBOARD ‧
+            PHASER GameScene(game state/render/score) ‧ APP(UI/flow/fallback)
+============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<style>
+  :root{
+    --bg1:#ffd6ec; --bg2:#c8b6ff; --bg3:#bbecff;
+    --candy:#ff6fb5; --grape:#7b5cff; --mint:#37e1b5; --sun:#ffd23f;
+    --ink:#3a2a5d; --card:#fff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;overflow:hidden;}
+  body{
+    font-family:"Segoe UI Rounded","Microsoft JhengHei",-apple-system,"PingFang TC","Noto Sans TC",system-ui,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+  }
+  #app{position:fixed;inset:0;}
+  #game-holder{position:absolute;inset:0;}
+  #game-holder canvas{display:block;margin:auto;}
+
+  /* ---------- DOM 畫面（靜態 UI，避免遊戲主畫面大量 DOM 動畫） ---------- */
+  .screen{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;
+    padding:24px;text-align:center;z-index:20;
+  }
+  .hidden{display:none !important;}
+  .logo{
+    font-size:clamp(34px,7vw,64px);font-weight:900;line-height:1.05;
+    letter-spacing:1px;
+    background:linear-gradient(90deg,#ff5fa2,#7b5cff,#37c9ff,#ffb13f);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 4px 0 rgba(255,255,255,.5);
+    filter:drop-shadow(0 6px 10px rgba(123,92,255,.35));
+  }
+  .logo .mon{font-size:1.1em;-webkit-text-fill-color:initial;}
+  .subtitle{font-size:clamp(15px,2.6vw,20px);font-weight:700;opacity:.85;margin-top:-6px;}
+  .card{
+    background:rgba(255,255,255,.82);backdrop-filter:blur(6px);
+    border-radius:26px;padding:18px 22px;box-shadow:0 12px 30px rgba(123,92,255,.25);
+    max-width:min(620px,94vw);
+  }
+  .how{display:flex;flex-wrap:wrap;gap:10px 16px;justify-content:center;font-size:clamp(13px,2.2vw,16px);font-weight:700;}
+  .how span{display:inline-flex;align-items:center;gap:6px;background:#fff;border-radius:999px;padding:6px 12px;box-shadow:0 3px 8px rgba(0,0,0,.08);}
+  .how b{color:var(--grape);}
+  .btnrow{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;}
+  button.big{
+    border:none;cursor:pointer;font-family:inherit;font-weight:900;color:#fff;
+    font-size:clamp(17px,3vw,22px);padding:16px 26px;border-radius:20px;
+    box-shadow:0 8px 0 rgba(0,0,0,.18),0 10px 20px rgba(0,0,0,.18);
+    transition:transform .08s,box-shadow .08s;
+  }
+  button.big:active{transform:translateY(5px);box-shadow:0 3px 0 rgba(0,0,0,.18);}
+  .b-voice{background:linear-gradient(180deg,#ff8ac4,#ff4f9e);}
+  .b-touch{background:linear-gradient(180deg,#7fd2ff,#4aa9ff);}
+  .b-grape{background:linear-gradient(180deg,#9d83ff,#7b5cff);}
+  .b-mint{background:linear-gradient(180deg,#5ef0c4,#19c79b);}
+  .b-ghost{background:linear-gradient(180deg,#c9c2e8,#a99fd6);}
+  .hint{font-size:13px;opacity:.7;font-weight:700;}
+
+  /* 校準 */
+  #screen-calibrate .meter-wrap{width:min(420px,82vw);}
+  .bigmsg{font-size:clamp(22px,4.5vw,34px);font-weight:900;}
+  .meter{height:26px;border-radius:14px;background:#ffffffcc;overflow:hidden;box-shadow:inset 0 2px 6px rgba(0,0,0,.15);position:relative;}
+  .meter .fill{height:100%;width:0%;border-radius:14px;background:linear-gradient(90deg,#37e1b5,#ffd23f,#ff5fa2);transition:width .05s linear;}
+  .countbig{font-size:clamp(60px,16vw,140px);font-weight:900;color:#fff;text-shadow:0 6px 0 rgba(123,92,255,.5);}
+
+  /* 結算 */
+  #screen-result .panel{display:flex;flex-direction:column;gap:10px;align-items:center;}
+  .score-big{font-size:clamp(46px,10vw,84px);font-weight:900;color:var(--grape);line-height:1;}
+  .title-badge{font-size:clamp(18px,3.4vw,26px);font-weight:900;color:#fff;background:linear-gradient(90deg,#ff5fa2,#7b5cff);padding:8px 18px;border-radius:999px;box-shadow:0 6px 14px rgba(123,92,255,.35);}
+  .stat-row{display:flex;gap:18px;font-weight:800;font-size:clamp(14px,2.6vw,18px);}
+  .stat-row div b{display:block;font-size:1.5em;color:var(--candy);}
+  .name-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+  .name-row input{
+    font-family:inherit;font-weight:800;font-size:18px;padding:10px 14px;border-radius:14px;
+    border:3px solid #d9cffb;width:160px;text-align:center;color:var(--ink);outline:none;
+  }
+  .name-row input:focus{border-color:var(--grape);}
+  .lb{width:min(460px,90vw);text-align:left;}
+  .lb h3{margin:6px 0;text-align:center;font-size:18px;}
+  .lb ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .lb li{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:8px 12px;font-weight:800;box-shadow:0 3px 8px rgba(0,0,0,.07);}
+  .lb li .rk{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;flex:none;background:#bbb;}
+  .lb li:nth-child(1) .rk{background:linear-gradient(180deg,#ffd23f,#ff9e2f);}
+  .lb li:nth-child(2) .rk{background:linear-gradient(180deg,#cfd6e6,#9fb0c9);}
+  .lb li:nth-child(3) .rk{background:linear-gradient(180deg,#f0b78a,#cf8f5c);}
+  .lb li .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lb li .sc{color:var(--grape);}
+  .lb li .tt{font-size:11px;opacity:.7;font-weight:700;}
+  .lb .empty{text-align:center;opacity:.6;font-weight:700;padding:14px;}
+
+  /* 橫向提示 */
+  #orient{
+    position:absolute;inset:0;z-index:60;display:none;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;
+    background:linear-gradient(160deg,#7b5cff,#37c9ff);color:#fff;font-weight:900;
+  }
+  #orient .rot{font-size:80px;animation:rot 1.6s ease-in-out infinite;}
+  @keyframes rot{0%,100%{transform:rotate(-12deg);}50%{transform:rotate(78deg);}}
+
+  /* 右上角控制（遊玩中） */
+  #topbtns{position:absolute;top:10px;right:10px;z-index:30;display:none;gap:8px;}
+  #topbtns button{border:none;width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.8);font-size:22px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.15);}
+
+  /* ---- Kenney UI Pack 按鈕皮膚（CC0，9-slice border-image） ---- */
+  button.big{
+    background:transparent !important; box-shadow:none !important;
+    border-style:solid; border-color:transparent;
+    border-width:22px 22px 30px 22px;
+    border-image-slice:22 22 30 22 fill;
+    border-image-width:22px 22px 30px 22px;
+    border-image-repeat:stretch;
+    padding:0 10px; min-height:64px; color:#fff; text-shadow:0 2px 0 rgba(0,0,0,.28);
+  }
+  button.big:active{transform:translateY(4px);}
+  .big.b-voice{border-image-source:url(assets/sound-monster/ui/btn_red.png);}
+  .big.b-touch{border-image-source:url(assets/sound-monster/ui/btn_blue.png);}
+  .big.b-grape{border-image-source:url(assets/sound-monster/ui/btn_yellow.png);color:#6a5212;text-shadow:0 1px 0 rgba(255,255,255,.4);}
+  .big.b-mint{border-image-source:url(assets/sound-monster/ui/btn_green.png);}
+  .big.b-ghost{border-image-source:url(assets/sound-monster/ui/btn_blue.png);}
+
+  .float{animation:fl 3s ease-in-out infinite;}
+  @keyframes fl{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+  .pop{animation:pop .5s cubic-bezier(.18,1.4,.4,1);}
+  @keyframes pop{0%{transform:scale(.6);opacity:0;}100%{transform:scale(1);opacity:1;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="game-holder"></div>
+
+  <!-- 遊玩中右上：靜音 / 暫停退出 -->
+  <div id="topbtns">
+    <button id="btn-mute" title="音效">🔊</button>
+    <button id="btn-quit" title="退出">✕</button>
+  </div>
+
+  <!-- 主選單 -->
+  <div id="screen-menu" class="screen">
+    <div class="logo pop"><span class="mon">👾</span> Sound Monster Run</div>
+    <div class="subtitle">用你的聲音，帶怪獸狂奔 60 秒！</div>
+    <div class="card float">
+      <div class="how">
+        <span>👏 <b>短促喊聲</b> 跳躍</span>
+        <span>🎐 <b>持續中音</b> 滑翔</span>
+        <span>📣 <b>大聲吼</b> 衝刺</span>
+        <span>💫 太久太大聲會頭暈喔</span>
+      </div>
+      <div class="how" style="margin-top:10px;">
+        <span>🍬 糖果 +分</span><span>⭐ 星星 大分</span><span>🌈 彩虹圈 連擊倍數</span>
+        <span>☁️ 泡泡雲 彈跳</span><span>🟪 軟糖牆 衝刺撞破</span><span>🌵 仙人掌糖 閃開</span>
+      </div>
+    </div>
+    <div class="btnrow">
+      <button class="big b-voice" id="btn-start-voice">🎤 用聲音玩</button>
+      <button class="big b-touch" id="btn-start-touch">👆 用觸控玩</button>
+    </div>
+    <div class="hint">桌機也可用鍵盤：空白鍵=跳　Shift(按住)=滑翔　X/↑=衝刺</div>
+    <button class="big b-ghost" id="btn-menu-lb" style="font-size:16px;padding:10px 18px;">🏆 排行榜</button>
+  </div>
+
+  <!-- 校準 -->
+  <div id="screen-calibrate" class="screen hidden">
+    <div class="bigmsg" id="cal-msg">先安靜 3 秒，讓怪獸聽聽周圍的聲音…</div>
+    <div class="countbig" id="cal-count">3</div>
+    <div class="card meter-wrap">
+      <div style="font-weight:800;margin-bottom:8px;">🔊 目前音量</div>
+      <div class="meter"><div class="fill" id="cal-fill"></div></div>
+      <div class="hint" style="margin-top:8px;">校準後可以小聲「哈！」測試一下～</div>
+    </div>
+  </div>
+
+  <!-- 結算 -->
+  <div id="screen-result" class="screen hidden">
+    <div class="panel card">
+      <div class="bigmsg">🎉 衝過終點派對門！</div>
+      <div class="title-badge" id="res-title">糖果新手</div>
+      <div class="score-big" id="res-score">0</div>
+      <div class="stat-row">
+        <div>最高連擊<b id="res-combo">0</b></div>
+        <div>糖果<b id="res-candy">0</b></div>
+        <div>星星<b id="res-star">0</b></div>
+      </div>
+      <div class="name-row">
+        <input id="res-name" maxlength="8" placeholder="你的暱稱" />
+        <button class="big b-mint" id="btn-save" style="font-size:16px;padding:12px 18px;">儲存成績</button>
+      </div>
+    </div>
+    <div class="lb card" id="res-lb"></div>
+    <div class="btnrow">
+      <button class="big b-grape" id="btn-replay">🔁 再玩一次</button>
+      <button class="big b-ghost" id="btn-home" style="background:linear-gradient(180deg,#c9c2e8,#a99fd6);">🏠 回首頁</button>
+    </div>
+  </div>
+
+  <!-- 純排行榜檢視 -->
+  <div id="screen-lb" class="screen hidden">
+    <div class="logo" style="font-size:clamp(28px,6vw,48px);">🏆 本機排行榜</div>
+    <div class="lb card" id="view-lb"></div>
+    <div class="btnrow">
+      <button class="big b-ghost" id="btn-clear-lb">🧹 清除排行榜</button>
+      <button class="big b-grape" id="btn-lb-back">← 返回</button>
+    </div>
+  </div>
+
+  <!-- 直向提示 -->
+  <div id="orient"><div class="rot">📱</div><div>把裝置轉成「橫向」更好玩喔！</div></div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   區塊 1 — CONFIG（裝置偵測 + 降階策略 + 數值）
+   ===================================================================== */
+const IS_TOUCH = (window.matchMedia && matchMedia('(pointer:coarse)').matches) || navigator.maxTouchPoints > 0;
+const CORES = navigator.hardwareConcurrency || 4;
+// 行動裝置 / 低核心 → 低畫質：少粒子、限制同時物件、關閉 ADD 濾鏡
+const LOW = IS_TOUCH || CORES <= 4;
+
+const GAME_W = 1280, GAME_H = 720;       // 內部渲染解析度（高解析、FIT 縮放，iPad 視網膜也清晰）
+
+// 動態畫質：預設一律「華麗」(tier 2)，只有在實測掉幀時才由看門狗降階。
+// 不預先因為是行動裝置就閹割畫面 —— 先漂亮，撐不住才退讓。
+const Quality = {
+  tier: 2,                                 // 2=華麗(預設) 1=中 0=省電
+  qty(){ return [0.5,0.78,1][this.tier]; },         // 粒子量係數
+  maxObjects(){ return [18,24,30][this.tier]; },    // 同時存在物件上限
+  useAdd(){ return this.tier >= 1; },               // ADD 加亮輝光
+  bloom(){ return this.tier >= 2; },                // 額外輝光層
+  blend(){ return this.useAdd() ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL; }
+};
+
+const GAME_TIME = 60;                    // 固定 60 秒
+const GROUND_Y = 630, PLAYER_X = 260;    // （依 1280×720 設計）
+const GRAVITY = 2000, JUMP_V = -860, GLIDE_GRAV = 480, GLIDE_MAXFALL = 105, BOUNCE_V = -1200;
+const SPEED0 = 440, SPEED1 = 580;        // 世界捲動速度（隨時間加快）
+const DASH_MULT = 1.85, DASH_TIME = 620; // 衝刺
+const STUN_TIME = 1450, BONK_TIME = 520; // 暈眩 / 撞牆失控
+
+// 聲音判定參數（相對校準後的正規化音量 0..1）
+const VOICE = {
+  loudRef: 0.32, floorMargin: 0.012,
+  jumpDelta: 0.15, jumpMin: 0.28, jumpCD: 340,
+  glideLo: 0.18, glideHi: 0.64, glideHold: 160,
+  dashLv: 0.70, dashCD: 820,
+  overLv: 0.85, overHold: 1050,
+  fast: 0.5, slow: 0.08
+};
+
+const LS = {                              // localStorage：一律 soundMonster:* 前綴
+  board: 'soundMonster:leaderboard',
+  name:  'soundMonster:lastName',
+  muted: 'soundMonster:muted'
+};
+
+/* =====================================================================
+   區塊 2 — AUDIO：VoiceInput（Web Audio API，非語音辨識）
+   3 秒環境校準 → 平滑音量 → spike/sustain/overload + cooldown
+   ===================================================================== */
+const VoiceInput = {
+  ready:false, ctx:null, stream:null, analyser:null, buf:null,
+  floor:0.02, fast:0, slow:0, level:0,
+  overTimer:0, glideTimer:0, lastJump:-9999, lastDash:-9999,
+
+  async init(){
+    this.ctx = new (window.AudioContext||window.webkitAudioContext)();
+    if(this.ctx.state === 'suspended') await this.ctx.resume();
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+    });
+    const src = this.ctx.createMediaStreamSource(this.stream);
+    this.analyser = this.ctx.createAnalyser();
+    this.analyser.fftSize = 1024;
+    this.analyser.smoothingTimeConstant = 0.15;
+    src.connect(this.analyser);
+    this.buf = new Uint8Array(this.analyser.fftSize);
+    this.ready = true;
+  },
+  rms(){
+    if(!this.ready) return 0;
+    this.analyser.getByteTimeDomainData(this.buf);
+    let s=0; const b=this.buf, n=b.length;
+    for(let i=0;i<n;i++){ const v=(b[i]-128)/128; s+=v*v; }
+    return Math.sqrt(s/n);
+  },
+  // 3 秒環境校準：取平均 RMS + 邊際當作 noise floor
+  async calibrate(onTick){
+    const start = performance.now(); let acc=0, cnt=0;
+    return new Promise(res=>{
+      const step=()=>{
+        const t = performance.now()-start;
+        const r = this.rms(); acc+=r; cnt++;
+        const lv = this.norm(r);
+        if(onTick) onTick(Math.min(1,t/3000), lv);
+        if(t < 3000){ requestAnimationFrame(step); }
+        else { this.floor = Math.min(0.2, (acc/cnt) + VOICE.floorMargin); res(); }
+      };
+      requestAnimationFrame(step);
+    });
+  },
+  norm(r){ return Math.max(0, Math.min(1, (r - this.floor) / Math.max(0.05, VOICE.loudRef - this.floor))); },
+
+  // 每幀計算，回傳事件旗標
+  poll(dt, now){
+    const r = this.rms();
+    const n = this.norm(r);
+    this.fast += (n - this.fast) * VOICE.fast;
+    this.slow += (n - this.slow) * VOICE.slow;
+    this.level = this.fast;
+    const out = { jump:false, dash:false, glide:false, overload:false, level:this.fast };
+
+    // 過載暈眩（最高優先）
+    if(n > VOICE.overLv) this.overTimer += dt; else this.overTimer = Math.max(0, this.overTimer - dt*1.6);
+    if(this.overTimer > VOICE.overHold){ out.overload = true; this.overTimer = 0; this.lastDash = now; return out; }
+
+    // 大聲衝刺
+    if(n > VOICE.dashLv && now - this.lastDash > VOICE.dashCD){ out.dash = true; this.lastDash = now; }
+
+    // 短促 spike 跳躍（穩定中音不會觸發，因需要 fast-slow 落差）
+    if(!out.dash && (this.fast - this.slow) > VOICE.jumpDelta && this.fast > VOICE.jumpMin && now - this.lastJump > VOICE.jumpCD){
+      out.jump = true; this.lastJump = now;
+    }
+
+    // 持續中音滑翔
+    if(n > VOICE.glideLo && n < VOICE.glideHi) this.glideTimer += dt; else this.glideTimer = 0;
+    if(this.glideTimer > VOICE.glideHold) out.glide = true;
+
+    return out;
+  }
+};
+
+/* =====================================================================
+   區塊 3 — INPUT：統一輸入（voice / touch+keyboard 共用介面）
+   ===================================================================== */
+const Input = {
+  mode:'touch',                 // 'voice' | 'touch'
+  _jumpQ:false, _dashQ:false, _glide:false, _pulse:0,
+  queueJump(){ this._jumpQ = true; this._pulse = 1; },
+  queueDash(){ this._dashQ = true; this._pulse = 1; },
+  setGlide(v){ this._glide = v; },
+  poll(dt, now){
+    if(this.mode === 'voice') return VoiceInput.poll(dt, now);
+    const j=this._jumpQ, d=this._dashQ; this._jumpQ=false; this._dashQ=false;
+    this._pulse = Math.max(0, this._pulse - dt/300);
+    const lv = this._glide ? 0.42 : (d?0.85:this._pulse*0.7);
+    return { jump:j, dash:d, glide:this._glide, overload:false, level:lv };
+  }
+};
+
+/* =====================================================================
+   區塊 4 — SFX：Kenney Interface Sounds（CC0 .ogg）+ 程序合成備援
+   檔案載入失敗時自動回退到 Web Audio 合成音，確保永不無聲/報錯。
+   ===================================================================== */
+const Sfx = {
+  ctx:null, master:null, muted:false, active:0, buffers:{}, loaded:false,
+  MAP:{ click:'click_001', jump:'select_005', collect:'pluck_001', star:'glass_006',
+        ring:'confirmation_001', bounce:'maximize_003', bonk:'error_004',
+        dizzy:'error_007', dash:'glitch_002', finish:'confirmation_004' },
+  ensure(){
+    if(this.ctx) return;
+    this.ctx = VoiceInput.ctx || new (window.AudioContext||window.webkitAudioContext)();
+    this.master = this.ctx.createGain();
+    this.muted = localStorage.getItem(LS.muted) === '1';
+    this.master.gain.value = this.muted ? 0 : 0.6;
+    this.master.connect(this.ctx.destination);
+  },
+  load(){
+    this.ensure(); if(this.loaded) return; this.loaded = true;
+    Object.entries(this.MAP).forEach(([k,f])=>{
+      fetch('assets/sound-monster/sfx/'+f+'.ogg')
+        .then(r=> r.ok ? r.arrayBuffer() : Promise.reject())
+        .then(b=> this.ctx.decodeAudioData(b))
+        .then(buf=>{ this.buffers[k]=buf; })
+        .catch(()=>{}); // 失敗 → 用合成備援，不報錯
+    });
+  },
+  toggle(){ this.ensure(); this.muted=!this.muted; this.master.gain.value=this.muted?0:0.6; localStorage.setItem(LS.muted, this.muted?'1':'0'); return this.muted; },
+  play(name, vol){
+    this.ensure(); if(this.muted || this.active > 8) return;   // 限制同時音效重疊
+    if(this.ctx.state==='suspended') this.ctx.resume();
+    const buf = this.buffers[name];
+    if(buf){
+      const s=this.ctx.createBufferSource(); s.buffer=buf;
+      const g=this.ctx.createGain(); g.gain.value=vol||0.6;
+      s.connect(g); g.connect(this.master);
+      this.active++; s.start(); s.onended=()=>{ this.active--; };
+    } else { this.syn(name); }
+  },
+  tone(freq, dur, type, vol, slideTo){
+    this.ensure(); if(this.muted || this.active > 8) return;
+    const t=this.ctx.currentTime, o=this.ctx.createOscillator(), g=this.ctx.createGain();
+    o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol||0.3,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(this.master);
+    this.active++; o.start(t); o.stop(t+dur+0.02); o.onended=()=>{ this.active--; };
+  },
+  syn(name){ // 程序合成備援
+    switch(name){
+      case 'jump': this.tone(440,0.16,'sine',0.25,820); break;
+      case 'collect': this.tone(880,0.12,'triangle',0.22,1320); break;
+      case 'star': this.tone(660,0.1,'triangle',0.25,990); break;
+      case 'ring': this.tone(523,0.12,'square',0.18,1046); break;
+      case 'dash': this.tone(180,0.26,'sawtooth',0.22,1200); break;
+      case 'bounce': this.tone(300,0.2,'sine',0.28,900); break;
+      case 'bonk': this.tone(160,0.3,'sawtooth',0.3,70); break;
+      case 'dizzy': this.tone(500,0.45,'sine',0.25,180); break;
+      case 'finish': [523,659,784,1046].forEach((f,i)=>setTimeout(()=>this.tone(f,0.3,'triangle',0.3),i*110)); break;
+      default: this.tone(700,0.1,'sine',0.2);
+    }
+  },
+  click(){ this.play('click',0.5); },
+  jump(){ this.play('jump',0.5); },
+  collect(){ this.play('collect',0.5); },
+  star(){ this.play('star',0.6); },
+  ring(){ this.play('ring',0.6); },
+  dash(){ this.play('dash',0.5); },
+  bounce(){ this.play('bounce',0.6); },
+  bonk(){ this.play('bonk',0.6); },
+  dizzy(){ this.play('dizzy',0.6); },
+  smash(){ this.play('bonk',0.5); },
+  finish(){ this.play('finish',0.7); setTimeout(()=>this.play('star',0.5),140); setTimeout(()=>this.play('ring',0.5),300); }
+};
+
+/* =====================================================================
+   區塊 5 — LEADERBOARD：本機 Top 5（localStorage，soundMonster:*）
+   欄位：暱稱、分數、最高 Combo、稱號、日期
+   ===================================================================== */
+const Board = {
+  read(){ try{ return JSON.parse(localStorage.getItem(LS.board)||'[]'); }catch(e){ return []; } },
+  write(a){ localStorage.setItem(LS.board, JSON.stringify(a.slice(0,5))); },
+  add(entry){
+    const a = this.read(); a.push(entry);
+    a.sort((x,y)=>y.score - x.score);
+    this.write(a);
+    return a.slice(0,5).findIndex(e=>e===entry);  // 名次（-1 表示未進榜）
+  },
+  clear(){ localStorage.removeItem(LS.board); },
+  render(el, highlightName, highlightScore){
+    const a = this.read();
+    if(!a.length){ el.innerHTML = '<div class="empty">還沒有人挑戰過～快來當第一名！</div>'; return; }
+    el.innerHTML = '<ol>' + a.map((e,i)=>{
+      const hot = (e.name===highlightName && e.score===highlightScore) ? 'style="outline:3px solid #ff5fa2;"' : '';
+      return `<li ${hot}><span class="rk">${i+1}</span>
+        <span class="nm">${escapeHtml(e.name)} <span class="tt">${escapeHtml(e.title||'')}・x${e.combo} ・${e.date||''}</span></span>
+        <span class="sc">${e.score}</span></li>`;
+    }).join('') + '</ol>';
+  }
+};
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function titleFor(score, combo){
+  if(score>=4000) return '怪獸吼吼王 👑';
+  if(score>=2600) return '彩虹收藏家 🌈';
+  if(score>=1700) return '衝刺達人 💨';
+  if(score>=1000) return '滑翔小子 🪂';
+  if(score>=450)  return '跳跳學徒 ⭐';
+  return combo>=12 ? '連擊小可愛 ✨' : '糖果新手 🍬';
+}
+
+/* =====================================================================
+   區塊 6 — PHASER GameScene（game state + render + score）
+   ===================================================================== */
+class GameScene extends Phaser.Scene {
+  constructor(){ super('game'); }
+
+  /* ---- 程序貼圖：僅用於粒子 / 輝光（角色與物件皆為 Kenney 圖檔） ---- */
+  makeCircle(key, r, color){
+    if(this.textures.exists(key)) return;
+    const g = this.make.graphics({x:0,y:0,add:false});
+    g.fillStyle(color,1); g.fillCircle(r,r,r);
+    g.generateTexture(key, r*2, r*2); g.destroy();
+  }
+  // 柔邊輝光（多層同心圓近似 radial gradient）
+  makeGlow(key, r){
+    if(this.textures.exists(key)) return;
+    const g = this.make.graphics({x:0,y:0,add:false});
+    for(let i=12;i>=1;i--){ g.fillStyle(0xffffff, 0.06); g.fillCircle(r,r, r*i/12); }
+    g.generateTexture(key, r*2, r*2); g.destroy();
+  }
+  /* ---- 載入 Kenney CC0 圖檔（角色 / 糖果世界 / 收集物 / 障礙） ---- */
+  preload(){
+    const C='assets/sound-monster/';
+    ['stand','walk1','walk2','jump','hurt','duck'].forEach(f=>this.load.image('mon_'+f, C+'char/alienPink_'+f+'.png'));
+    this.load.image('ground', C+'world/cakeMid.png');
+    this.load.image('hill',   C+'world/hillCanePink.png');
+    this.load.image('cloudA', C+'world/cloud1.png');
+    this.load.image('cloudB', C+'world/cloud2.png');
+    ['candyRed','candyBlue','candyGreen','candyYellow','star','gemYellow','springboardUp','cactus','flagBlue']
+      .forEach(n=>this.load.image(n, C+'items/'+n+'.png'));
+    this.load.image('slimeBlock', C+'items/slimeBlock.png');
+  }
+
+  create(data){
+    const W=GAME_W, H=GAME_H;
+    this.cameras.main.setBackgroundColor('#bfe9ff');
+
+    // 程序貼圖（粒子 / 輝光）
+    this.makeCircle('spark', 10, 0xffffff);
+    this.makeGlow('glow', 64);
+
+    // 角色跑步動畫（walk1/walk2 交替）
+    if(!this.anims.exists('run')){
+      this.anims.create({ key:'run', frames:[{key:'mon_walk1'},{key:'mon_walk2'}], frameRate:12, repeat:-1 });
+    }
+
+    this.buildBackground(W,H);
+
+    // 糖果蛋糕地面：捲動 tileSprite（看起來會跑）+ 隱形靜態碰撞體
+    const gh = H - GROUND_Y;
+    this.groundTile = this.add.tileSprite(W/2, GROUND_Y + gh/2, W, gh, 'ground').setDepth(2);
+    this.ground = this.add.rectangle(W/2, GROUND_Y+44, W, 80, 0x000000, 0);
+    this.physics.add.existing(this.ground, true); // static body
+
+    // 玩家（Kenney 粉紅外星怪獸，CC0）
+    this.player = this.physics.add.sprite(PLAYER_X, GROUND_Y-40, 'mon_stand').setDepth(10);
+    this.player.setCollideWorldBounds(false);
+    this.player.body.setSize(46,80);          // 在原圖 66×92 內置中
+    this.player.setGravityY(GRAVITY);
+    this._expr = null;
+    this.physics.add.collider(this.player, this.ground, ()=>{ this.airJumps = 2; });
+
+    // 物件群組
+    this.objects = this.physics.add.group({ allowGravity:false });
+    this.physics.add.overlap(this.player, this.objects, this.onHit, null, this);
+
+    // 粒子發射器（重複使用，手動 explode）
+    this.fx = this.add.particles(0,0,'spark',{ lifespan:560, speed:{min:90,max:260}, scale:{start:1.0,end:0}, rotate:{min:0,max:360}, blendMode:Quality.blend(), emitting:false });
+    this.fx.setDepth(9);
+    this.dashTrail = this.add.particles(0,0,'glow',{ lifespan:320, speed:24, scale:{start:0.9,end:0}, tint:0xfff1a8, blendMode:Quality.blend(), emitting:false });
+    this.dashTrail.setDepth(8);
+    // 玩家輝光光暈（衝刺時顯現）
+    this.aura = this.add.image(PLAYER_X, 0, 'glow').setDepth(9).setBlendMode(Quality.blend()).setAlpha(0).setScale(2.2);
+
+    // 漂浮文字回饋池
+    this.popText = this.add.text(0,0,'',{fontFamily:'inherit'}).setVisible(false);
+
+    // 狀態
+    this.resetState();
+
+    // 鍵盤（桌機 / 測試）
+    this.keys = this.input.keyboard.addKeys({ jump:'SPACE', glide:'SHIFT', dash:'X', up:'UP' });
+    this.keys.jump.on('down', ()=>{ if(Input.mode==='touch') Input.queueJump(); });
+    this.keys.dash.on('down', ()=>{ if(Input.mode==='touch') Input.queueDash(); });
+    this.keys.up.on('down', ()=>{ if(Input.mode==='touch') Input.queueDash(); });
+
+    // 觸控：點擊=跳、按住=滑翔、右下 DASH 區
+    this.setupTouch(W,H);
+
+    // HUD
+    this.buildHUD(W,H);
+
+    this.time.delayedCall(300, ()=>{ this.running = true; });
+  }
+
+  resetState(){
+    this.running=false; this.finishing=false; this.finished=false;
+    this.score=0; this.combo=0; this.maxCombo=0; this.mult=1;
+    this.candyCount=0; this.starCount=0;
+    this.timeLeft=GAME_TIME; this.traveled=0; this.nextSpawn=420;
+    this.worldSpeed=SPEED0; this.airJumps=2;
+    this.dashUntil=0; this.stunUntil=0; this.bonkUntil=0;
+    this.invincible=false; this.spawnIdx=0; this.elapsed=0;
+    this._fpsLow=0; this._fpsHigh=0; this._downgraded=false;
+  }
+
+  buildBackground(W,H){
+    // 漸層天空
+    const sky=this.add.graphics().setDepth(0);
+    sky.fillGradientStyle(0xffd9f2, 0xffd9f2, 0xbfe9ff, 0xd9f7ff, 1);
+    sky.fillRect(0,0,W,H);
+
+    // 太陽 + 輝光
+    this.add.image(W-150,130,'glow').setScale(4.2).setTint(0xffe27a).setAlpha(0.8).setBlendMode(Quality.blend()).setDepth(0);
+    this.add.circle(W-150,130,60,0xfff0a0).setDepth(0);
+
+    // 閃爍星星（少量，twinkle tween）
+    for(let i=0;i<10;i++){
+      const s=this.add.star(Phaser.Math.Between(40,W-40), Phaser.Math.Between(30,260), 4, 2, 7, 0xffffff, 0.9).setDepth(0);
+      this.tweens.add({targets:s, alpha:0.15, scale:0.5, duration:Phaser.Math.Between(900,1800), yoyo:true, repeat:-1, delay:i*120});
+    }
+
+    // 遠山糖果丘（兩層視差）
+    const far=this.add.graphics().setDepth(0);
+    far.fillStyle(0xd7c4ff,0.7); far.fillEllipse(280,640,720,420); far.fillEllipse(950,660,820,460);
+    const g=this.add.graphics().setDepth(1);
+    g.fillStyle(0xffc6e6,0.95); g.fillEllipse(220,690,560,360);
+    g.fillStyle(0xc9b6ff,0.9);  g.fillEllipse(760,720,720,420);
+    g.fillStyle(0xa9e6ff,0.85);  g.fillEllipse(1180,700,620,380);
+
+    // 糖果拐杖山丘（Kenney Candy expansion）擺在地平線上當裝飾
+    [180,560,940,1240].forEach((hx)=> this.add.image(hx, GROUND_Y+8, 'hill').setOrigin(0.5,1).setScale(1.5).setDepth(1));
+
+    // 雲（Kenney，緩慢視差）
+    this.clouds=[];
+    for(let i=0;i<5;i++){
+      const c=this.add.image(120+i*260, 90+(i%2)*60, i%2?'cloudB':'cloudA').setScale(1.0+(i%3)*0.25).setAlpha(0.95).setDepth(1);
+      this.clouds.push(c);
+    }
+  }
+
+  buildHUD(W,H){
+    const st={fontFamily:'"Segoe UI Rounded","Microsoft JhengHei",sans-serif',fontStyle:'900'};
+    this.hudTime = this.add.text(W/2, 26, '60', {...st, fontSize:'44px', color:'#ffffff'}).setOrigin(0.5).setDepth(40)
+      .setStroke('#7b5cff',7);
+    this.hudScore = this.add.text(W-22, 18, '0', {...st, fontSize:'30px', color:'#7b5cff'}).setOrigin(1,0).setDepth(40).setStroke('#fff',5);
+    this.hudCombo = this.add.text(W-22, 56, '', {...st, fontSize:'22px', color:'#ff5fa2'}).setOrigin(1,0).setDepth(40).setStroke('#fff',4);
+
+    // 左側音量表（畫在 canvas，不用 DOM）
+    this.meterBg = this.add.graphics().setDepth(40);
+    this.meterFill = this.add.graphics().setDepth(41);
+    this.meterLabel = this.add.text(28, 92, Input.mode==='voice'?'🎤 音量':'👆 觸控', {...st, fontSize:'16px', color:'#3a2a5d'}).setDepth(41);
+
+    // 觸控提示
+    if(Input.mode==='touch'){
+      this.add.text(W/2, H-26, '👆 點一下=跳　按住=滑翔　右下角=衝刺', {...st, fontSize:'18px', color:'#3a2a5d'}).setOrigin(0.5).setDepth(40);
+      this.dashBtn = this.add.circle(W-72, H-72, 50, 0xff5fa2, 0.85).setDepth(40).setStrokeStyle(5,0xffffff);
+      this.add.text(W-72, H-72, '衝!', {...st, fontSize:'26px', color:'#fff'}).setOrigin(0.5).setDepth(41);
+    }
+  }
+
+  setupTouch(W,H){
+    let downAt=0, held=false, onDash=false;
+    this.input.on('pointerdown', (p)=>{
+      if(Input.mode!=='touch' || !this.running) return;
+      // 右下角 DASH 圓鈕
+      if(this.dashBtn && Phaser.Math.Distance.Between(p.x,p.y,this.dashBtn.x,this.dashBtn.y) < 64){
+        onDash=true; Input.queueDash(); return;
+      }
+      downAt = this.time.now; held=false;
+      this._holdTimer = this.time.delayedCall(160, ()=>{ held=true; Input.setGlide(true); });
+    });
+    this.input.on('pointerup', ()=>{
+      if(Input.mode!=='touch') return;
+      if(onDash){ onDash=false; return; }
+      if(this._holdTimer) this._holdTimer.remove();
+      if(!held) Input.queueJump();
+      Input.setGlide(false); held=false;
+    });
+  }
+
+  /* ---------- 物件生成（樣式：用樣板而非個別亂數，確保公平好玩） ---------- */
+  spawn(type, x, y){
+    if(this.objects.countActive(true) >= Quality.maxObjects()) return null;
+    let tex;
+    if(type==='candy'){ const pal=['candyRed','candyBlue','candyGreen','candyYellow']; tex=pal[(this._candyN=(this._candyN||0)+1)%4]; }
+    else tex = {star:'star',ring:'gemYellow',bubble:'springboardUp',jelly:'slimeBlock',cactus:'cactus',gate:'flagBlue'}[type];
+    const o = this.objects.create(x, y, tex);
+    o.objType = type; o.hit=false; o.setDepth(6);
+    if(type==='jelly'){        // 軟糖牆：拉長的 Kenney slime 方塊（中心原點＋預設 body 置中，碰撞穩定）
+      o.setOrigin(0.5,0.5).setScale(1.35,3.0); o.y = GROUND_Y + 6 - o.displayHeight/2;
+    } else if(type==='gate'){  // 終點派對旗（中心原點＋預設 body 置中）
+      o.setOrigin(0.5,0.5).setScale(2.0); o.y = GROUND_Y + 6 - o.displayHeight/2;
+    } else if(type==='cactus'){
+      o.setOrigin(0.5,1); o.y=GROUND_Y+6; o.body.setSize(46,60);
+    } else if(type==='bubble'){ // 彈跳糖板（地面彈簧）
+      o.setOrigin(0.5,1); o.y=GROUND_Y+6; o.body.setSize(60,44);
+    } else if(type==='ring'){  o.body.setCircle(28,7,7); o.floatY=y; o.spin=true; }
+      else if(type==='star'){  o.body.setCircle(28,7,7); o.floatY=y; o.spin=true; }
+      else {                   o.body.setCircle(26,9,9); o.floatY=y; }   // candy
+    o.body.setAllowGravity(false);
+    return o;
+  }
+  patterns(x){
+    const G=GROUND_Y, p=this.spawnIdx++;
+    const arc=(cx,cy,n,sp)=>{ for(let i=0;i<n;i++){ this.spawn('candy', cx+i*sp, cy - Math.sin(i/(n-1)*Math.PI)*120); } };
+    const list=[
+      ()=>arc(x,G-90,5,70),                                            // 糖果彩虹弧（跳）
+      ()=>{ for(let i=0;i<4;i++) this.spawn('candy',x+i*64,G-70); },     // 地面糖果排
+      ()=>{ this.spawn('star',x,G-220); this.spawn('candy',x-50,G-150); this.spawn('candy',x+50,G-150); }, // 高星星
+      ()=>{ this.spawn('cactus',x); for(let i=0;i<3;i++) this.spawn('candy',x+120+i*60,G-110); }, // 仙人掌+糖果
+      ()=>{ this.spawn('bubble',x,G-120); this.spawn('star',x+140,G-300); },  // 泡泡彈到高星
+      ()=>{ this.spawn('ring',x,G-160); for(let i=0;i<4;i++) this.spawn('candy',x+70+i*55,G-160); }, // 彩虹圈連擊
+      ()=>{ this.spawn('jelly',x); this.spawn('ring',x-130,G-150); for(let i=0;i<3;i++) this.spawn('star',x+90+i*60,G-150);}, // 軟糖牆(衝)後星星
+      ()=>{ this.spawn('cactus',x); this.spawn('bubble',x+90,G-130); this.spawn('cactus',x+190); }, // 雙仙人掌+泡泡
+    ];
+    // 前 3 個樣式用簡單的，之後隨機
+    const idx = p<3 ? p%3 : (p*7+3)%list.length;
+    list[idx]();
+  }
+
+  popFloat(x,y,txt,color){
+    const t=this.add.text(x,y,txt,{fontFamily:'"Segoe UI Rounded",sans-serif',fontSize:'26px',fontStyle:'900',color:color||'#fff'})
+      .setOrigin(0.5).setDepth(20).setStroke('#3a2a5d',4);
+    this.tweens.add({targets:t, y:y-50, alpha:0, duration:700, onComplete:()=>t.destroy()});
+  }
+  burst(x,y,tint,n){
+    this.fx.setParticleTint(tint);
+    this.fx.explode(Math.max(3, Math.round((n||10)*Quality.qty())), x, y);
+  }
+
+  // 用 Kenney 角色幀組合表情：跑步動畫 + 跳/滑/衝/受傷 各一幀，輔以傾斜與染色
+  setExpr(s){
+    if(this._expr===s) return; this._expr=s;
+    const p=this.player; p.clearTint(); p.setAngle(0);
+    if(s==='run'){ p.play('run', true); return; }
+    p.anims.stop();
+    if(s==='happy'||s==='win'){ p.setTexture('mon_jump'); }
+    else if(s==='glide'){ p.setTexture('mon_jump'); p.setAngle(-10); p.setTint(0xbfe3ff); }
+    else if(s==='dash'){ p.setTexture('mon_jump'); p.setAngle(12); p.setTint(0xfff2a0); }
+    else if(s==='dizzy'){ p.setTexture('mon_hurt'); }
+    else { p.setTexture('mon_stand'); }
+  }
+
+  /* ---------- 碰撞 ---------- */
+  onHit(player, o){
+    if(o.hit || !o.active) return;
+    const now=this.time.now;
+    switch(o.objType){
+      case 'candy':
+        o.hit=true; this.addScore(10); this.combo++; this.candyCount++;
+        this.burst(o.x,o.y,0xff8ac4,8); Sfx.collect(); this.popFloat(o.x,o.y,'+'+(10*this.mult),'#ffd23f');
+        o.destroy(); break;
+      case 'star':
+        o.hit=true; this.addScore(50); this.combo+=2; this.starCount++;
+        this.burst(o.x,o.y,0xffe27a,16); Sfx.star(); this.popFloat(o.x,o.y,'⭐+'+(50*this.mult),'#fff');
+        o.destroy(); break;
+      case 'ring':
+        o.hit=true; this.mult=Math.min(5,this.mult+1); this.addScore(20); this.combo++;
+        this.burst(o.x,o.y,0xff5fa2,18); Sfx.ring(); this.popFloat(o.x,o.y,'倍數 x'+this.mult,'#ff5fa2');
+        o.destroy(); break;
+      case 'bubble':
+        o.hit=true; this.player.setVelocityY(BOUNCE_V); this.airJumps=2;
+        this.burst(o.x,o.y,0xbfe9ff,10); Sfx.bounce(); this.popFloat(o.x,o.y-30,'boing!','#7b5cff');
+        this.setExpr('happy'); o.destroy(); break;
+      case 'jelly':
+        o.hit=true;
+        if(this.invincible){ this.addScore(30); this.combo++; this.burst(o.x,o.y-60,0xd6a6ff,18); Sfx.smash(); this.popFloat(o.x,o.y-80,'撞破!+'+(30*this.mult),'#fff'); o.destroy(); }
+        else { this.doBonk(o); }
+        break;
+      case 'cactus':
+        o.hit=true;
+        if(this.invincible){ this.addScore(15); this.burst(o.x,o.y-30,0x8be08f,12); Sfx.smash(); this.popFloat(o.x,o.y-50,'踏扁!','#fff'); o.destroy(); }
+        else { this.doSpike(o); }
+        break;
+      case 'gate':
+        if(!this.finished) this.triggerFinish();
+        break;
+    }
+  }
+  doBonk(o){
+    this.combo=0; this.mult=1; this.bonkUntil=this.time.now+BONK_TIME;
+    this.player.setVelocity(-90, -260);
+    this.burst(o.x,o.y-60,0xb06bff,12); Sfx.bonk(); this.popFloat(this.player.x,this.player.y-60,'QQ 撞牆了…','#b06bff');
+    this.setExpr('dizzy');
+    this.cameras.main.shake(180, 0.008);
+    o.destroy();
+  }
+  doSpike(o){
+    this.combo=0; this.mult=1; this.bonkUntil=this.time.now+BONK_TIME;
+    this.player.setVelocityY(-360);
+    Sfx.bonk(); this.popFloat(this.player.x,this.player.y-60,'哎呀！','#ff5fa2');
+    this.setExpr('dizzy');
+    this.cameras.main.shake(150, 0.006);
+    o.destroy();
+  }
+  doOverload(){
+    this.stunUntil = this.time.now + STUN_TIME;
+    Sfx.dizzy(); this.setExpr('dizzy');
+    this.popFloat(this.player.x, this.player.y-70, '太大聲啦～頭暈 💫', '#7b5cff');
+    this.tweens.add({targets:this.player, angle:360, duration:STUN_TIME, onComplete:()=>this.player.setAngle(0)});
+  }
+  addScore(base){ this.score += base * this.mult; }
+
+  // FPS 看門狗：實測掉幀才降階（先漂亮，撐不住才退讓）
+  watchdog(dt){
+    const fps = this.game.loop.actualFps;
+    if(!fps || !isFinite(fps)) return;
+    if(fps < 45){ this._fpsLow += dt; this._fpsHigh = 0; }
+    else if(fps > 57){ this._fpsHigh += dt; this._fpsLow = Math.max(0, this._fpsLow - dt); }
+    else { this._fpsLow = Math.max(0, this._fpsLow - dt*0.5); }
+    if(this._fpsLow > 1600 && Quality.tier > 0){ this.setTier(Quality.tier-1); this._fpsLow=0; this._downgraded=true; }
+    else if(this._fpsHigh > 9000 && this._downgraded && Quality.tier < 2){ this.setTier(Quality.tier+1); this._fpsHigh=0; }
+  }
+  setTier(t){
+    t = Phaser.Math.Clamp(t,0,2);
+    if(t === Quality.tier) return;
+    Quality.tier = t;
+    const bm = Quality.blend();
+    this.fx.blendMode = bm; this.dashTrail.blendMode = bm; this.aura.blendMode = bm;
+    if(t < 2) this.popFloat(GAME_W/2, 140, '⚙️ 自動調整畫質保持流暢', '#7b5cff');
+  }
+
+  triggerFinish(){
+    this.finished=true; this.running=false;
+    Sfx.finish(); this.setExpr('win');
+    // 派對門演出：彩帶
+    for(let i=0;i<3;i++) this.time.delayedCall(i*180, ()=>{
+      [0xff5fa2,0xffd23f,0x37e1b5,0x7b5cff].forEach(c=>this.burst(Phaser.Math.Between(300,GAME_W-100), Phaser.Math.Between(120,260), c, 14));
+    });
+    this.tweens.add({targets:this.player, y:this.player.y-60, yoyo:true, repeat:3, duration:240});
+    this.time.delayedCall(1800, ()=> App.toResult({
+      score:Math.round(this.score), combo:this.maxCombo, candy:this.candyCount, star:this.starCount
+    }));
+  }
+
+  /* ---------- 主迴圈（Phaser 內建 game loop） ---------- */
+  update(time, delta){
+    const dt = Math.min(48, delta);
+    // 視差雲
+    for(const c of this.clouds){ c.x -= 0.15*dt*(c.scale*0.4); if(c.x < -90) c.x = GAME_W+90; }
+
+    if(!this.running && !this.finishing){ this.drawMeter(0); return; }
+
+    // 輸入
+    const ev = Input.poll(dt, time);
+    this.drawMeter(ev.level||0);
+    const stunned = time < this.stunUntil;
+    const bonked  = time < this.bonkUntil;
+
+    if(this.running){
+      // 計時
+      this.elapsed += dt; this.timeLeft = Math.max(0, GAME_TIME - this.elapsed/1000);
+      this.hudTime.setText(Math.ceil(this.timeLeft));
+      if(this.timeLeft <= 8) this.hudTime.setColor(this.timeLeft%1<0.5?'#ff3b6b':'#ffffff');
+      this.worldSpeed = Phaser.Math.Linear(SPEED0, SPEED1, this.elapsed/(GAME_TIME*1000));
+
+      // 觸發終點
+      if(this.timeLeft <= 0 && !this.finishing){
+        this.finishing=true;
+        const gate=this.spawn('gate', GAME_W+120, 0);
+        this.time.delayedCall(4000, ()=>{ if(!this.finished) this.triggerFinish(); });
+      }
+    }
+
+    // 處理事件（暈眩/失控時忽略主動操作）
+    if(!stunned && !bonked && this.running){
+      if(ev.overload){ this.doOverload(); }
+      else {
+        if(ev.dash && time > this.dashUntil - 200){ this.startDash(time); }
+        if(ev.jump && this.airJumps > 0){ this.doJump(); }
+        this.gliding = !!ev.glide;
+      }
+    } else { this.gliding=false; }
+
+    // 衝刺狀態 + 光暈
+    this.invincible = time < this.dashUntil;
+    const curSpeed = this.worldSpeed * (this.invincible ? DASH_MULT : 1);
+    this.groundTile.tilePositionX += curSpeed * dt/1000;   // 地面捲動（跑起來的感覺）
+    if(this.invincible){
+      if(Math.random()<0.6) this.dashTrail.explode(1, this.player.x-22, this.player.y+10);
+      this.aura.setAlpha(0.7).setScale(2.2+Math.sin(time*0.02)*0.35); this.aura.y=this.player.y;
+    } else if(this.aura.alpha>0){ this.aura.setAlpha(Math.max(0,this.aura.alpha-0.08)); this.aura.y=this.player.y; }
+
+    // 滑翔物理
+    const vy = this.player.body.velocity.y;
+    if(this.gliding && vy > 0){
+      this.player.setGravityY(GLIDE_GRAV);
+      if(vy > GLIDE_MAXFALL) this.player.setVelocityY(GLIDE_MAXFALL);
+    } else {
+      this.player.setGravityY(GRAVITY);
+    }
+
+    // 表情（非特殊狀態時）：地面=跑、空中=跳
+    if(!stunned){
+      if(this.invincible) this.setExpr('dash');
+      else if(this.gliding) this.setExpr('glide');
+      else if(!bonked) this.setExpr(this.player.body.blocked.down ? 'run' : 'happy');
+    }
+
+    // 移動所有物件（用 physics velocity 維持 overlap 偵測）
+    const v=-curSpeed;
+    this.objects.children.iterate(o=>{
+      if(!o) return;
+      o.body.velocity.x = v;
+      // 浮空物上下飄動 + 旋轉
+      if(o.floatY!=null){ o.y = o.floatY + Math.sin((time+o.x)*0.004)*10; }
+      if(o.spin) o.rotation += 0.045;
+      if(o.x < -160) o.destroy();
+    });
+
+    this.watchdog(dt);
+
+    // 生成
+    this.traveled += curSpeed * dt/1000;
+    if(!this.finishing && this.traveled >= this.nextSpawn){
+      this.patterns(GAME_W + 80);
+      const gap = Phaser.Math.Linear(330, 250, this.elapsed/(GAME_TIME*1000));
+      this.nextSpawn = this.traveled + gap;
+    }
+
+    // 防止掉出畫面下方
+    if(this.player.y > GROUND_Y-20) this.airJumps = 2;
+    if(this.player.y > GAME_H+80){ this.player.setPosition(PLAYER_X, GROUND_Y-120); this.player.setVelocity(0,0); }
+
+    // combo / HUD
+    if(this.combo > this.maxCombo) this.maxCombo=this.combo;
+    this.hudScore.setText(Math.round(this.score));
+    this.hudCombo.setText(this.combo>=2 ? `連擊 ${this.combo}　倍數 x${this.mult}` : '');
+
+    // 維持玩家固定 x
+    this.player.x = PLAYER_X;
+  }
+
+  doJump(){
+    this.airJumps--;
+    this.player.setVelocityY(this.airJumps===1 ? JUMP_V : JUMP_V*0.86);
+    this.burst(this.player.x, this.player.y+24, 0xffffff, 5);
+    Sfx.jump(); this.setExpr('happy');
+  }
+  startDash(time){
+    this.dashUntil = time + DASH_TIME;
+    this.burst(this.player.x, this.player.y, 0xffd23f, 14);
+    Sfx.dash(); this.setExpr('dash');
+    this.cameras.main.flash(120, 255,255,200);
+  }
+
+  drawMeter(level){
+    const x=24, y=120, w=22, h=300;
+    if(!this._meterInit){
+      this.meterBg.fillStyle(0xffffff,0.75); this.meterBg.fillRoundedRect(x-4,y-4,w+8,h+8,12);
+      this._meterInit=true;
+    }
+    const g=this.meterFill; g.clear();
+    const fh = Phaser.Math.Clamp(level,0,1)*h;
+    // 區帶底色
+    g.fillStyle(0xeeeeee,0.6); g.fillRoundedRect(x,y,w,h,10);
+    // 當前音量填色（依狀態）
+    let col=0x37e1b5;
+    if(level>VOICE.overLv) col=0xff3b6b; else if(level>VOICE.dashLv) col=0xff8a3b; else if(level>VOICE.glideHi) col=0xffd23f; else if(level>VOICE.glideLo) col=0x37c9ff;
+    g.fillStyle(col,1); g.fillRoundedRect(x, y+h-fh, w, fh, 10);
+    // 門檻線
+    g.lineStyle(2,0xff5fa2,0.8);
+    [VOICE.dashLv, VOICE.glideHi].forEach(t=>{ const yy=y+h-t*h; g.beginPath(); g.moveTo(x-3,yy); g.lineTo(x+w+3,yy); g.strokePath(); });
+  }
+}
+
+/* =====================================================================
+   區塊 7 — APP：UI 流程 / 模式選擇 / Fallback / Phaser 生命週期
+   ===================================================================== */
+const App = {
+  game:null, scene:null, pumpId:0,
+  el(id){ return document.getElementById(id); },
+  show(id){
+    ['screen-menu','screen-calibrate','screen-result','screen-lb'].forEach(s=>this.el(s).classList.add('hidden'));
+    if(id) this.el(id).classList.remove('hidden');
+    this.el('topbtns').style.display = (id===null) ? 'flex' : 'none';
+    // 只有遊玩中(id===null)才顯示遊戲畫布；用 visibility（非 display:none）以保留尺寸，
+    // 否則 Phaser FIT 會量到 0×0 把畫布縮成 0。
+    this.el('game-holder').style.visibility = (id===null) ? 'visible' : 'hidden';
+  },
+
+  init(){
+    Sfx.ensure(); Sfx.load();
+    this.el('btn-mute').textContent = Sfx.muted?'🔇':'🔊';
+    document.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>Sfx.click()));
+
+    this.el('btn-start-voice').onclick = ()=>this.startVoice();
+    this.el('btn-start-touch').onclick = ()=>this.startGame('touch');
+    this.el('btn-menu-lb').onclick = ()=>{ Board.render(this.el('view-lb')); this.show('screen-lb'); };
+    this.el('btn-lb-back').onclick = ()=>this.show('screen-menu');
+    this.el('btn-clear-lb').onclick = ()=>{ if(confirm('確定要清除本機排行榜嗎？')){ Board.clear(); Board.render(this.el('view-lb')); } };
+    this.el('btn-replay').onclick = ()=>this.startGame(Input.mode);
+    this.el('btn-home').onclick = ()=>{ this.stopGame(); this.show('screen-menu'); };
+    this.el('btn-save').onclick = ()=>this.saveScore();
+    this.el('btn-mute').onclick = ()=>{ const m=Sfx.toggle(); this.el('btn-mute').textContent=m?'🔇':'🔊'; };
+    this.el('btn-quit').onclick = ()=>{ this.stopGame(); this.show('screen-menu'); };
+
+    this.el('res-name').value = localStorage.getItem(LS.name) || '';
+    this.checkOrient();
+    window.addEventListener('resize', ()=>this.checkOrient());
+    window.addEventListener('orientationchange', ()=>setTimeout(()=>this.checkOrient(),300));
+    this.show('screen-menu');
+  },
+
+  checkOrient(){
+    const portrait = window.innerHeight > window.innerWidth;
+    this.el('orient').style.display = (IS_TOUCH && portrait) ? 'flex' : 'none';
+  },
+
+  // 嘗試麥克風 → 成功則校準；失敗則 fallback 觸控
+  async startVoice(){
+    try{ Sfx.ensure(); if(VoiceInput.ctx && VoiceInput.ctx.state==='suspended') await VoiceInput.ctx.resume(); }catch(e){}
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      this.fallback('這個瀏覽器不支援麥克風，改用觸控玩！'); return;
+    }
+    try{
+      if(!VoiceInput.ready) await VoiceInput.init();
+      Input.mode='voice';
+      await this.calibrate();
+      this.startGame('voice');
+    }catch(err){
+      console.warn('mic unavailable:', err && err.name);
+      this.fallback('沒拿到麥克風權限，改用觸控玩一樣好玩！');
+    }
+  },
+  fallback(msg){
+    Input.mode='touch';
+    // 不卡死：直接進觸控模式
+    if(msg) this.el('cal-msg') && (this.el('cal-msg').textContent = msg);
+    this.startGame('touch');
+  },
+
+  calibrate(){
+    this.show('screen-calibrate');
+    const msg=this.el('cal-msg'), cnt=this.el('cal-count'), fill=this.el('cal-fill');
+    msg.textContent='先安靜 3 秒，讓怪獸聽聽周圍的聲音…';
+    return VoiceInput.calibrate((prog, lv)=>{
+      cnt.textContent = Math.max(1, Math.ceil(3 - prog*3));
+      fill.style.width = Math.round(lv*100)+'%';
+    }).then(()=>{
+      msg.textContent='校準完成！準備出發～';
+      cnt.textContent='GO!';
+      return new Promise(r=>setTimeout(r,600));
+    });
+  },
+
+  ensureGame(){
+    if(this.game) return;
+    this.game = new Phaser.Game({
+      type: Phaser.AUTO,
+      parent: 'game-holder',
+      width: GAME_W, height: GAME_H,
+      backgroundColor:'#bfe9ff',
+      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      physics: { default:'arcade', arcade:{ gravity:{y:0} } },
+      render: { antialias: true, powerPreference:'high-performance', roundPixels: false },
+      fps: { target:60, min:30 },
+      scene: [GameScene]
+    });
+  },
+
+  startGame(mode){
+    Input.mode = mode;
+    Sfx.ensure();
+    this.ensureGame();
+    this.show(null); // 隱藏所有 DOM 畫面，顯示遊戲 + 右上鈕
+    const boot=()=>{
+      if(this.game.scale) this.game.scale.refresh();   // 重新量測尺寸，避免 0×0
+      this.scene = this.game.scene.getScene('game');
+      if(this.scene && this.scene.scene.isActive()) this.scene.scene.restart();
+      else this.game.scene.start('game');
+    };
+    // 等 Phaser 準備好
+    if(this.game.isBooted) boot(); else this.game.events.once('ready', boot);
+  },
+
+  stopGame(){
+    if(this.game && this.game.scene.getScene('game')){
+      try{ this.game.scene.stop('game'); }catch(e){}
+    }
+  },
+
+  toResult(data){
+    this.last = data;
+    this.show('screen-result');
+    this.el('res-score').textContent = data.score;
+    this.el('res-combo').textContent = data.combo;
+    this.el('res-candy').textContent = data.candy;
+    this.el('res-star').textContent  = data.star;
+    const title = titleFor(data.score, data.combo);
+    this.el('res-title').textContent = title;
+    this._title = title;
+    this._saved = false;
+    this.el('btn-save').disabled=false; this.el('btn-save').textContent='儲存成績';
+    this.el('res-name').value = localStorage.getItem(LS.name) || '';
+    Board.render(this.el('res-lb'));
+    try{ this.game.scene.stop('game'); }catch(e){}
+  },
+
+  saveScore(){
+    if(this._saved) return;
+    let name = (this.el('res-name').value||'').trim().slice(0,8) || '小怪獸';
+    localStorage.setItem(LS.name, name);
+    const d = new Date();
+    const entry = {
+      name, score:this.last.score, combo:this.last.combo,
+      title:this._title.replace(/\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}👑]/gu,'').trim(),
+      date:`${d.getMonth()+1}/${d.getDate()}`
+    };
+    Board.add(entry);
+    this._saved=true;
+    this.el('btn-save').disabled=true; this.el('btn-save').textContent='已儲存 ✓';
+    Board.render(this.el('res-lb'), name, this.last.score);
+  }
+};
+
+window.addEventListener('load', ()=>App.init());
+</script>
+</body>
+</html>

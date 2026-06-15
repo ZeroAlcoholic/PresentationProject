@@ -33,3 +33,6 @@ node_modules/
 
 # 保留空資料夾標記
 !.gitkeep
+
+# Sound Monster Run 遊戲素材（Kenney CC0，需隨遊戲一起部署）
+!all-member/assets/sound-monster/**
