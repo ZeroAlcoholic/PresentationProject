@@ -227,9 +227,6 @@
    區塊 1 — CONFIG（裝置偵測 + 降階策略 + 數值）
    ===================================================================== */
 const IS_TOUCH = (window.matchMedia && matchMedia('(pointer:coarse)').matches) || navigator.maxTouchPoints > 0;
-const CORES = navigator.hardwareConcurrency || 4;
-// 行動裝置 / 低核心 → 低畫質：少粒子、限制同時物件、關閉 ADD 濾鏡
-const LOW = IS_TOUCH || CORES <= 4;
 
 const GAME_W = 1280, GAME_H = 720;       // 內部渲染解析度（高解析、FIT 縮放，iPad 視網膜也清晰）
 
@@ -237,10 +234,10 @@ const GAME_W = 1280, GAME_H = 720;       // 內部渲染解析度（高解析、
 // 不預先因為是行動裝置就閹割畫面 —— 先漂亮，撐不住才退讓。
 const Quality = {
   tier: 2,                                 // 2=華麗(預設) 1=中 0=省電
+  _downgraded: false,                      // 是否曾被看門狗降階（跨局保留，讓 FPS 回穩後能升回）
   qty(){ return [0.5,0.78,1][this.tier]; },         // 粒子量係數
   maxObjects(){ return [18,24,30][this.tier]; },    // 同時存在物件上限
   useAdd(){ return this.tier >= 1; },               // ADD 加亮輝光
-  bloom(){ return this.tier >= 2; },                // 額外輝光層
   blend(){ return this.useAdd() ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL; }
 };
 
@@ -248,7 +245,7 @@ const GAME_TIME = 60;                    // 固定 60 秒
 const GROUND_Y = 630, PLAYER_X = 260;    // （依 1280×720 設計）
 const GRAVITY = 2000, JUMP_V = -860, GLIDE_GRAV = 480, GLIDE_MAXFALL = 105, BOUNCE_V = -1200;
 const SPEED0 = 440, SPEED1 = 580;        // 世界捲動速度（隨時間加快）
-const DASH_MULT = 1.85, DASH_TIME = 620; // 衝刺
+const DASH_MULT = 1.85, DASH_TIME = 620, DASH_CD = 900; // 衝刺（CD>TIME → 兩次衝刺間有空檔，不能一直無敵）
 const STUN_TIME = 1450, BONK_TIME = 520; // 暈眩 / 撞牆失控
 
 // 聲音判定參數（相對校準後的正規化音量 0..1）
@@ -459,8 +456,8 @@ const Board = {
     el.innerHTML = '<ol>' + a.map((e,i)=>{
       const hot = (e.name===highlightName && e.score===highlightScore) ? 'style="outline:3px solid #ff5fa2;"' : '';
       return `<li ${hot}><span class="rk">${i+1}</span>
-        <span class="nm">${escapeHtml(e.name)} <span class="tt">${escapeHtml(e.title||'')}・x${e.combo} ・${e.date||''}</span></span>
-        <span class="sc">${e.score}</span></li>`;
+        <span class="nm">${escapeHtml(e.name)} <span class="tt">${escapeHtml(e.title||'')}・x${escapeHtml(String(e.combo))} ・${escapeHtml(String(e.date||''))}</span></span>
+        <span class="sc">${escapeHtml(String(e.score))}</span></li>`;
     }).join('') + '</ol>';
   }
 };
@@ -548,8 +545,12 @@ class GameScene extends Phaser.Scene {
     // 玩家輝光光暈（衝刺時顯現）
     this.aura = this.add.image(PLAYER_X, 0, 'glow').setDepth(9).setBlendMode(Quality.blend()).setAlpha(0).setScale(2.2);
 
-    // 漂浮文字回饋池
-    this.popText = this.add.text(0,0,'',{fontFamily:'inherit'}).setVisible(false);
+    // 漂浮文字回饋池（重複使用 12 個 Text，避免每顆糖果都 new/destroy 造成 GC 抖動）
+    this.popPool = []; this.popIdx = 0;
+    for(let i=0;i<12;i++){
+      this.popPool.push(this.add.text(0,0,'',{fontFamily:'"Segoe UI Rounded",sans-serif',fontSize:'26px',fontStyle:'900',color:'#fff'})
+        .setOrigin(0.5).setDepth(20).setStroke('#3a2a5d',4).setVisible(false));
+    }
 
     // 狀態
     this.resetState();
@@ -575,9 +576,11 @@ class GameScene extends Phaser.Scene {
     this.candyCount=0; this.starCount=0;
     this.timeLeft=GAME_TIME; this.traveled=0; this.nextSpawn=420;
     this.worldSpeed=SPEED0; this.airJumps=2;
-    this.dashUntil=0; this.stunUntil=0; this.bonkUntil=0;
+    this.dashUntil=0; this.lastDashAt=-9999; this.stunUntil=0; this.bonkUntil=0;
     this.invincible=false; this.spawnIdx=0; this.elapsed=0;
-    this._fpsLow=0; this._fpsHigh=0; this._downgraded=false;
+    this._fpsLow=0; this._fpsHigh=0;
+    // HUD/meter 重畫快取（buildHUD 每局重建 graphics，故須一併重置，否則第二局起背景不畫）
+    this._meterInit=false; this._meterKey=-1; this._lastSc=-1; this._lastTs=-1; this._lastCombo=-1; this._lastMult=-1;
   }
 
   buildBackground(W,H){
@@ -698,9 +701,10 @@ class GameScene extends Phaser.Scene {
   }
 
   popFloat(x,y,txt,color){
-    const t=this.add.text(x,y,txt,{fontFamily:'"Segoe UI Rounded",sans-serif',fontSize:'26px',fontStyle:'900',color:color||'#fff'})
-      .setOrigin(0.5).setDepth(20).setStroke('#3a2a5d',4);
-    this.tweens.add({targets:t, y:y-50, alpha:0, duration:700, onComplete:()=>t.destroy()});
+    const t = this.popPool[this.popIdx]; this.popIdx = (this.popIdx+1) % this.popPool.length;
+    this.tweens.killTweensOf(t);
+    t.setText(txt).setColor(color||'#fff').setPosition(x,y).setAlpha(1).setScale(1).setVisible(true);
+    this.tweens.add({targets:t, y:y-50, alpha:0, duration:700, onComplete:()=>t.setVisible(false)});
   }
   burst(x,y,tint,n){
     this.fx.setParticleTint(tint);
@@ -787,8 +791,8 @@ class GameScene extends Phaser.Scene {
     if(fps < 45){ this._fpsLow += dt; this._fpsHigh = 0; }
     else if(fps > 57){ this._fpsHigh += dt; this._fpsLow = Math.max(0, this._fpsLow - dt); }
     else { this._fpsLow = Math.max(0, this._fpsLow - dt*0.5); }
-    if(this._fpsLow > 1600 && Quality.tier > 0){ this.setTier(Quality.tier-1); this._fpsLow=0; this._downgraded=true; }
-    else if(this._fpsHigh > 9000 && this._downgraded && Quality.tier < 2){ this.setTier(Quality.tier+1); this._fpsHigh=0; }
+    if(this._fpsLow > 1600 && Quality.tier > 0){ this.setTier(Quality.tier-1); this._fpsLow=0; Quality._downgraded=true; }
+    else if(this._fpsHigh > 9000 && Quality._downgraded && Quality.tier < 2){ this.setTier(Quality.tier+1); this._fpsHigh=0; }  // 跨局保留，FPS 回穩可升回
   }
   setTier(t){
     t = Phaser.Math.Clamp(t,0,2);
@@ -829,7 +833,8 @@ class GameScene extends Phaser.Scene {
     if(this.running){
       // 計時
       this.elapsed += dt; this.timeLeft = Math.max(0, GAME_TIME - this.elapsed/1000);
-      this.hudTime.setText(Math.ceil(this.timeLeft));
+      const ts = Math.ceil(this.timeLeft);
+      if(ts !== this._lastTs){ this.hudTime.setText(ts); this._lastTs = ts; }
       if(this.timeLeft <= 8) this.hudTime.setColor(this.timeLeft%1<0.5?'#ff3b6b':'#ffffff');
       this.worldSpeed = Phaser.Math.Linear(SPEED0, SPEED1, this.elapsed/(GAME_TIME*1000));
 
@@ -845,7 +850,7 @@ class GameScene extends Phaser.Scene {
     if(!stunned && !bonked && this.running){
       if(ev.overload){ this.doOverload(); }
       else {
-        if(ev.dash && time > this.dashUntil - 200){ this.startDash(time); }
+        if(ev.dash && time - this.lastDashAt > DASH_CD){ this.startDash(time); }  // 真正的冷卻，避免連續無敵
         if(ev.jump && this.airJumps > 0){ this.doJump(); }
         this.gliding = !!ev.glide;
       }
@@ -860,14 +865,10 @@ class GameScene extends Phaser.Scene {
       this.aura.setAlpha(0.7).setScale(2.2+Math.sin(time*0.02)*0.35); this.aura.y=this.player.y;
     } else if(this.aura.alpha>0){ this.aura.setAlpha(Math.max(0,this.aura.alpha-0.08)); this.aura.y=this.player.y; }
 
-    // 滑翔物理
+    // 滑翔物理：整段滑翔都用低重力（不再依 vy 正負每幀切換 → 不抖動，且上升段也吃得到滑翔），落速封頂
     const vy = this.player.body.velocity.y;
-    if(this.gliding && vy > 0){
-      this.player.setGravityY(GLIDE_GRAV);
-      if(vy > GLIDE_MAXFALL) this.player.setVelocityY(GLIDE_MAXFALL);
-    } else {
-      this.player.setGravityY(GRAVITY);
-    }
+    this.player.setGravityY(this.gliding ? GLIDE_GRAV : GRAVITY);
+    if(this.gliding && vy > GLIDE_MAXFALL) this.player.setVelocityY(GLIDE_MAXFALL);
 
     // 表情（非特殊狀態時）：地面=跑、空中=跳
     if(!stunned){
@@ -901,10 +902,14 @@ class GameScene extends Phaser.Scene {
     if(this.player.y > GROUND_Y-20) this.airJumps = 2;
     if(this.player.y > GAME_H+80){ this.player.setPosition(PLAYER_X, GROUND_Y-120); this.player.setVelocity(0,0); }
 
-    // combo / HUD
+    // combo / HUD（只在數值變動時才 setText，避免每幀重繪 canvas 文字）
     if(this.combo > this.maxCombo) this.maxCombo=this.combo;
-    this.hudScore.setText(Math.round(this.score));
-    this.hudCombo.setText(this.combo>=2 ? `連擊 ${this.combo}　倍數 x${this.mult}` : '');
+    const sc = Math.round(this.score);
+    if(sc !== this._lastSc){ this.hudScore.setText(sc); this._lastSc = sc; }
+    if(this.combo !== this._lastCombo || this.mult !== this._lastMult){
+      this.hudCombo.setText(this.combo>=2 ? `連擊 ${this.combo}　倍數 x${this.mult}` : '');
+      this._lastCombo = this.combo; this._lastMult = this.mult;
+    }
 
     // 維持玩家固定 x
     this.player.x = PLAYER_X;
@@ -917,7 +922,7 @@ class GameScene extends Phaser.Scene {
     Sfx.jump(); this.setExpr('happy');
   }
   startDash(time){
-    this.dashUntil = time + DASH_TIME;
+    this.dashUntil = time + DASH_TIME; this.lastDashAt = time;
     this.burst(this.player.x, this.player.y, 0xffd23f, 14);
     Sfx.dash(); this.setExpr('dash');
     this.cameras.main.flash(120, 255,255,200);
@@ -929,16 +934,16 @@ class GameScene extends Phaser.Scene {
       this.meterBg.fillStyle(0xffffff,0.75); this.meterBg.fillRoundedRect(x-4,y-4,w+8,h+8,12);
       this._meterInit=true;
     }
-    const g=this.meterFill; g.clear();
     const fh = Phaser.Math.Clamp(level,0,1)*h;
-    // 區帶底色
-    g.fillStyle(0xeeeeee,0.6); g.fillRoundedRect(x,y,w,h,10);
-    // 當前音量填色（依狀態）
     let col=0x37e1b5;
     if(level>VOICE.overLv) col=0xff3b6b; else if(level>VOICE.dashLv) col=0xff8a3b; else if(level>VOICE.glideHi) col=0xffd23f; else if(level>VOICE.glideLo) col=0x37c9ff;
-    g.fillStyle(col,1); g.fillRoundedRect(x, y+h-fh, w, fh, 10);
-    // 門檻線
-    g.lineStyle(2,0xff5fa2,0.8);
+    const key = (fh|0)*1000 + (col & 0xff);   // 量化：填色高度(px)+色帶；不變就不重畫
+    if(key === this._meterKey) return;
+    this._meterKey = key;
+    const g=this.meterFill; g.clear();
+    g.fillStyle(0xeeeeee,0.6); g.fillRoundedRect(x,y,w,h,10);              // 區帶底色
+    g.fillStyle(col,1); g.fillRoundedRect(x, y+h-fh, w, fh, 10);          // 當前音量
+    g.lineStyle(2,0xff5fa2,0.8);                                          // 門檻線
     [VOICE.dashLv, VOICE.glideHi].forEach(t=>{ const yy=y+h-t*h; g.beginPath(); g.moveTo(x-3,yy); g.lineTo(x+w+3,yy); g.strokePath(); });
   }
 }
@@ -947,7 +952,7 @@ class GameScene extends Phaser.Scene {
    區塊 7 — APP：UI 流程 / 模式選擇 / Fallback / Phaser 生命週期
    ===================================================================== */
 const App = {
-  game:null, scene:null, pumpId:0,
+  game:null, scene:null,
   el(id){ return document.getElementById(id); },
   show(id){
     ['screen-menu','screen-calibrate','screen-result','screen-lb'].forEach(s=>this.el(s).classList.add('hidden'));
