@@ -112,6 +112,10 @@
   #orient .rot{font-size:80px;animation:rot 1.6s ease-in-out infinite;}
   @keyframes rot{0%,100%{transform:rotate(-12deg);}50%{transform:rotate(78deg);}}
 
+  /* 暫停選單：疊在遊戲畫面上方（半透明，畫面仍可見） */
+  #screen-pause{z-index:45;background:rgba(40,22,66,.5);backdrop-filter:blur(3px);}
+  #screen-pause .bigmsg{color:#fff;text-shadow:0 3px 0 rgba(123,92,255,.6);}
+
   /* 右上角控制（遊玩中） */
   #topbtns{position:absolute;top:10px;right:10px;z-index:30;display:none;gap:8px;}
   #topbtns button{border:none;width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.8);font-size:22px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.15);}
@@ -143,10 +147,20 @@
 <div id="app">
   <div id="game-holder"></div>
 
-  <!-- 遊玩中右上：靜音 / 暫停退出 -->
+  <!-- 遊玩中右上：靜音 / 暫停 -->
   <div id="topbtns">
     <button id="btn-mute" title="音效">🔊</button>
-    <button id="btn-quit" title="退出">✕</button>
+    <button id="btn-pause" title="暫停">⏸</button>
+  </div>
+
+  <!-- 暫停選單（疊在遊戲畫面上，畫面仍可見） -->
+  <div id="screen-pause" class="screen hidden">
+    <div class="bigmsg">⏸ 暫停中</div>
+    <div class="btnrow">
+      <button class="big b-mint" id="btn-resume">▶ 繼續</button>
+      <button class="big b-grape" id="btn-restart">🔁 重新開始</button>
+      <button class="big b-ghost" id="btn-pause-home">🏠 回首頁</button>
+    </div>
   </div>
 
   <!-- 主選單 -->
@@ -251,11 +265,12 @@ const STUN_TIME = 1450, BONK_TIME = 520; // 暈眩 / 撞牆失控
 // 聲音判定參數（相對校準後的正規化音量 0..1）
 const VOICE = {
   loudRef: 0.32, floorMargin: 0.012,
-  jumpDelta: 0.15, jumpMin: 0.28, jumpCD: 340,
-  glideLo: 0.18, glideHi: 0.64, glideHold: 160,
-  dashLv: 0.70, dashCD: 820,
+  attack: 0.6, release: 0.10, baseSmooth: 0.04,   // 非對稱包絡(快攻擊/慢釋放) + 慢基線
+  onsetMargin: 0.12, jumpMin: 0.26, jumpCD: 250,  // onset：包絡越過(base+margin)的上升緣即跳
+  glideLo: 0.18, glideHi: 0.64, glideHold: 120,
+  dashLv: 0.66, dashCD: 820,
   overLv: 0.85, overHold: 1050,
-  fast: 0.5, slow: 0.08
+  sampleMs: 8                                       // 解耦取樣間隔（脫離 render 迴圈）
 };
 
 const LS = {                              // localStorage：一律 soundMonster:* 前綴
@@ -265,17 +280,43 @@ const LS = {                              // localStorage：一律 soundMonster:
 };
 
 /* =====================================================================
+   區塊 1.5 — DEBUG：延遲儀表（?debug=1 顯示 FPS / 取樣間隔 / 輸入→動作延遲）
+   ===================================================================== */
+const Debug = {
+  on: /[?&]debug/.test(location.search),
+  jumpLat: 0, sampleMs: 0, el: null,
+  init(){
+    if(!this.on) return;
+    const d = document.createElement('div'); d.id='dbg';
+    d.style.cssText='position:fixed;left:8px;bottom:8px;z-index:80;background:rgba(0,0,0,.62);color:#7CFC00;'
+      +'font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:6px 9px;border-radius:7px;white-space:pre;pointer-events:none;';
+    document.body.appendChild(d); this.el=d;
+  },
+  update(fps){
+    if(!this.on || !this.el) return;
+    this.el.textContent =
+      `FPS        ${fps}\n取樣間隔   ${this.sampleMs.toFixed(1)} ms\n輸入→跳    ${this.jumpLat.toFixed(0)} ms\n模式       ${Input.mode}`;
+  }
+};
+
+/* =====================================================================
    區塊 2 — AUDIO：VoiceInput（Web Audio API，非語音辨識）
    3 秒環境校準 → 平滑音量 → spike/sustain/overload + cooldown
    ===================================================================== */
 const VoiceInput = {
-  ready:false, ctx:null, stream:null, analyser:null, buf:null,
-  floor:0.02, fast:0, slow:0, level:0,
-  overTimer:0, glideTimer:0, lastJump:-9999, lastDash:-9999,
-  resetRound(){ this.overTimer=0; this.glideTimer=0; this.fast=0; this.slow=0; this.lastJump=-9999; this.lastDash=-9999; },  // 跨局重置，避免殘留計時器誤觸
+  ready:false, active:false, ctx:null, stream:null, analyser:null, buf:null,
+  floor:0.02, loudRef:VOICE.loudRef,
+  env:0, base:0, level:0,
+  overTimer:0, glideTimer:0, lastJump:-9999, lastDash:-9999, _wasAbove:false,
+  samplerId:null, _lastT:0, _avgDt:VOICE.sampleMs,
+  // 已偵測、尚未被遊戲消費的鎖存事件（latched edges）
+  pJump:false, pDash:false, pOver:false, glideOn:false, jumpAt:0,
+
+  clearEdges(){ this.pJump=this.pDash=this.pOver=false; this.glideOn=false; },
+  resetRound(){ this.overTimer=0; this.glideTimer=0; this.env=0; this.base=0; this._wasAbove=false; this.lastJump=-9999; this.lastDash=-9999; this.clearEdges(); },
 
   async init(){
-    this.ctx = new (window.AudioContext||window.webkitAudioContext)();
+    this.ctx = new (window.AudioContext||window.webkitAudioContext)({ latencyHint:'interactive' });
     if(this.ctx.state === 'suspended') await this.ctx.resume();
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }
@@ -283,10 +324,11 @@ const VoiceInput = {
     const src = this.ctx.createMediaStreamSource(this.stream);
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 1024;
-    this.analyser.smoothingTimeConstant = 0.15;
+    this.analyser.smoothingTimeConstant = 0;   // 時域 RMS 不受此影響，設 0 避免誤導
     src.connect(this.analyser);
     this.buf = new Uint8Array(this.analyser.fftSize);
     this.ready = true;
+    this.startSampler();
   },
   rms(){
     if(!this.ready) return 0;
@@ -295,49 +337,61 @@ const VoiceInput = {
     for(let i=0;i<n;i++){ const v=(b[i]-128)/128; s+=v*v; }
     return Math.sqrt(s/n);
   },
-  // 3 秒環境校準：取平均 RMS + 邊際當作 noise floor
-  async calibrate(onTick){
-    const start = performance.now(); let acc=0, cnt=0;
+  norm(r){ return Math.max(0, Math.min(1, (r - this.floor) / Math.max(0.05, this.loudRef - this.floor))); },
+
+  // 解耦取樣器：~8ms 在 render 迴圈之外更新包絡並鎖存事件（不被掉幀拖累取樣粒度）
+  startSampler(){ if(this.samplerId) return; this._lastT=performance.now(); this.samplerId=setInterval(()=>this.tick(), VOICE.sampleMs); },
+  stopSampler(){ if(this.samplerId){ clearInterval(this.samplerId); this.samplerId=null; } },
+  tick(){
+    const nowT=performance.now(); const dt=Math.min(50, nowT-this._lastT); this._lastT=nowT;
+    this._avgDt += (dt-this._avgDt)*0.1; Debug.sampleMs=this._avgDt;
+    if(!this.active || !this.ready) return;              // 閘門：非遊玩 / 暫停時不偵測
+    const r=this.rms(), n=this.norm(r);
+    // 非對稱包絡（快攻擊、慢釋放）+ 慢基線
+    this.env  += (n - this.env)  * (n > this.env ? VOICE.attack : VOICE.release);
+    this.base += (n - this.base) * VOICE.baseSmooth;
+    this.level = this.env;
+    // 過載暈眩（最高優先）
+    if(n > VOICE.overLv) this.overTimer+=dt; else this.overTimer=Math.max(0, this.overTimer-dt*1.6);
+    if(this.overTimer > VOICE.overHold){ this.pOver=true; this.overTimer=0; this.lastDash=nowT; this._wasAbove=true; return; }
+    // 大聲衝刺
+    if(n > VOICE.dashLv && nowT-this.lastDash > VOICE.dashCD){ this.pDash=true; this.lastDash=nowT; }
+    // onset 跳躍：包絡越過 (base+margin) 的「上升緣」→ 前緣即觸發、不靠絕對音量
+    const above = this.env > this.base+VOICE.onsetMargin && this.env > VOICE.jumpMin;
+    if(above && !this._wasAbove && !this.pDash && nowT-this.lastJump > VOICE.jumpCD){
+      this.pJump=true; this.jumpAt=nowT; this.lastJump=nowT;
+    }
+    this._wasAbove = above;
+    // 持續中音滑翔
+    if(n > VOICE.glideLo && n < VOICE.glideHi) this.glideTimer+=dt; else this.glideTimer=0;
+    this.glideOn = this.glideTimer > VOICE.glideHold;
+  },
+  // 遊戲每幀消費：回傳鎖存事件並清除上升緣
+  read(){
+    const e={ jump:this.pJump, dash:this.pDash, overload:this.pOver, glide:this.glideOn, level:this.level, jumpAt:this.jumpAt };
+    this.pJump=this.pDash=this.pOver=false;
+    return e;
+  },
+
+  // 量測一段時間的平均/峰值（給校準用）
+  measure(ms, onTick){
+    const start=performance.now(); let acc=0,cnt=0,peak=0;
     return new Promise(res=>{
       const step=()=>{
-        const t = performance.now()-start;
-        const r = this.rms(); acc+=r; cnt++;
-        const lv = this.norm(r);
-        if(onTick) onTick(Math.min(1,t/3000), lv);
-        if(t < 3000){ requestAnimationFrame(step); }
-        else { this.floor = Math.min(0.2, (acc/cnt) + VOICE.floorMargin); res(); }
+        const t=performance.now()-start; const r=this.rms(); acc+=r; cnt++; if(r>peak) peak=r;
+        if(onTick) onTick(Math.min(1,t/ms), this.norm(r));
+        if(t<ms) requestAnimationFrame(step); else res({ avg:acc/Math.max(1,cnt), peak });
       };
       requestAnimationFrame(step);
     });
   },
-  norm(r){ return Math.max(0, Math.min(1, (r - this.floor) / Math.max(0.05, VOICE.loudRef - this.floor))); },
-
-  // 每幀計算，回傳事件旗標
-  poll(dt, now){
-    const r = this.rms();
-    const n = this.norm(r);
-    this.fast += (n - this.fast) * VOICE.fast;
-    this.slow += (n - this.slow) * VOICE.slow;
-    this.level = this.fast;
-    const out = { jump:false, dash:false, glide:false, overload:false, level:this.fast };
-
-    // 過載暈眩（最高優先）
-    if(n > VOICE.overLv) this.overTimer += dt; else this.overTimer = Math.max(0, this.overTimer - dt*1.6);
-    if(this.overTimer > VOICE.overHold){ out.overload = true; this.overTimer = 0; this.lastDash = now; return out; }
-
-    // 大聲衝刺
-    if(n > VOICE.dashLv && now - this.lastDash > VOICE.dashCD){ out.dash = true; this.lastDash = now; }
-
-    // 短促 spike 跳躍（穩定中音不會觸發，因需要 fast-slow 落差）
-    if(!out.dash && (this.fast - this.slow) > VOICE.jumpDelta && this.fast > VOICE.jumpMin && now - this.lastJump > VOICE.jumpCD){
-      out.jump = true; this.lastJump = now;
-    }
-
-    // 持續中音滑翔
-    if(n > VOICE.glideLo && n < VOICE.glideHi) this.glideTimer += dt; else this.glideTimer = 0;
-    if(this.glideTimer > VOICE.glideHold) out.glide = true;
-
-    return out;
+  // 兩段式校準：① 底噪 → floor；② 大聲一喊 → 自適應 loudRef（含保底，安靜麥也玩得動）
+  async calibrate(onTick){
+    const m1 = await this.measure(3000, (p,lv)=>onTick('floor',p,lv));
+    this.floor = Math.min(0.2, m1.avg + VOICE.floorMargin);
+    const m2 = await this.measure(2500, (p,lv)=>onTick('loud',p,lv));
+    const span = Math.max(0.12, Math.min(0.5, m2.peak*0.55 - this.floor));   // 保底 span：喊太小聲也不會卡死
+    this.loudRef = this.floor + span;
   }
 };
 
@@ -346,17 +400,18 @@ const VoiceInput = {
    ===================================================================== */
 const Input = {
   mode:'touch',                 // 'voice' | 'touch'
-  _jumpQ:false, _dashQ:false, _glide:false, _pulse:0,
-  queueJump(){ this._jumpQ = true; this._pulse = 1; },
+  _jumpQ:false, _dashQ:false, _glide:false, _pulse:0, jumpAt:0,
+  queueJump(){ this._jumpQ = true; this._pulse = 1; this.jumpAt = performance.now(); },
   queueDash(){ this._dashQ = true; this._pulse = 1; },
   setGlide(v){ this._glide = v; },
   reset(){ this._jumpQ=false; this._dashQ=false; this._glide=false; this._pulse=0; },  // 清掉上一局殘留（避免開局幻影跳/滑）
+  // 統一契約：voice 走解耦取樣鎖存的事件；touch 走自己的佇列
   poll(dt, now){
-    if(this.mode === 'voice') return VoiceInput.poll(dt, now);
+    if(this.mode === 'voice') return VoiceInput.read();
     const j=this._jumpQ, d=this._dashQ; this._jumpQ=false; this._dashQ=false;
     this._pulse = Math.max(0, this._pulse - dt/300);
     const lv = this._glide ? 0.42 : (d?0.85:this._pulse*0.7);
-    return { jump:j, dash:d, glide:this._glide, overload:false, level:lv };
+    return { jump:j, dash:d, glide:this._glide, overload:false, level:lv, jumpAt:this.jumpAt };
   }
 };
 
@@ -371,7 +426,7 @@ const Sfx = {
         dizzy:'error_007', dash:'glitch_002', finish:'confirmation_004' },
   ensure(){
     if(this.ctx) return;
-    this.ctx = VoiceInput.ctx || new (window.AudioContext||window.webkitAudioContext)();
+    this.ctx = VoiceInput.ctx || new (window.AudioContext||window.webkitAudioContext)({ latencyHint:'interactive' });
     this.master = this.ctx.createGain();
     this.muted = localStorage.getItem(LS.muted) === '1';
     this.master.gain.value = this.muted ? 0 : 0.6;
@@ -567,7 +622,10 @@ class GameScene extends Phaser.Scene {
     // HUD
     this.buildHUD(W,H);
 
-    this.time.delayedCall(300, ()=>{ this.running = true; });
+    this.time.delayedCall(300, ()=>{
+      this.running = true;
+      if(Input.mode==='voice' && VoiceInput.ready){ VoiceInput.active = true; VoiceInput.clearEdges(); }  // 開跑才開始偵測
+    });
   }
 
   resetState(){
@@ -639,21 +697,21 @@ class GameScene extends Phaser.Scene {
   }
 
   setupTouch(W,H){
-    let downAt=0, held=false, onDash=false;
+    let held=false, onDash=false;
     this.input.on('pointerdown', (p)=>{
-      if(Input.mode!=='touch' || !this.running) return;
+      if(Input.mode!=='touch' || !this.running || App.paused) return;
       // 右下角 DASH 圓鈕
       if(this.dashBtn && Phaser.Math.Distance.Between(p.x,p.y,this.dashBtn.x,this.dashBtn.y) < 64){
         onDash=true; Input.queueDash(); return;
       }
-      downAt = this.time.now; held=false;
-      this._holdTimer = this.time.delayedCall(160, ()=>{ held=true; Input.setGlide(true); });
+      Input.queueJump();                 // 按下即跳（不再等放開 → 觸控延遲降到 1 幀）
+      held=false;
+      this._holdTimer = this.time.delayedCall(130, ()=>{ held=true; Input.setGlide(true); });  // 續壓→滑翔
     });
     this.input.on('pointerup', ()=>{
       if(Input.mode!=='touch') return;
       if(onDash){ onDash=false; return; }
       if(this._holdTimer) this._holdTimer.remove();
-      if(!held) Input.queueJump();
       Input.setGlide(false); held=false;
     });
   }
@@ -851,7 +909,7 @@ class GameScene extends Phaser.Scene {
       if(ev.overload){ this.doOverload(); }
       else {
         if(ev.dash && time - this.lastDashAt > DASH_CD){ this.startDash(time); }  // 真正的冷卻，避免連續無敵
-        if(ev.jump && this.airJumps > 0){ this.doJump(); }
+        if(ev.jump && this.airJumps > 0){ this._jumpAt = ev.jumpAt; this.doJump(); }
         this.gliding = !!ev.glide;
       }
     } else { this.gliding=false; }
@@ -913,9 +971,12 @@ class GameScene extends Phaser.Scene {
 
     // 維持玩家固定 x
     this.player.x = PLAYER_X;
+
+    if(Debug.on) Debug.update(Math.round(this.game.loop.actualFps));
   }
 
   doJump(){
+    if(Debug.on && this._jumpAt){ Debug.jumpLat = performance.now() - this._jumpAt; this._jumpAt = 0; }  // 輸入→動作延遲
     this.airJumps--;
     this.player.setVelocityY(this.airJumps===1 ? JUMP_V : JUMP_V*0.86);
     this.burst(this.player.x, this.player.y+24, 0xffffff, 5);
@@ -952,10 +1013,11 @@ class GameScene extends Phaser.Scene {
    區塊 7 — APP：UI 流程 / 模式選擇 / Fallback / Phaser 生命週期
    ===================================================================== */
 const App = {
-  game:null, scene:null,
+  game:null, scene:null, paused:false,
   el(id){ return document.getElementById(id); },
   show(id){
     ['screen-menu','screen-calibrate','screen-result','screen-lb'].forEach(s=>this.el(s).classList.add('hidden'));
+    this.el('screen-pause').classList.add('hidden');   // 暫停選單永遠不殘留在其他畫面
     if(id) this.el(id).classList.remove('hidden');
     this.el('topbtns').style.display = (id===null) ? 'flex' : 'none';
     // 只有遊玩中(id===null)才顯示遊戲畫布；用 visibility（非 display:none）以保留尺寸，
@@ -964,7 +1026,7 @@ const App = {
   },
 
   init(){
-    Sfx.ensure(); Sfx.load();
+    Sfx.ensure(); Sfx.load(); Debug.init();
     this.el('btn-mute').textContent = Sfx.muted?'🔇':'🔊';
     document.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>Sfx.click()));
 
@@ -977,13 +1039,52 @@ const App = {
     this.el('btn-home').onclick = ()=>{ this.stopGame(); this.show('screen-menu'); };
     this.el('btn-save').onclick = ()=>this.saveScore();
     this.el('btn-mute').onclick = ()=>{ const m=Sfx.toggle(); this.el('btn-mute').textContent=m?'🔇':'🔊'; };
-    this.el('btn-quit').onclick = ()=>{ this.stopGame(); this.show('screen-menu'); };
+
+    // 暫停系統
+    this.el('btn-pause').onclick = ()=>this.togglePause();
+    this.el('btn-resume').onclick = ()=>this.resumeGame();
+    this.el('btn-restart').onclick = ()=>this.restartFromPause();
+    this.el('btn-pause-home').onclick = ()=>this.pauseHome();
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) this.pauseGame(); });  // 切背景自動暫停
+    window.addEventListener('keydown', (e)=>{ if(e.key==='Escape'||e.key==='p'||e.key==='P') this.togglePause(); });
 
     this.el('res-name').value = localStorage.getItem(LS.name) || '';
     this.checkOrient();
     window.addEventListener('resize', ()=>this.checkOrient());
     window.addEventListener('orientationchange', ()=>setTimeout(()=>this.checkOrient(),300));
     this.show('screen-menu');
+  },
+
+  // ---- 暫停 / 繼續 / 重新開始 / 回首頁 ----
+  isPlaying(){ const sc=this.game && this.game.scene.getScene('game'); return !!(sc && (sc.scene.isActive()||sc.scene.isPaused())); },
+  pauseGame(){
+    if(this.paused || !this.isPlaying()) return;
+    const sc=this.game.scene.getScene('game');
+    if(!sc.scene.isActive()) return;          // 只有真正在跑時可暫停
+    this.paused=true;
+    VoiceInput.active=false;                   // B4：音訊閘門，暫停中喊叫不觸發
+    sc.scene.pause();
+    this.el('btn-pause').textContent='▶';
+    this.el('screen-pause').classList.remove('hidden');
+  },
+  resumeGame(){
+    if(!this.paused) return;
+    this.paused=false;
+    this.el('screen-pause').classList.add('hidden');
+    this.el('btn-pause').textContent='⏸';
+    const sc=this.game.scene.getScene('game');
+    Input.reset(); if(VoiceInput.ready) VoiceInput.resetRound();   // 清掉暫停期間殘留
+    if(sc) sc.scene.resume();
+    if(Input.mode==='voice' && VoiceInput.ready) VoiceInput.active=true;
+  },
+  togglePause(){ if(!this.isPlaying()) return; this.paused ? this.resumeGame() : this.pauseGame(); },
+  restartFromPause(){
+    this.paused=false; this.el('screen-pause').classList.add('hidden'); this.el('btn-pause').textContent='⏸';
+    this.startGame(Input.mode);
+  },
+  pauseHome(){
+    this.paused=false; this.el('screen-pause').classList.add('hidden'); this.el('btn-pause').textContent='⏸';
+    this.stopGame(); this.show('screen-menu');
   },
 
   checkOrient(){
@@ -1021,10 +1122,15 @@ const App = {
   calibrate(){
     this.show('screen-calibrate');
     const msg=this.el('cal-msg'), cnt=this.el('cal-count'), fill=this.el('cal-fill');
-    msg.textContent='先安靜 3 秒，讓怪獸聽聽周圍的聲音…';
-    return VoiceInput.calibrate((prog, lv)=>{
-      cnt.textContent = Math.max(1, Math.ceil(3 - prog*3));
+    return VoiceInput.calibrate((phase, prog, lv)=>{
       fill.style.width = Math.round(lv*100)+'%';
+      if(phase==='floor'){
+        msg.textContent='先安靜 3 秒，讓怪獸聽聽周圍的聲音…';
+        cnt.textContent = Math.max(1, Math.ceil(3 - prog*3));
+      } else {
+        msg.textContent='換你大喊一聲！讓怪獸記住你的音量 📣';
+        cnt.textContent = Math.max(1, Math.ceil(2.5 - prog*2.5));
+      }
     }).then(()=>{
       msg.textContent='校準完成！準備出發～';
       cnt.textContent='GO!';
@@ -1050,6 +1156,8 @@ const App = {
   startGame(mode){
     Input.mode = mode;
     Input.reset();                 // 清掉上一局殘留輸入
+    this.paused = false;
+    VoiceInput.active = false;      // 開跑前不偵測（由場景 running 後才開啟）
     if(VoiceInput.ready) VoiceInput.resetRound();
     Sfx.ensure();
     this.ensureGame();
@@ -1057,7 +1165,8 @@ const App = {
     const boot=()=>{
       if(this.game.scale) this.game.scale.refresh();   // 重新量測尺寸，避免 0×0
       this.scene = this.game.scene.getScene('game');
-      if(this.scene && this.scene.scene.isActive()) this.scene.scene.restart();
+      const sm = this.scene && this.scene.scene;
+      if(sm && (sm.isActive() || sm.isPaused())) sm.restart();   // 含「從暫停中重開」
       else this.game.scene.start('game');
     };
     // 等 Phaser 準備好
@@ -1065,6 +1174,7 @@ const App = {
   },
 
   stopGame(){
+    this.paused = false; VoiceInput.active = false;
     if(this.game && this.game.scene.getScene('game')){
       try{ this.game.scene.stop('game'); }catch(e){}
     }
@@ -1072,6 +1182,8 @@ const App = {
 
   toResult(data){
     this.last = data;
+    this.paused = false; VoiceInput.active = false;   // 結算後停止偵測
+    this.el('btn-pause').textContent = '⏸';
     this.show('screen-result');
     this.el('res-score').textContent = data.score;
     this.el('res-combo').textContent = data.combo;
