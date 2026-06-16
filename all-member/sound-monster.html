@@ -169,21 +169,20 @@
     <div class="subtitle">用你的聲音，帶怪獸狂奔 60 秒！</div>
     <div class="card float">
       <div class="how">
-        <span>👏 <b>短促喊聲</b> 跳躍</span>
-        <span>🎐 <b>持續中音</b> 滑翔</span>
-        <span>📣 <b>大聲吼</b> 衝刺</span>
-        <span>💫 太久太大聲會頭暈喔</span>
+        <span>👏 <b>出聲</b> 就跳</span>
+        <span>🎐 <b>持續出聲</b> 浮更高</span>
+        <span>📣 <b>大聲一吼</b> 衝刺撞牆</span>
       </div>
       <div class="how" style="margin-top:10px;">
         <span>🍬 糖果 +分</span><span>⭐ 星星 大分</span><span>🌈 彩虹圈 連擊倍數</span>
-        <span>☁️ 泡泡雲 彈跳</span><span>🟪 軟糖牆 衝刺撞破</span><span>🌵 仙人掌糖 閃開</span>
+        <span>🟪 軟糖牆 衝刺撞破</span><span>🌵 仙人掌糖 跳過</span>
       </div>
     </div>
     <div class="btnrow">
       <button class="big b-voice" id="btn-start-voice">🎤 用聲音玩</button>
       <button class="big b-touch" id="btn-start-touch">👆 用觸控玩</button>
     </div>
-    <div class="hint">桌機也可用鍵盤：空白鍵=跳　Shift(按住)=滑翔　X/↑=衝刺</div>
+    <div class="hint">桌機也可用鍵盤：空白鍵=跳　按住=浮高　X/↑=衝刺</div>
     <button class="big b-ghost" id="btn-menu-lb" style="font-size:16px;padding:10px 18px;">🏆 排行榜</button>
   </div>
 
@@ -257,19 +256,18 @@ const Quality = {
 
 const GAME_TIME = 60;                    // 固定 60 秒
 const GROUND_Y = 630, PLAYER_X = 260;    // （依 1280×720 設計）
-const GRAVITY = 2000, JUMP_V = -860, GLIDE_GRAV = 480, GLIDE_MAXFALL = 105, BOUNCE_V = -1200;
+const GRAVITY = 2000, JUMP_V = -860, GLIDE_GRAV = 480, GLIDE_MAXFALL = 105;
 const SPEED0 = 440, SPEED1 = 580;        // 世界捲動速度（隨時間加快）
 const DASH_MULT = 1.85, DASH_TIME = 620, DASH_CD = 900; // 衝刺（CD>TIME → 兩次衝刺間有空檔，不能一直無敵）
-const STUN_TIME = 1450, BONK_TIME = 520; // 暈眩 / 撞牆失控
+const BONK_TIME = 520, IFRAME_TIME = 1000; // 撞牆失控(無法操作) / 受傷無敵閃爍(穿透障礙)
 
-// 聲音判定參數（相對校準後的正規化音量 0..1）
+// 聲音判定參數（相對校準後的正規化音量 0..1）— 中度簡化：跳/浮 + 大聲衝刺，無暈眩
 const VOICE = {
   loudRef: 0.32, floorMargin: 0.012,
   attack: 0.6, release: 0.10, baseSmooth: 0.04,   // 非對稱包絡(快攻擊/慢釋放) + 慢基線
   onsetMargin: 0.12, jumpMin: 0.26, jumpCD: 250,  // onset：包絡越過(base+margin)的上升緣即跳
-  glideLo: 0.18, glideHi: 0.64, glideHold: 120,
-  dashLv: 0.66, dashCD: 820,
-  overLv: 0.85, overHold: 1050,
+  floatLo: 0.25, glideHold: 120,                  // 持續出聲＝浮空（合併原滑翔，校準後的絕對門檻）
+  dashMargin: 0.45, dashCD: 820,                  // 大聲一吼＝衝刺；相對 base → 吵雜派對/跨局自適應
   sampleMs: 8                                       // 解耦取樣間隔（脫離 render 迴圈）
 };
 
@@ -301,19 +299,19 @@ const Debug = {
 
 /* =====================================================================
    區塊 2 — AUDIO：VoiceInput（Web Audio API，非語音辨識）
-   3 秒環境校準 → 平滑音量 → spike/sustain/overload + cooldown
+   兩段校準 → 解耦取樣 → 非對稱包絡 onset(跳) / 持續(浮) / 大聲(衝刺) + cooldown
    ===================================================================== */
 const VoiceInput = {
   ready:false, active:false, ctx:null, stream:null, analyser:null, buf:null,
   floor:0.02, loudRef:VOICE.loudRef,
   env:0, base:0, level:0,
-  overTimer:0, glideTimer:0, lastJump:-9999, lastDash:-9999, _wasAbove:false,
+  glideTimer:0, lastJump:-9999, lastDash:-9999, _wasAbove:false,
   samplerId:null, _lastT:0, _avgDt:VOICE.sampleMs,
   // 已偵測、尚未被遊戲消費的鎖存事件（latched edges）
-  pJump:false, pDash:false, pOver:false, glideOn:false, jumpAt:0,
+  pJump:false, pDash:false, glideOn:false, jumpAt:0,
 
-  clearEdges(){ this.pJump=this.pDash=this.pOver=false; this.glideOn=false; },
-  resetRound(){ this.overTimer=0; this.glideTimer=0; this.env=0; this.base=0; this._wasAbove=false; this.lastJump=-9999; this.lastDash=-9999; this.clearEdges(); },
+  clearEdges(){ this.pJump=this.pDash=false; this.glideOn=false; },
+  resetRound(){ this.glideTimer=0; this.env=0; this.base=0; this._wasAbove=false; this.lastJump=-9999; this.lastDash=-9999; this.clearEdges(); },
 
   async init(){
     this.ctx = new (window.AudioContext||window.webkitAudioContext)({ latencyHint:'interactive' });
@@ -351,25 +349,23 @@ const VoiceInput = {
     this.env  += (n - this.env)  * (n > this.env ? VOICE.attack : VOICE.release);
     this.base += (n - this.base) * VOICE.baseSmooth;
     this.level = this.env;
-    // 過載暈眩（最高優先）
-    if(n > VOICE.overLv) this.overTimer+=dt; else this.overTimer=Math.max(0, this.overTimer-dt*1.6);
-    if(this.overTimer > VOICE.overHold){ this.pOver=true; this.overTimer=0; this.lastDash=nowT; this._wasAbove=true; return; }
-    // 大聲衝刺
-    if(n > VOICE.dashLv && nowT-this.lastDash > VOICE.dashCD){ this.pDash=true; this.lastDash=nowT; }
+    // R1 噪音自適應：衝刺門檻相對 base（吵雜派對自適應），但封頂 0.85 確保「用力大吼」永遠衝得了
+    const dashTh = Math.min(0.85, this.base + VOICE.dashMargin);
+    if(this.env > dashTh && nowT-this.lastDash > VOICE.dashCD){ this.pDash=true; this.lastDash=nowT; }
     // onset 跳躍：包絡越過 (base+margin) 的「上升緣」→ 前緣即觸發、不靠絕對音量
     const above = this.env > this.base+VOICE.onsetMargin && this.env > VOICE.jumpMin;
     if(above && !this._wasAbove && !this.pDash && nowT-this.lastJump > VOICE.jumpCD){
       this.pJump=true; this.jumpAt=nowT; this.lastJump=nowT;
     }
     this._wasAbove = above;
-    // 持續中音滑翔
-    if(n > VOICE.glideLo && n < VOICE.glideHi) this.glideTimer+=dt; else this.glideTimer=0;
+    // 持續出聲＝浮空（合併原滑翔：跳起後繼續出聲就浮高）
+    if(n > VOICE.floatLo) this.glideTimer+=dt; else this.glideTimer=0;
     this.glideOn = this.glideTimer > VOICE.glideHold;
   },
   // 遊戲每幀消費：回傳鎖存事件並清除上升緣
   read(){
-    const e={ jump:this.pJump, dash:this.pDash, overload:this.pOver, glide:this.glideOn, level:this.level, jumpAt:this.jumpAt };
-    this.pJump=this.pDash=this.pOver=false;
+    const e={ jump:this.pJump, dash:this.pDash, glide:this.glideOn, level:this.level, jumpAt:this.jumpAt };
+    this.pJump=this.pDash=false;
     return e;
   },
 
@@ -411,7 +407,7 @@ const Input = {
     const j=this._jumpQ, d=this._dashQ; this._jumpQ=false; this._dashQ=false;
     this._pulse = Math.max(0, this._pulse - dt/300);
     const lv = this._glide ? 0.42 : (d?0.85:this._pulse*0.7);
-    return { jump:j, dash:d, glide:this._glide, overload:false, level:lv, jumpAt:this.jumpAt };
+    return { jump:j, dash:d, glide:this._glide, level:lv, jumpAt:this.jumpAt };
   }
 };
 
@@ -422,8 +418,7 @@ const Input = {
 const Sfx = {
   ctx:null, master:null, muted:false, active:0, buffers:{}, loaded:false,
   MAP:{ click:'click_001', jump:'select_005', collect:'pluck_001', star:'glass_006',
-        ring:'confirmation_001', bounce:'maximize_003', bonk:'error_004',
-        dizzy:'error_007', dash:'glitch_002', finish:'confirmation_004' },
+        ring:'confirmation_001', bonk:'error_004', dash:'glitch_002', finish:'confirmation_004' },
   ensure(){
     if(this.ctx) return;
     this.ctx = VoiceInput.ctx || new (window.AudioContext||window.webkitAudioContext)({ latencyHint:'interactive' });
@@ -471,9 +466,7 @@ const Sfx = {
       case 'star': this.tone(660,0.1,'triangle',0.25,990); break;
       case 'ring': this.tone(523,0.12,'square',0.18,1046); break;
       case 'dash': this.tone(180,0.26,'sawtooth',0.22,1200); break;
-      case 'bounce': this.tone(300,0.2,'sine',0.28,900); break;
       case 'bonk': this.tone(160,0.3,'sawtooth',0.3,70); break;
-      case 'dizzy': this.tone(500,0.45,'sine',0.25,180); break;
       case 'finish': [523,659,784,1046].forEach((f,i)=>setTimeout(()=>this.tone(f,0.3,'triangle',0.3),i*110)); break;
       default: this.tone(700,0.1,'sine',0.2);
     }
@@ -484,9 +477,7 @@ const Sfx = {
   star(){ this.play('star',0.6); },
   ring(){ this.play('ring',0.6); },
   dash(){ this.play('dash',0.5); },
-  bounce(){ this.play('bounce',0.6); },
   bonk(){ this.play('bonk',0.6); },
-  dizzy(){ this.play('dizzy',0.6); },
   smash(){ this.play('bonk',0.5); },
   finish(){ this.play('finish',0.7); setTimeout(()=>this.play('star',0.5),140); setTimeout(()=>this.play('ring',0.5),300); }
 };
@@ -554,7 +545,7 @@ class GameScene extends Phaser.Scene {
     this.load.image('hill',   C+'world/hillCanePink.png');
     this.load.image('cloudA', C+'world/cloud1.png');
     this.load.image('cloudB', C+'world/cloud2.png');
-    ['candyRed','candyBlue','candyGreen','candyYellow','star','gemYellow','springboardUp','cactus','flagBlue']
+    ['candyRed','candyBlue','candyGreen','candyYellow','star','gemYellow','cactus','flagBlue']
       .forEach(n=>this.load.image(n, C+'items/'+n+'.png'));
     this.load.image('slimeBlock', C+'items/slimeBlock.png');
   }
@@ -586,7 +577,10 @@ class GameScene extends Phaser.Scene {
     this.player.body.setSize(46,80);          // 在原圖 66×92 內置中
     this.player.setGravityY(GRAVITY);
     this._expr = null;
-    this.physics.add.collider(this.player, this.ground, ()=>{ this.airJumps = 2; });
+    this.physics.add.collider(this.player, this.ground, ()=>{
+      this.airJumps = 2;
+      if(this.running && this.time.now - this.jumpBuffer < 130){ this.jumpBuffer = 0; this.doJump(); }  // 落地補跳
+    });
 
     // 物件群組
     this.objects = this.physics.add.group({ allowGravity:false });
@@ -612,9 +606,11 @@ class GameScene extends Phaser.Scene {
 
     // 鍵盤（桌機 / 測試）
     this.keys = this.input.keyboard.addKeys({ jump:'SPACE', glide:'SHIFT', dash:'X', up:'UP' });
-    this.keys.jump.on('down', ()=>{ if(Input.mode==='touch') Input.queueJump(); });
-    this.keys.dash.on('down', ()=>{ if(Input.mode==='touch') Input.queueDash(); });
-    this.keys.up.on('down', ()=>{ if(Input.mode==='touch') Input.queueDash(); });
+    this.keys.jump.on('down', ()=>{ if(Input.mode==='touch' && !App.paused) Input.queueJump(); });
+    this.keys.dash.on('down', ()=>{ if(Input.mode==='touch' && !App.paused) Input.queueDash(); });
+    this.keys.up.on('down',   ()=>{ if(Input.mode==='touch' && !App.paused) Input.queueDash(); });
+    this.keys.glide.on('down',()=>{ if(Input.mode==='touch' && !App.paused) Input.setGlide(true); });   // 按住=浮高
+    this.keys.glide.on('up',  ()=>{ if(Input.mode==='touch') Input.setGlide(false); });
 
     // 觸控：點擊=跳、按住=滑翔、右下 DASH 區
     this.setupTouch(W,H);
@@ -634,7 +630,7 @@ class GameScene extends Phaser.Scene {
     this.candyCount=0; this.starCount=0;
     this.timeLeft=GAME_TIME; this.traveled=0; this.nextSpawn=420;
     this.worldSpeed=SPEED0; this.airJumps=2;
-    this.dashUntil=0; this.lastDashAt=-9999; this.stunUntil=0; this.bonkUntil=0;
+    this.dashUntil=0; this.lastDashAt=-9999; this.bonkUntil=0; this.hurtUntil=0; this.jumpBuffer=0; this.exprFlashUntil=0;
     this.invincible=false; this.spawnIdx=0; this.elapsed=0;
     this._fpsLow=0; this._fpsHigh=0;
     // HUD/meter 重畫快取（buildHUD 每局重建 graphics，故須一併重置，否則第二局起背景不畫）
@@ -690,7 +686,7 @@ class GameScene extends Phaser.Scene {
 
     // 觸控提示
     if(Input.mode==='touch'){
-      this.add.text(W/2, H-26, '👆 點一下=跳　按住=滑翔　右下角=衝刺', {...st, fontSize:'18px', color:'#3a2a5d'}).setOrigin(0.5).setDepth(40);
+      this.add.text(W/2, H-26, '👆 點一下=跳　按住=浮高　右下角=衝刺', {...st, fontSize:'18px', color:'#3a2a5d'}).setOrigin(0.5).setDepth(40);
       this.dashBtn = this.add.circle(W-72, H-72, 50, 0xff5fa2, 0.85).setDepth(40).setStrokeStyle(5,0xffffff);
       this.add.text(W-72, H-72, '衝!', {...st, fontSize:'26px', color:'#fff'}).setOrigin(0.5).setDepth(41);
     }
@@ -721,7 +717,7 @@ class GameScene extends Phaser.Scene {
     if(this.objects.countActive(true) >= Quality.maxObjects()) return null;
     let tex;
     if(type==='candy'){ const pal=['candyRed','candyBlue','candyGreen','candyYellow']; tex=pal[(this._candyN=(this._candyN||0)+1)%4]; }
-    else tex = {star:'star',ring:'gemYellow',bubble:'springboardUp',jelly:'slimeBlock',cactus:'cactus',gate:'flagBlue'}[type];
+    else tex = {star:'star',ring:'gemYellow',jelly:'slimeBlock',cactus:'cactus',gate:'flagBlue'}[type];
     const o = this.objects.create(x, y, tex);
     o.objType = type; o.hit=false; o.setDepth(6);
     if(type==='jelly'){        // 軟糖牆：拉長的 Kenney slime 方塊
@@ -732,8 +728,6 @@ class GameScene extends Phaser.Scene {
       o.body.reset(o.x, o.y);
     } else if(type==='cactus'){
       o.setOrigin(0.5,1); o.y=GROUND_Y+6; o.body.setSize(46,60);
-    } else if(type==='bubble'){ // 彈跳糖板（地面彈簧）
-      o.setOrigin(0.5,1); o.y=GROUND_Y+6; o.body.setSize(60,44);
     } else if(type==='ring'){  o.body.setCircle(28,7,7); o.floatY=y; o.spin=true; }
       else if(type==='star'){  o.body.setCircle(28,7,7); o.floatY=y; o.spin=true; }
       else {                   o.body.setCircle(26,9,9); o.floatY=y; }   // candy
@@ -748,10 +742,10 @@ class GameScene extends Phaser.Scene {
       ()=>{ for(let i=0;i<4;i++) this.spawn('candy',x+i*64,G-70); },     // 地面糖果排
       ()=>{ this.spawn('star',x,G-220); this.spawn('candy',x-50,G-150); this.spawn('candy',x+50,G-150); }, // 高星星
       ()=>{ this.spawn('cactus',x); for(let i=0;i<3;i++) this.spawn('candy',x+120+i*60,G-110); }, // 仙人掌+糖果
-      ()=>{ this.spawn('bubble',x,G-120); this.spawn('star',x+140,G-300); },  // 泡泡彈到高星
+      ()=>{ this.spawn('star',x,G-250); for(let i=0;i<3;i++) this.spawn('candy',x+(i-1)*70,G-130); },  // 高星星(持續出聲浮上去)
       ()=>{ this.spawn('ring',x,G-160); for(let i=0;i<4;i++) this.spawn('candy',x+70+i*55,G-160); }, // 彩虹圈連擊
       ()=>{ this.spawn('jelly',x); this.spawn('ring',x-130,G-150); for(let i=0;i<3;i++) this.spawn('star',x+90+i*60,G-150);}, // 軟糖牆(衝)後星星
-      ()=>{ this.spawn('cactus',x); this.spawn('bubble',x+90,G-130); this.spawn('cactus',x+190); }, // 雙仙人掌+泡泡
+      ()=>{ this.spawn('cactus',x); for(let i=0;i<3;i++) this.spawn('candy',x+110+i*55,G-150); this.spawn('cactus',x+300); }, // 雙仙人掌間糖果
     ];
     // 前 3 個樣式用簡單的，之後隨機
     const idx = p<3 ? p%3 : (p*7+3)%list.length;
@@ -778,31 +772,34 @@ class GameScene extends Phaser.Scene {
     if(s==='happy'||s==='win'){ p.setTexture('mon_jump'); }
     else if(s==='glide'){ p.setTexture('mon_jump'); p.setAngle(-10); p.setTint(0xbfe3ff); }
     else if(s==='dash'){ p.setTexture('mon_jump'); p.setAngle(12); p.setTint(0xfff2a0); }
-    else if(s==='dizzy'){ p.setTexture('mon_hurt'); }
+    else if(s==='dizzy'){ p.setTexture('mon_hurt'); p.setTint(0xff8a8a); }   // 受傷：紅染表情
     else { p.setTexture('mon_stand'); }
   }
+  // 微回饋：身體 Q 彈一下（body 為絕對尺寸 setSize → 縮放不影響碰撞，安全）
+  monsterPop(s){ this.tweens.killTweensOf(this.player); this.player.setScale(1); this.tweens.add({ targets:this.player, scaleX:s, scaleY:s, duration:70, yoyo:true, onComplete:()=>this.player.setScale(1) }); }
 
   /* ---------- 碰撞 ---------- */
   onHit(player, o){
     if(o.hit || !o.active) return;
     const now=this.time.now;
+    // 受傷無敵閃爍期間：穿透障礙，不再連續受擊
+    if(now < this.hurtUntil && (o.objType==='cactus'||o.objType==='jelly')) return;
     switch(o.objType){
       case 'candy':
         o.hit=true; this.addScore(10); this.combo++; this.candyCount++;
         this.burst(o.x,o.y,0xff8ac4,8); Sfx.collect(); this.popFloat(o.x,o.y,'+'+(10*this.mult),'#ffd23f');
+        this.monsterPop(1.12); this.exprFlashUntil=now+200;   // 吃到→小開心彈
         o.destroy(); break;
       case 'star':
         o.hit=true; this.addScore(50); this.combo+=2; this.starCount++;
         this.burst(o.x,o.y,0xffe27a,16); Sfx.star(); this.popFloat(o.x,o.y,'⭐+'+(50*this.mult),'#fff');
+        this.monsterPop(1.24); this.exprFlashUntil=now+280;   // 星星→大開心彈
         o.destroy(); break;
       case 'ring':
         o.hit=true; this.mult=Math.min(5,this.mult+1); this.addScore(20); this.combo++;
         this.burst(o.x,o.y,0xff5fa2,18); Sfx.ring(); this.popFloat(o.x,o.y,'倍數 x'+this.mult,'#ff5fa2');
+        this.monsterPop(1.18); this.exprFlashUntil=now+240;
         o.destroy(); break;
-      case 'bubble':
-        o.hit=true; this.player.setVelocityY(BOUNCE_V); this.airJumps=2;
-        this.burst(o.x,o.y,0xbfe9ff,10); Sfx.bounce(); this.popFloat(o.x,o.y-30,'boing!','#7b5cff');
-        this.setExpr('happy'); o.destroy(); break;
       case 'jelly':
         o.hit=true;
         if(this.invincible){ this.addScore(30); this.combo++; this.burst(o.x,o.y-60,0xd6a6ff,18); Sfx.smash(); this.popFloat(o.x,o.y-80,'撞破!+'+(30*this.mult),'#fff'); o.destroy(); }
@@ -818,28 +815,19 @@ class GameScene extends Phaser.Scene {
         break;
     }
   }
-  doBonk(o){
-    this.combo=0; this.mult=1; this.bonkUntil=this.time.now+BONK_TIME;
-    this.player.setVelocity(-90, -260);
-    this.burst(o.x,o.y-60,0xb06bff,12); Sfx.bonk(); this.popFloat(this.player.x,this.player.y-60,'QQ 撞牆了…','#b06bff');
-    this.setExpr('dizzy');
-    this.cameras.main.shake(180, 0.008);
-    o.destroy();
-  }
-  doSpike(o){
-    this.combo=0; this.mult=1; this.bonkUntil=this.time.now+BONK_TIME;
-    this.player.setVelocityY(-360);
-    Sfx.bonk(); this.popFloat(this.player.x,this.player.y-60,'哎呀！','#ff5fa2');
+  doHurt(o, vx, vy, txt, color){
+    this.combo=0; this.mult=1;
+    this.bonkUntil=this.time.now+BONK_TIME;       // 短暫無法操作
+    this.hurtUntil=this.time.now+IFRAME_TIME;     // 較長的無敵閃爍（穿透障礙）
+    this.player.setVelocity(vx, vy);              // 收斂彈跳（不彈過高）
+    this.burst(o.x,o.y-40,color,12); Sfx.bonk();
+    this.popFloat(this.player.x,this.player.y-60,txt,'#ff5fa2');
     this.setExpr('dizzy');
     this.cameras.main.shake(150, 0.006);
     o.destroy();
   }
-  doOverload(){
-    this.stunUntil = this.time.now + STUN_TIME;
-    Sfx.dizzy(); this.setExpr('dizzy');
-    this.popFloat(this.player.x, this.player.y-70, '太大聲啦～頭暈 💫', '#7b5cff');
-    this.tweens.add({targets:this.player, angle:360, duration:STUN_TIME, onComplete:()=>this.player.setAngle(0)});
-  }
+  doBonk(o){ this.doHurt(o, -80, -240, 'QQ 撞牆了…', 0xb06bff); }   // 軟糖牆未衝刺
+  doSpike(o){ this.doHurt(o, 0, -280, '哎呀！', 0xff8a3b); }         // 仙人掌
   addScore(base){ this.score += base * this.mult; }
 
   // FPS 看門狗：實測掉幀才降階（先漂亮，撐不住才退讓）
@@ -885,8 +873,7 @@ class GameScene extends Phaser.Scene {
     // 輸入
     const ev = Input.poll(dt, time);
     this.drawMeter(ev.level||0);
-    const stunned = time < this.stunUntil;
-    const bonked  = time < this.bonkUntil;
+    const bonked = time < this.bonkUntil;
 
     if(this.running){
       // 計時
@@ -904,14 +891,14 @@ class GameScene extends Phaser.Scene {
       }
     }
 
-    // 處理事件（暈眩/失控時忽略主動操作）
-    if(!stunned && !bonked && this.running){
-      if(ev.overload){ this.doOverload(); }
-      else {
-        if(ev.dash && time - this.lastDashAt > DASH_CD){ this.startDash(time); }  // 真正的冷卻，避免連續無敵
-        if(ev.jump && this.airJumps > 0){ this._jumpAt = ev.jumpAt; this.doJump(); }
-        this.gliding = !!ev.glide;
+    // 處理事件（撞牆失控時忽略主動操作）
+    if(!bonked && this.running){
+      if(ev.dash && time - this.lastDashAt > DASH_CD){ this.startDash(time); }  // 真正的冷卻，避免連續無敵
+      if(ev.jump){
+        if(this.airJumps > 0){ this._jumpAt = ev.jumpAt; this.doJump(); }
+        else { this.jumpBuffer = time; this._jumpAt = ev.jumpAt; }              // 緩衝：落地瞬間補跳
       }
+      this.gliding = !!ev.glide;
     } else { this.gliding=false; }
 
     // 衝刺狀態 + 光暈
@@ -928,12 +915,14 @@ class GameScene extends Phaser.Scene {
     this.player.setGravityY(this.gliding ? GLIDE_GRAV : GRAVITY);
     if(this.gliding && vy > GLIDE_MAXFALL) this.player.setVelocityY(GLIDE_MAXFALL);
 
-    // 表情（非特殊狀態時）：地面=跑、空中=跳
-    if(!stunned){
-      if(this.invincible) this.setExpr('dash');
-      else if(this.gliding) this.setExpr('glide');
-      else if(!bonked) this.setExpr(this.player.body.blocked.down ? 'run' : 'happy');
-    }
+    // 表情優先序：受傷 > 衝刺 > 吃到開心閃 > 浮空 > 地面跑/空中跳
+    if(time < this.hurtUntil) this.setExpr('dizzy');
+    else if(this.invincible) this.setExpr('dash');
+    else if(time < this.exprFlashUntil) this.setExpr('happy');
+    else if(this.gliding) this.setExpr('glide');
+    else this.setExpr(this.player.body.blocked.down ? 'run' : 'happy');
+    // 受傷無敵閃爍（alpha 與 setExpr 無衝突）
+    this.player.setAlpha(time < this.hurtUntil ? (Math.floor(time/70)%2 ? 0.35 : 1) : 1);
 
     // 移動所有物件（用 physics velocity 維持 overlap 偵測）
     const v=-curSpeed;
@@ -979,7 +968,9 @@ class GameScene extends Phaser.Scene {
     if(Debug.on && this._jumpAt){ Debug.jumpLat = performance.now() - this._jumpAt; this._jumpAt = 0; }  // 輸入→動作延遲
     this.airJumps--;
     this.player.setVelocityY(this.airJumps===1 ? JUMP_V : JUMP_V*0.86);
-    this.burst(this.player.x, this.player.y+24, 0xffffff, 5);
+    this.burst(this.player.x, this.player.y+24, 0xffffff, 5);            // 起跳塵粒
+    this.tweens.killTweensOf(this.player); this.player.setScale(1);      // 起跳 squash（拉長）
+    this.tweens.add({ targets:this.player, scaleX:0.86, scaleY:1.18, duration:110, yoyo:true, onComplete:()=>this.player.setScale(1) });
     Sfx.jump(); this.setExpr('happy');
   }
   startDash(time){
@@ -996,16 +987,17 @@ class GameScene extends Phaser.Scene {
       this._meterInit=true;
     }
     const fh = Phaser.Math.Clamp(level,0,1)*h;
-    let col=0x37e1b5;
-    if(level>VOICE.overLv) col=0xff3b6b; else if(level>VOICE.dashLv) col=0xff8a3b; else if(level>VOICE.glideHi) col=0xffd23f; else if(level>VOICE.glideLo) col=0x37c9ff;
-    const key = (fh|0)*1000 + (col & 0xff);   // 量化：填色高度(px)+色帶；不變就不重畫
+    const dashLine = Math.min(0.85, VoiceInput.base + VOICE.dashMargin);   // 衝刺門檻隨環境噪音浮動(封頂 0.85)
+    let col=0x37e1b5;                                          // 安靜=綠
+    if(level>dashLine) col=0xff8a3b; else if(level>VOICE.floatLo) col=0x37c9ff;  // 大聲=橘(衝刺) / 出聲=藍(跳·浮)
+    const key = (fh|0)*1000 + (col & 0xff) + (dashLine*97|0)*7;   // 量化：填色高度(px)+色帶+衝刺線位置；不變就不重畫
     if(key === this._meterKey) return;
     this._meterKey = key;
     const g=this.meterFill; g.clear();
     g.fillStyle(0xeeeeee,0.6); g.fillRoundedRect(x,y,w,h,10);              // 區帶底色
     g.fillStyle(col,1); g.fillRoundedRect(x, y+h-fh, w, fh, 10);          // 當前音量
     g.lineStyle(2,0xff5fa2,0.8);                                          // 門檻線
-    [VOICE.dashLv, VOICE.glideHi].forEach(t=>{ const yy=y+h-t*h; g.beginPath(); g.moveTo(x-3,yy); g.lineTo(x+w+3,yy); g.strokePath(); });
+    [dashLine, VOICE.floatLo].forEach(t=>{ const yy=y+h-t*h; g.beginPath(); g.moveTo(x-3,yy); g.lineTo(x+w+3,yy); g.strokePath(); });
   }
 }
 
