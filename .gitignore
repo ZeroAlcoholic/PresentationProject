@@ -36,3 +36,6 @@ node_modules/
 
 # Sound Monster Run 遊戲素材（Kenney CC0，需隨遊戲一起部署）
 !all-member/assets/sound-monster/**
+
+# 隱匿路徑報告
+!r/**
